@@ -1,4 +1,4 @@
-# 我的智能图书馆（my-smart-library）
+# 我的智能图书馆（smart-library）
 
 一个跑在自己 Mac 上的私人电子书库：把散落在各处的电子书整理成一个书库，能搜、能推荐、能在浏览器和 iPhone 上直接读。数据和模型都在本机，不依赖任何云端书库服务。
 
@@ -18,7 +18,7 @@
 ### 2. 搜索：用一句话找书
 
 - 两路召回：关键词全文检索（SQLite FTS5 的 BM25）加语义向量检索（BGE-M3，1024 维）。
-- 重排：前 12 本用 bge-reranker-v2-m3 交叉编码器再判断一次相关性。
+- 重排：「按描述推荐」对前 12 本用 bge-reranker-v2-m3 交叉编码器再判断一次相关性；书架搜索为了速度不走这一步。
 - 支持自然语言描述（"讲认知偏差的入门书"）、拼音和拼音首字母、中英文互查。
 - 可选「AI 精排」：DeepSeek 为前 20 本打分重排，失败或超出费用上限时保留标准排序。
 
@@ -93,8 +93,6 @@ bash start.sh
 
 语义搜索和推荐需要两个模型放在 `data/models/` 下：`bge-m3/` 和 `bge-reranker-v2-m3/`（ONNX 量化版加 `tokenizer.json`）。没有模型时退回纯关键词搜索。书的向量索引用 `backend/build_bge_index.py` 生成。
 
-注意：`start.sh` 里写的是本机的绝对路径，换机器要改。
-
 ## 配置
 
 环境变量，全部可选：
@@ -105,15 +103,23 @@ bash start.sh
 | `DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL` | DeepSeek 翻译、AI 精排、书目整理（模型默认 `deepseek-flash`） |
 | `GOOGLE_BOOKS_API_KEY` | Google Books 评分和简介 |
 | `AI_DAILY_CAP_CNY` | 搜索与翻译合计的每日费用上限，默认 ¥5 |
-| `LIBRARY_DATA_DIR`、`LIBRARY_CONFIG_PATH` | 数据目录和配置文件的位置 |
+| `LIBRARY_BASE_DIR`、`LIBRARY_DATA_DIR` | 项目根目录和数据目录，默认是仓库根目录和其下的 `data/` |
+| `LIBRARY_CONFIG_PATH` | 配置文件的位置，优先于下面两个默认位置 |
 
-`data/config.json`，可选：
+本机配置文件，可选。按顺序找第一个存在的：`local/config.json`、`data/config.json`。
+
+`local/` 不进本仓库（已在 `.gitignore` 里），适合放这台机器自己的路径；可以在里面单独 `git init` 记录配置的变化。API key 建议放环境变量，不写进配置文件。
 
 | 键 | 作用 |
 |---|---|
-| `source_dirs` | 要扫描的来源目录，每个带名称、可信度权重和优先级 |
-| `google_books_api_key` | 同上面的环境变量 |
+| `source_dirs` | 要扫描的来源目录，每个带 `path`、`name`、可信度权重 `trust_weight` 和优先级 `priority`。不配时只扫描 `books/inbox/` |
+| `index_csv_paths` | 额外的分类索引 CSV（文件名、分类、简介），先于仓库根目录的 `电子书分类索引与简介目录.csv` 读取 |
+| `library_dir`、`db_path`、`covers_dir` | 归档目录、书库数据库、封面目录，默认 `Library/`、`data/library.db`、`data/covers/` |
+| `duplicates_dir`、`removed_books_dir`、`calibre_cfg_dir` | 重复文件、删除的书、Calibre 配置的存放位置 |
+| `google_books_api_key` | 同上面的环境变量，环境变量优先 |
 | `claude_translate` | 设为 `false` 时不调用 Claude 翻译（比如账户没有余额时） |
+
+相对路径按项目根目录解析。
 
 Apple 本机翻译需要 macOS 26，并在"系统设置 › 通用 › 语言与地区 › 翻译语言"里下载英语和中文语言包。
 
@@ -141,7 +147,7 @@ Apple 本机翻译需要 macOS 26，并在"系统设置 › 通用 › 语言与
 .venv/bin/python -m unittest discover -s tests -p "test_*.py"
 ```
 
-约 280 个测试，80 秒左右。其中有三类门禁值得知道：
+约 290 个测试，80 秒左右。其中有三类门禁值得知道：
 
 - **代码规范门禁**（`tests/test_code_standards_gate.py`）：函数不超过 50 行、嵌套不超过 3 层、参数不超过 3 个、文件不超过 500 行。
 - **搜索质量门禁**（`tests/test_search_quality.py`）：用 `tests/search_eval/queries.json` 里标注好的查询评估书架搜索，nDCG 不得低于基线 0.02 以上，Hit@3 不得低于基线 0.05 以上，Bad@5 不得增加。
@@ -172,7 +178,9 @@ DeepSeek 相关的离线工具：
 - [系统分析与优化方案.md](系统分析与优化方案.md)：系统现状分析和历次优化的评审记录
 - [代码规范重构与架构解耦方案.md](代码规范重构与架构解耦方案.md)：代码规范和模块拆分
 - [同书归并与误合并拆分方案.md](同书归并与误合并拆分方案.md)：怎么判断两个文件是不是同一本书
+- [推荐算法重构与优化方案.md](推荐算法重构与优化方案.md)：兴趣推荐的问题分析和重构方案
 - [推荐算法重构实施计划.md](推荐算法重构实施计划.md)：兴趣推荐的设计、实测数据和每个阶段的实施记录
+- [推荐算法重构实施计划_评审与修正.md](推荐算法重构实施计划_评审与修正.md)：对实施计划的评审意见和修正
 - [docs/designs/ios-app.md](docs/designs/ios-app.md)：iPhone app 的设计决定
 
 ## 许可
