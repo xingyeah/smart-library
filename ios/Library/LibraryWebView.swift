@@ -27,6 +27,7 @@ struct LibraryWebView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         // WebKit's own back swipe previews a stale snapshot for same-page history, so the page closes its top layer itself
         let edgeSwipe = UIScreenEdgePanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleEdgeSwipe(_:)))
         edgeSwipe.edges = .left
@@ -47,7 +48,7 @@ struct LibraryWebView: UIViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
         static let messageName = "library"
         static let edgeSwipeMinDistance: CGFloat = 60
         /// A page that loaded but never says `ready` (an error page from the server) still gets shown after this.
@@ -87,6 +88,51 @@ struct LibraryWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             NSLog("Page load failed before it started: %@", error.localizedDescription)
             onPageReady?()
+        }
+
+        // Without these WebKit drops the page's alert/confirm/prompt: confirm() returns false, so deleting a book did nothing
+        func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String,
+                     initiatedByFrame frame: WKFrameInfo) async {
+            await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
+                let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "好", style: .default) { _ in done.resume() })
+                present(alert, from: webView) { done.resume() }
+            }
+        }
+
+        func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String,
+                     initiatedByFrame frame: WKFrameInfo) async -> Bool {
+            await withCheckedContinuation { (done: CheckedContinuation<Bool, Never>) in
+                let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in done.resume(returning: false) })
+                alert.addAction(UIAlertAction(title: "确定", style: .default) { _ in done.resume(returning: true) })
+                present(alert, from: webView) { done.resume(returning: false) }
+            }
+        }
+
+        func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?,
+                     initiatedByFrame frame: WKFrameInfo) async -> String? {
+            await withCheckedContinuation { (done: CheckedContinuation<String?, Never>) in
+                let alert = UIAlertController(title: nil, message: prompt, preferredStyle: .alert)
+                alert.addTextField { $0.text = defaultText }
+                alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in done.resume(returning: nil) })
+                alert.addAction(UIAlertAction(title: "确定", style: .default) { [weak alert] _ in
+                    done.resume(returning: alert?.textFields?.first?.text ?? "")
+                })
+                present(alert, from: webView) { done.resume(returning: nil) }
+            }
+        }
+
+        /// Shows the dialog over whatever is on top; calls `onNoPresenter` (the page's "cancel") when nothing can show it.
+        private func present(_ alert: UIAlertController, from webView: WKWebView, onNoPresenter: () -> Void) {
+            var top = webView.window?.rootViewController
+            while let presented = top?.presentedViewController { top = presented }
+            guard let top else {
+                NSLog("No view controller to show a page dialog")
+                onNoPresenter()
+                return
+            }
+            top.present(alert, animated: true)
         }
 
         @objc func handleEdgeSwipe(_ gesture: UIScreenEdgePanGestureRecognizer) {
