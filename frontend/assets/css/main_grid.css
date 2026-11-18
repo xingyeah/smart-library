@@ -1,0 +1,404 @@
+/* Book Grid */
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.book-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  position: relative;
+}
+
+.book-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--text-dim);
+  box-shadow: var(--shadow);
+}
+
+.book-card-top {
+  display: flex;
+  gap: 13px;
+}
+
+.book-cover {
+  width: 78px;
+  height: 110px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--ground);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 6px;
+  text-align: center;
+  position: relative;
+}
+
+.book-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-cover.sim-cover { width: 48px; height: 68px; padding: 4px 3px; justify-content: center; }
+.sim-cover .cover-fallback-title { font-size: 12px; }
+
+.cover-fallback-cat {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: rgba(16, 24, 40, 0.05);
+  border-radius: 6px;
+  padding: 1px 4px;
+}
+
+.cover-fallback-title {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cover-fallback-author {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.book-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.book-author {
+  font-size: 14px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.tag-xs {
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--ground);
+  color: var(--text-muted);
+}
+
+.tag-xs.cat {
+  background: var(--ground);
+  color: var(--text-muted);
+}
+
+.tag-xs.lang-cn {
+  background: rgba(3, 105, 161, 0.07);
+  color: #0369a1;
+  border: 1px solid rgba(3, 105, 161, 0.2);
+  font-weight: 600;
+}
+
+.tag-xs.lang-tw {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border: 1px solid rgba(180, 83, 9, 0.2);
+  font-weight: 600;
+}
+
+.tag-xs.lang-en {
+  background: rgba(190, 24, 93, 0.07);
+  color: #be185d;
+  border: 1px solid rgba(190, 24, 93, 0.2);
+  font-weight: 600;
+}
+
+.tag-xs.fmt {
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.book-summary {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.book-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.btn-icon {
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-icon.fav-active {
+  color: var(--rose);
+  border-color: rgba(244, 63, 94, 0.4);
+  background: var(--rose-soft);
+}
+
+/* Recommendation Reason Banner inside Card */
+.rec-reason-box {
+  background: var(--ground);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rank-medal {
+  align-self: flex-start;
+  white-space: nowrap;
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-dim);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-emerald {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: #fff;
+}
+
+/* Numeric Pagination Styles */
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  user-select: none;
+}
+
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled):not(.active) {
+  background: var(--bg-hover);
+  color: var(--text);
+  border-color: var(--text-dim);
+  transform: translateY(-1px);
+}
+
+.page-btn.active {
+  background: var(--selected-bg);
+  border-color: var(--text-dim);
+  color: var(--text);
+  cursor: default;
+}
+
+.page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.page-ellipsis {
+  min-width: 32px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.page-ellipsis:hover {
+  background: var(--ground);
+  color: var(--text);
+}
+
+/* Modal / Drawer */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal-box {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 920px;
+  max-height: 90vh;
+  overflow-y: auto;
+  /* Titles like "Thinking+and+Deciding" have no break points and would widen the box past a phone screen */
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(16, 24, 40, 0.16);
+}
+
+.section-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+.textarea-lg {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.textarea-lg:focus {
+  border-color: var(--text-dim);
+}
+
+.preset-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.table-clean {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table-clean th, .table-clean td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-clean th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.hidden {
+  display: none !important;
+}

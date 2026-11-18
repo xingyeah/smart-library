@@ -1,45 +1,53 @@
-import { appState, shelfFilters, readerState, pdfState } from './state.js';
+import { appState, pdfState, readerState, shelfFilters } from './state.js';
 import { escapeHtml } from './utils.js';
-import { aiRerankOn, setAiRerank, loadAiUsage, loadStats } from './api.js';
+import { aiRerankOn, loadStats, setAiRerank } from './api.js';
 import {
-  initCategoryChips, bindShelfSearchIme, toggleLangFilter, switchTab, setFilter, resetShelfFilters,
-  debounceShelfSearch, toggleFavorite, cycleReadingStatus, toggleShelfMoreFilters,
-  toggleShelfFilter, clearShelfFilters, updateShelfSearchClear, clearShelfSearch,
-  openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
-  initMobileShelf, loadShelfBooks,
+  bindShelfSearchIme, clearShelfFilters, clearShelfSearch, debounceShelfSearch, initCategoryChips,
+  initMobileShelf, loadMoreShelfBooks, loadShelfBooks, resetShelfFilters, setFilter, switchTab,
+  toggleLangFilter, toggleShelfFilter, toggleShelfMoreFilters, updateShelfSearchClear,
 } from './shelf.js';
 import { initBackStack } from './back_stack.js';
-import { runPresetDescribe, triggerDescribeRecommend, loadInterestView, saveInterestConfig, showExploreRatio } from './recommend.js';
 import {
-  startOrganize, loadConflicts, resolveConflict, rollbackRun,
-  loadMismergedBooks, triggerSplitSingleBook, triggerBatchSplitMismerged,
+  loadInterestView, runPresetDescribe, saveInterestConfig, showExploreRatio, triggerDescribeRecommend,
+} from './recommend.js';
+import {
+  loadConflicts, loadMismergedBooks, resolveConflict, rollbackRun, startOrganize,
+  triggerBatchSplitMismerged, triggerSplitSingleBook,
 } from './organize.js';
 import {
-  openBookModal, closeBookModal, saveBookMeta, triggerAiRefresh, acceptProposedTitle,
-  triggerDeleteBook, triggerSplitFromModal, toggleModalWant, toggleModalFavorite,
+  acceptProposedTitle, closeBookModal, openBookModal, saveBookMeta, toggleModalFavorite, toggleModalWant,
+  triggerAiRefresh, triggerDeleteBook, triggerSplitFromModal,
 } from './book_modal.js';
+import { initPdfLongPress, openPdfPageTextSheet } from './reader_pdf.js';
 import {
-  initPdfLongPress, alignAllPdfTransBlocks, openPdfPageTextSheet,
-  scrollToPdfPage, adjustPdfZoom, setPdfZoomFitWidth,
-} from './reader_pdf.js';
-import {
-  initReaderSelectionHandler, speakEnglishText, hideReaderTransPopover,
-  toggleReaderTransDrawer, executeDrawerTranslate, speakDrawerCurrent,
-  copyDrawerCurrent, reselectHistoryItem, clearTransHistory,
-  getTransEngine, onTransEngineChange, toggleBilingualMode,
-  initPdfSplitDrag, applyPdfSplitShare, savedPdfSplitShare,
-  toggleTransOnly, speakPdfPage, copyPdfPageTrans,
+  clearTransHistory, copyDrawerCurrent, executeDrawerTranslate, getTransEngine, hideReaderTransPopover,
+  initReaderSelectionHandler, onTransEngineChange, reselectHistoryItem, speakDrawerCurrent,
+  speakEnglishText, toggleReaderTransDrawer,
 } from './reader_translate.js';
+import { closeOnlineReader, openOnlineReader } from './reader.js';
 import {
-  setMobileChrome, onMobileReaderTap, onMobileReaderScroll,
-  openMobileSheet, closeMobileSheets, renderMobileProgressSheet,
-  previewMobileChapter, renderMobileFontSheet, setReaderLineHeight,
-  toggleMobileMenu, closeMobileMenu, mobileOpenTransDrawer, mobileToggleBilingual,
-  onReaderScrollProgress, flushReaderProgress, migrateLocalReaderProgress,
-  setReaderTheme, setReaderFont, adjustReaderFontSize, toggleReaderWidth,
-  toggleReaderSidebar, closeOnlineReader, filterReaderToc,
-  onReaderTocClick, stepReaderChapter, navigateReaderChapter, openOnlineReader, scrollToReaderAnchor,
-} from './reader.js';
+  applyPdfSplitShare, copyPdfPageTrans, initPdfSplitDrag, savedPdfSplitShare, speakPdfPage,
+  toggleBilingualMode, toggleTransOnly,
+} from './reader_bilingual.js';
+import {
+  mobileOpenTransDrawer, mobileToggleBilingual, onMobileReaderScroll, onMobileReaderTap, openMobileSheet,
+  previewMobileChapter, renderMobileFontSheet, renderMobileProgressSheet, toggleMobileMenu,
+} from './reader_mobile.js';
+import {
+  adjustPdfZoom, alignAllPdfTransBlocks, scrollToPdfPage, setPdfZoomFitWidth,
+} from './reader_pdf_view.js';
+import {
+  flushReaderProgress, migrateLocalReaderProgress, onReaderScrollProgress,
+} from './reader_progress.js';
+import {
+  filterReaderToc, navigateReaderChapter, onReaderTocClick, scrollToReaderAnchor, stepReaderChapter,
+} from './reader_toc.js';
+import { cycleReadingStatus, toggleFavorite } from './shelf_actions.js';
+import { closeShelfSheet, openShelfSheet, pickShelfSort } from './shelf_sheets.js';
+import {
+  adjustReaderFontSize, closeMobileMenu, closeMobileSheets, setMobileChrome, setReaderFont,
+  setReaderLineHeight, setReaderTheme, toggleReaderSidebar, toggleReaderWidth,
+} from './reader_prefs.js';
 
 export function postToLibraryApp(message) {
   window.webkit.messageHandlers.library.postMessage(message);
@@ -76,7 +84,6 @@ export function libraryAppSetOffline(isOffline) {
   if (appState.currentTab === 'shelf') loadShelfBooks(1);
   else switchTab('shelf');
 }
-
 
 // Expose inline HTML event handlers and shared state objects to global scope
 Object.assign(window, {

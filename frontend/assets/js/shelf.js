@@ -1,15 +1,14 @@
 import {
-  appState, shelfFilters, langSelections, CATEGORIES, MOBILE_QUERY,
-  SHELF_MAX_PAGE_SIZE, SHEET_CLOSE_DRAG_PX,
-  SHELF_STATUS_OPTIONS, QUICK_STATUS_KEYS, SHELF_FILTER_GROUPS,
-  SORT_SHORT_LABELS,
+  CATEGORIES, MOBILE_QUERY, QUICK_STATUS_KEYS, SHELF_FILTER_GROUPS, SHELF_MAX_PAGE_SIZE,
+  SHELF_STATUS_OPTIONS, appState, langSelections, shelfFilters,
 } from './state.js';
 import { escapeHtml } from './utils.js';
 import { icon } from './icons.js';
-import { renderBookCard, generatePaginationItems, syncBookCards } from './shelf_render.js';
-import { aiRerankOn, setAiRerank, applyShelfAiRerank, loadStats, loadAiUsage } from './api.js';
-import { runPresetDescribe, triggerDescribeRecommend, loadInterestView } from './recommend.js';
+import { generatePaginationItems, renderBookCard } from './shelf_render.js';
+import { aiRerankOn, applyShelfAiRerank, loadAiUsage, loadStats } from './api.js';
+import { loadInterestView, runPresetDescribe, triggerDescribeRecommend } from './recommend.js';
 import { loadConflicts, loadMismergedBooks } from './organize.js';
+import { initShelfSheetDrag, renderShelfSheet } from './shelf_sheets.js';
 
 const isMobileViewport = () => window.matchMedia(MOBILE_QUERY).matches;
 
@@ -60,7 +59,6 @@ export function toggleLangFilter(scope, langCode, btn) {
     loadInterestView();
   }
 }
-
 
 export function switchTab(tab) {
   appState.currentTab = tab;
@@ -153,7 +151,6 @@ export function bindShelfSearchIme() {
   input.addEventListener('compositionstart', () => { appState.isImeComposing = true; });
   input.addEventListener('compositionend', () => { appState.isImeComposing = false; debounceShelfSearch(); });
 }
-
 
 export function shelfStatusKey() {
   if (shelfFilters.only_favorite) return 'fav';
@@ -273,85 +270,6 @@ export function clearShelfSearch() {
   /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).value = '';
   shelfFilters.q = '';
   loadShelfBooks(1, { scrollToTop: true });
-}
-
-// ---------- bottom sheets ----------
-export function openShelfSheet(kind, section) {
-  appState.shelfSheetKind = kind;
-  renderShelfSheet();
-  document.getElementById('shelf-sheet').classList.add('open');
-  document.getElementById('shelf-sheet-backdrop').classList.add('open');
-  document.documentElement.classList.add('shelf-sheet-lock');
-  const target = section && document.getElementById(`shelf-group-${section}`);
-  const body = document.getElementById('shelf-sheet-body');
-  body.scrollTop = target ? target.offsetTop - body.offsetTop : 0;
-}
-
-export function closeShelfSheet() {
-  appState.shelfSheetKind = '';
-  document.getElementById('shelf-sheet').classList.remove('open');
-  document.getElementById('shelf-sheet-backdrop').classList.remove('open');
-  document.documentElement.classList.remove('shelf-sheet-lock');
-}
-
-export function renderShelfSheet() {
-  const body = document.getElementById('shelf-sheet-body');
-  const keepScroll = body.scrollTop;
-  if (appState.shelfSheetKind === 'sort') renderSortSheet(); else renderFilterSheet();
-  body.scrollTop = keepScroll;
-}
-
-export function renderFilterSheet() {
-  document.getElementById('shelf-sheet-head').innerHTML =
-    '<span>筛选</span><button onclick="resetShelfFilters()">重置</button>';
-  document.getElementById('shelf-sheet-body').innerHTML = SHELF_FILTER_GROUPS.map(g => {
-    const picked = shelfGroupValues(g.key);
-    const chips = g.options.map(([v, label]) => shelfChipHtml(g.key, v, label, picked.includes(v))).join('');
-    return `<div class="shelf-sheet-group" id="shelf-group-${g.key}"><div class="shelf-sheet-group-title">${g.title}</div>`
-      + `<div class="shelf-sheet-chips">${chips}</div></div>`;
-  }).join('');
-  document.getElementById('shelf-sheet-foot').innerHTML = `
-    <label><input type="checkbox" id="m-ai-toggle" ${aiRerankOn() ? 'checked' : ''} onchange="setAiRerank(this.checked)" /> AI 精排</label>
-    <button class="btn btn-primary" onclick="closeShelfSheet()">完成 · ${appState.shelfLastTotal.toLocaleString()} 本</button>`;
-}
-
-export function renderSortSheet() {
-  const current = /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort')).value;
-  document.getElementById('shelf-sheet-head').innerHTML = '<span>排序</span>';
-  document.getElementById('shelf-sheet-body').innerHTML = Object.entries(SORT_SHORT_LABELS).map(([v, label]) =>
-    `<button class="shelf-sort-option ${v === current ? 'active' : ''}" onclick="pickShelfSort('${v}')">`
-    + `<span>${label}</span><span>${v === current ? '✓' : ''}</span></button>`).join('');
-  document.getElementById('shelf-sheet-foot').innerHTML = '';
-}
-
-export function pickShelfSort(value) {
-  /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort')).value = value;
-  appState.shelfSortTouched = true;
-  closeShelfSheet();
-  loadShelfBooks(1, { scrollToTop: true });
-}
-
-// Dragging the handle, title or footer down closes the sheet; the list in the middle scrolls instead
-export function initShelfSheetDrag() {
-  const sheet = document.getElementById('shelf-sheet');
-  let startY = null;
-  sheet.addEventListener('touchstart', e => {
-    if (e.target instanceof Element && e.target.closest('.shelf-sheet-body')) return;
-    startY = e.touches[0].clientY;
-    sheet.style.transition = 'none';
-  }, { passive: true });
-  sheet.addEventListener('touchmove', e => {
-    if (startY === null) return;
-    sheet.style.transform = `translateY(${Math.max(0, e.touches[0].clientY - startY)}px)`;
-  }, { passive: true });
-  sheet.addEventListener('touchend', e => {
-    if (startY === null) return;
-    const dragged = e.changedTouches[0].clientY - startY;
-    startY = null;
-    sheet.style.transition = '';
-    sheet.style.transform = '';
-    if (dragged > SHEET_CLOSE_DRAG_PX) closeShelfSheet();
-  });
 }
 
 // ---------- endless list ----------
@@ -541,33 +459,3 @@ export function toggleShelfMoreFilters() {
   const isOpen = document.getElementById('shelf-more-filters').classList.toggle('open');
   document.getElementById('shelf-more-filters-btn').setAttribute('aria-expanded', String(isOpen));
 }
-
-export async function toggleFavorite(bookId, newVal) {
-  const r = await fetch(`/api/books/${bookId}/meta`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ is_favorite: Boolean(newVal) }),
-  });
-  if (!r.ok) return;
-  // Like the status button: no reload, so the interest view keeps its cards and does not re-run AI
-  syncBookCards(bookId, { isFavorite: Boolean(newVal) });
-  loadStats();
-  if (appState.currentTab === 'shelf') loadShelfBooks(shelfFilters.page);
-}
-
-
-export async function cycleReadingStatus(bookId, currentSt) {
-  const order = ['unread', 'want', 'reading', 'read'];
-  const nextSt = order[(order.indexOf(currentSt) + 1) % order.length];
-  const r = await fetch(`/api/books/${bookId}/meta`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reading_status: nextSt }),
-  });
-  if (!r.ok) return;
-  // Update the button itself: interest and describe views are not reloaded (that would drop the card and re-run AI)
-  syncBookCards(bookId, { readingStatus: nextSt });
-  loadStats();
-  if (appState.currentTab === 'shelf') loadShelfBooks(shelfFilters.page);
-}
-

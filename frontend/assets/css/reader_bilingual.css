@@ -1,0 +1,343 @@
+/* ==================== PDF BILINGUAL READING MODE ==================== */
+.pdf-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto 28px auto;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.reader-overlay.pdf-bilingual-active .pdf-page-container {
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 36px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.reader-overlay.pdf-bilingual-active .pdf-page-container .pdf-page-slot {
+  margin: 0 !important;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .reader-overlay.pdf-bilingual-active .pdf-page-container {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
+  }
+  .pdf-trans-panel {
+    width: 100% !important;
+    max-width: 680px !important;
+  }
+}
+
+.pdf-trans-panel {
+  width: 480px;
+  max-width: 45vw;
+  min-width: 320px;
+  background: var(--r-paper);
+  border: 1px solid var(--r-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  padding: 18px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow-y: auto;
+  flex-shrink: 0;
+  transition: width 0.15s ease, min-height 0.15s ease;
+}
+
+.pdf-trans-panel.hidden {
+  display: none !important;
+}
+
+/* Translation only: the page stays in layout (invisible) so lazy render, translation and page tracking keep working */
+.reader-overlay.pdf-trans-only .pdf-page-container {
+  position: relative;
+}
+
+.reader-overlay.pdf-trans-only .pdf-page-container .pdf-page-slot {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.reader-overlay.pdf-trans-only .pdf-trans-panel {
+  width: 860px;
+  max-width: 100%;
+}
+
+.pdf-trans-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--r-border);
+  color: var(--r-text);
+  flex-shrink: 0;
+}
+
+/* Read as running text: paragraphs separated by space, not boxed; ~40 CJK characters per line at most */
+.pdf-trans-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 40em;
+}
+
+.pdf-trans-para {
+  margin: 0 -10px 0.9em;
+  padding: 2px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.pdf-trans-para:hover {
+  background: rgba(128, 128, 128, 0.08);
+}
+
+.pdf-trans-orig {
+  font-size: var(--trans-orig-fs, 12px);
+  line-height: 1.55;
+  color: var(--r-muted);
+  margin-bottom: 6px;
+  font-family: inherit;
+  opacity: 0.88;
+}
+
+.pdf-trans-dest {
+  font-size: var(--trans-dest-fs, 15px);
+  line-height: var(--m-line-height, 1.8);
+  color: var(--r-text);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  font-family: inherit;
+}
+
+.reader-overlay[data-theme="sepia"] .pdf-trans-panel {
+  background: #fbf5eb;
+  border-color: #e2d7c5;
+}
+.reader-overlay[data-theme="sepia"] .pdf-trans-para:hover {
+  background: rgba(217, 119, 6, 0.08);
+}
+
+/* Reading & Bilingual Translation Font Families */
+.reader-overlay,
+.reader-overlay[data-font="sans"] {
+  --reader-font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+.reader-overlay[data-font="serif"] {
+  --reader-font: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "Georgia", serif;
+}
+.reader-overlay[data-font="kaiti"] {
+  --reader-font: "Kaiti SC", "STKaiti", "BiauKai", "KaiTi", "楷体", serif;
+}
+.reader-overlay[data-font="fangsong"] {
+  --reader-font: "STFangsong", "FangSong", "仿宋", "华文仿宋", serif;
+}
+.reader-overlay[data-font="yuanti"] {
+  --reader-font: "Yuanti SC", "PingFang SC Round", "STYuanti", "Hiragino Sans GB", sans-serif;
+}
+.reader-overlay[data-font="ming"] {
+  --reader-font: "Hiragino Mincho ProN", "Songti SC", "Baskerville", "Palatino", "Times New Roman", serif;
+}
+
+.reader-paper .reader-article-body {
+  font-family: var(--reader-font);
+}
+
+.pdf-trans-panel,
+.bilingual-trans-block,
+.reader-trans-popover,
+.reader-trans-drawer {
+  font-family: var(--reader-font);
+}
+
+/* Authentic E-Book Content Typography */
+.reader-article-body {
+  font-size: 18px;
+  line-height: var(--m-line-height, 1.88);
+  color: var(--r-text);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.reader-article-body h1,
+.reader-article-body h2,
+.reader-article-body h3,
+.reader-article-body h4 {
+  color: var(--r-heading);
+  font-weight: 700;
+  line-height: 1.38;
+  margin-top: 1.6em;
+  margin-bottom: 0.75em;
+}
+.reader-article-body h1 {
+  font-size: 1.65em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--r-border);
+  margin-top: 0.4em;
+}
+.reader-article-body h2 {
+  font-size: 1.38em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px dashed var(--r-border);
+}
+.reader-article-body h3 { font-size: 1.18em; }
+.reader-article-body h4 { font-size: 1.05em; }
+
+.reader-article-body p {
+  margin: 0 0 1.08em 0;
+  text-align: justify;
+}
+.reader-article-body blockquote {
+  margin: 1.2em 0;
+  padding: 12px 18px;
+  border-left: 4px solid var(--r-accent);
+  background: var(--r-quote-bg);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.95em;
+}
+.reader-article-body ul,
+.reader-article-body ol {
+  margin: 0.8em 0 1.2em 1.6em;
+}
+.reader-article-body li {
+  margin-bottom: 0.4em;
+}
+.reader-article-body pre {
+  background: var(--r-code-bg);
+  border: 1px solid var(--r-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  font-size: 0.86em;
+  line-height: 1.55;
+  margin: 1.2em 0;
+}
+.reader-article-body code {
+  background: var(--r-code-bg);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  font-size: 0.88em;
+}
+.reader-article-body pre code {
+  background: transparent;
+  padding: 0;
+}
+.reader-article-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+  font-size: 0.92em;
+}
+.reader-article-body th,
+.reader-article-body td {
+  border: 1px solid var(--r-border);
+  padding: 8px 12px;
+  text-align: left;
+}
+.reader-article-body th {
+  background: var(--r-quote-bg);
+  font-weight: 700;
+}
+.reader-article-body img,
+.reader-article-body .reader-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.2em auto;
+  border-radius: 6px;
+}
+.reader-article-body figure,
+.reader-article-body .reader-figure {
+  margin: 1.4em auto;
+  text-align: center;
+}
+.reader-article-body figcaption {
+  font-size: 0.85em;
+  color: var(--r-muted);
+  margin-top: 6px;
+}
+.reader-article-body hr {
+  border: none;
+  border-top: 1px solid var(--r-border);
+  margin: 2em 0;
+}
+.reader-article-body a.reader-internal-link,
+.reader-article-body a.reader-external-link {
+  color: var(--r-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.reader-anchor-flash {
+  outline: 2px solid var(--r-accent);
+  background: var(--r-quote-bg);
+  border-radius: 4px;
+  transition: background 1.5s;
+}
+
+.reader-nav-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--r-border);
+}
+.reader-ctrl-btn {
+  background: var(--r-paper);
+  color: var(--r-text);
+  border: 1px solid var(--r-border);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 12.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.reader-ctrl-btn:hover:not(:disabled) {
+  border-color: var(--r-accent);
+  color: var(--r-accent);
+}
+.reader-ctrl-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.reader-theme-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--r-border);
+  cursor: pointer;
+  padding: 0;
+}
+.reader-theme-dot.active {
+  border-color: var(--r-accent);
+  transform: scale(1.12);
+}
+
+@media (max-width: 768px) {
+  html, body { overflow-x: clip; }  /* clip, not hidden: hidden makes body a scroll box and breaks sticky */
+  .topbar { padding: 10px 14px; }
+  .nav-tabs { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .nav-tab { white-space: nowrap; flex-shrink: 0; }
+  .stats-strip { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat-card { padding: 10px 12px; }
+  .search-row { flex-wrap: wrap; }
+  .container { padding: 14px 14px 40px; }
+  .book-grid { grid-template-columns: minmax(0, 1fr); }
+}

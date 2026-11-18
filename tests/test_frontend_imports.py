@@ -12,6 +12,7 @@ from pathlib import Path
 JS_DIR = Path(__file__).resolve().parent.parent / "frontend" / "assets" / "js"
 EXPORT = re.compile(r"export (?:async )?function (\w+)|export (?:const|let) (\w+)")
 IMPORT_BLOCK = re.compile(r"import\s*\{([^}]*)\}[^\n]*")
+INLINE_HANDLER = re.compile(r"\bon\w+=\"[^\"]*\"")
 LOCAL_NAME = re.compile(r"(?:function|const|let|var)\s+(\w+)")
 
 
@@ -22,7 +23,8 @@ def missing_imports() -> list:
     for name, source in sources.items():
         imported = {part.strip().split(" as ")[-1] for block in IMPORT_BLOCK.findall(source) for part in block.split(",")}
         known_here = imported | set(LOCAL_NAME.findall(source))
-        code = IMPORT_BLOCK.sub("", source)
+        # onclick="..." text in a template is run by the browser against window, not by this module
+        code = INLINE_HANDLER.sub("", IMPORT_BLOCK.sub("", source))
         for function, home in home_of.items():
             # A call, not a method of some object and not text inside a string
             is_called = re.search(r"(?<![\w.$'\"`])" + re.escape(function) + r"\s*\(", code)

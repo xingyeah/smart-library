@@ -2,8 +2,9 @@
 // One history entry stands for "some layer is open"; it is added when the first layer opens,
 // consumed by a back gesture, and re-added while more layers remain.
 import { closeBookModal } from './book_modal.js';
-import { closeOnlineReader, closeMobileSheets } from './reader.js';
-import { closeShelfSheet } from './shelf.js';
+import { closeOnlineReader } from './reader.js';
+import { closeShelfSheet } from './shelf_sheets.js';
+import { closeMobileSheets } from './reader_prefs.js';
 
 const BACK_STATE_KEY = 'libraryLayerOpen';
 

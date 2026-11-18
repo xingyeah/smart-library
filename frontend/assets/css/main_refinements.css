@@ -1,0 +1,231 @@
+/* ==================== MOBILE SHELF (<= 768px): one sticky search row, filters in a bottom sheet ==================== */
+.m-only { display: none; }
+.shelf-sheet-backdrop { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, 0.35); opacity: 0;
+                    pointer-events: none; transition: opacity 0.2s; touch-action: none; }
+.shelf-sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+.shelf-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 901; max-height: 85vh; display: flex;
+           flex-direction: column; background: var(--bg-elev); border-radius: 10px 10px 0 0;
+           border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom);
+           transform: translateY(100%); visibility: hidden; transition: transform 0.25s ease, visibility 0.25s; }
+.shelf-sheet.open { transform: none; visibility: visible; }
+.shelf-sheet-handle { width: 36px; height: 5px; border-radius: 6px; background: var(--border); margin: 8px auto 2px; flex-shrink: 0; }
+.shelf-sheet-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 16px 10px;
+                font-size: 16px; font-weight: 700; flex-shrink: 0; }
+.shelf-sheet-head button { background: none; border: none; color: var(--text); font-size: 14px; padding: 4px; }
+.shelf-sheet-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 12px; }
+.shelf-sheet-foot:empty { display: none; }
+.shelf-sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+                padding: 10px 16px; border-top: 1px solid var(--border); }
+.shelf-sheet-foot label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-muted); }
+.shelf-sheet-group { padding: 10px 0 6px; }
+.shelf-sheet-group-title { font-size: 14px; color: var(--text-dim); margin-bottom: 8px; }
+.shelf-sheet-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.shelf-sheet-chips .chip, .m-chip-row .chip { padding: 7px 13px; font-size: 14px; }
+.shelf-sort-option { display: flex; justify-content: space-between; width: 100%; padding: 14px 4px; background: none;
+                 border: none; border-bottom: 1px solid var(--border); color: var(--text); font-size: 14px; text-align: left; }
+.shelf-sort-option.active { color: var(--text); font-weight: 600; }
+html.shelf-sheet-lock, html.shelf-sheet-lock body { overflow: hidden; }
+/* At the detail's top or bottom iOS hands the swipe to the shelf behind, which eats it and loads more books */
+html:has(#book-modal.open), html:has(#book-modal.open) body { overflow: hidden; }
+.modal-box { overscroll-behavior: contain; }
+
+@media (max-width: 768px) {
+  .m-only { display: revert; }
+  .d-only { display: none !important; }
+  .topbar { position: static; }
+  /* Four short names share the width, so the bar never scrolls sideways */
+  .nav-tabs .nav-tab { flex: 1 1 0; justify-content: center; padding: 8px 4px; gap: 4px; }
+  #view-shelf .search-panel { position: sticky; top: 0; z-index: 30; margin: 0 -14px 10px; padding: 10px 14px;
+                              border-radius: 0; border-width: 0 0 1px; background: rgba(247, 248, 250, 0.94);
+                              backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  #view-shelf .search-row { flex-wrap: nowrap; gap: 8px; margin-bottom: 0; }
+  #view-shelf .filter-group { display: none; }
+  #view-shelf .search-Shortcut { display: none; }
+  #view-shelf .search-input { padding: 10px 34px 10px 12px; font-size: 16px; }
+  .m-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px;
+                    border: none; border-radius: 50%; background: var(--bg-card); color: var(--text-muted); font-size: 12px; }
+  .shelf-sort-btn, .m-filter-btn { flex-shrink: 0; height: 42px; border: 1px solid var(--border); border-radius: 10px;
+                               background: var(--bg-card); color: var(--text); font-size: 14px; }
+  .shelf-sort-btn { width: 42px; font-size: 20px; }
+  .m-filter-btn { padding: 0 12px; white-space: nowrap; }
+  .m-filter-btn.has-picks { border-color: var(--text-dim); background: var(--selected-bg); }
+  .m-chip-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -14px 12px; padding: 0 14px; }
+  .m-chip-row::-webkit-scrollbar { display: none; }
+  .m-chip-row:empty { display: none; }
+  .m-chip-row .chip { flex-shrink: 0; white-space: nowrap; }
+  .m-load-more { padding: 18px 0 8px; text-align: center; font-size: 14px; color: var(--text-dim); }
+}
+
+/* iPhone app offline: only the shelf is answered from the phone, so the other tabs and the stats are off */
+.tag-xs.partial {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.app-offline #tab-btn-describe,
+.app-offline #tab-btn-interest,
+.app-offline #tab-btn-organize {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.app-offline .stats-strip {
+  display: none;
+}
+.app-offline #m-top-title::before,
+.app-offline #reader-top-title::before {
+  content: "离线 · ";
+  color: var(--amber);
+}
+.app-offline #reader-top-title::before { color: #fbbf24; }
+
+/* Line icons (icons.js): sized and coloured by the text beside them */
+.icon { width: 1em; height: 1em; flex-shrink: 0; vertical-align: -0.125em; }
+.fav-active .icon { fill: currentColor; }
+.tag-xs .icon { margin-right: 3px; }
+.btn-icon { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.btn.fav-active { color: var(--rose); border-color: rgba(244, 63, 94, 0.4); background: var(--rose-soft); }
+#modal-want-btn.fav-active { color: var(--amber); border-color: rgba(245, 158, 11, 0.45); background: var(--amber-soft); }
+
+/* Digits line up in columns everywhere; count columns read right-aligned */
+body { font-variant-numeric: tabular-nums; }
+.num-cols-3-7 :is(th, td):nth-child(n+3):nth-child(-n+7) { text-align: right; }
+
+h1 { font-size: 20px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Interest directions: one compact row of tags under the form */
+.cluster-row { display: flex; align-items: baseline; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.cluster-tags { display: flex; flex-wrap: wrap; gap: 6px; font-size: 14px; }
+.cluster-tag { padding: 2px 8px; border-radius: 6px; background: var(--ground); color: var(--text); }
+.cluster-count { color: var(--accent-text); }
+
+/* Book detail: ⋯ and close sit in the corner on every screen; deleting lives in the ⋯ menu.
+   Written as .modal-box … so it outranks the phone-only rules in reader.css */
+.modal-box .detail-corner { display: flex; gap: 8px; position: absolute; top: 16px; right: 16px; z-index: 5; }
+.modal-box .detail-main { padding-right: 112px; }
+.modal-box .detail-more-menu { position: absolute; top: 42px; right: 0; min-width: 140px; background: var(--bg-elev);
+                               border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+                               box-shadow: 0 10px 30px rgba(16, 24, 40, 0.12); }
+.modal-box .detail-more-menu.hidden { display: none; }
+.modal-box .detail-more-menu button { display: block; width: 100%; padding: 10px 16px; text-align: left; white-space: nowrap;
+                                      background: none; border: none; color: var(--text); font-size: 14px; cursor: pointer; }
+.modal-box .detail-more-menu button:hover { background: var(--bg-hover); }
+.modal-box .detail-more-menu button.danger { color: var(--rose); }
+@media (max-width: 768px) {
+  .modal-box .detail-corner { top: 10px; right: 12px; }
+  .modal-box .detail-main { padding-right: 0; }
+}
+
+/* Organize page: the technical notes fold away under one summary */
+.how-it-works { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+.how-it-works summary { cursor: pointer; color: var(--text-dim); }
+.how-it-works p { margin-top: 6px; }
+
+/* Phone: the inbox and history tables turn into one card per row, each value under or beside its label */
+@media (max-width: 768px) {
+  #organize-progress-box > div { flex-direction: column; gap: 4px; }
+  .table-cards thead { display: none; }
+  .table-cards, .table-cards tbody, .table-cards tr, .table-cards td { display: block; width: 100%; }
+  .table-cards tr { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+                    padding: 8px 12px; margin-bottom: 10px; }
+  .table-cards td { border: none; padding: 4px 0; text-align: left !important; }
+  .table-cards td[data-label]::before { content: attr(data-label); display: block; font-size: 12px; color: var(--text-dim); }
+  .num-cols-3-7.table-cards td[data-label] { display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+                                             text-align: right !important; }
+  .num-cols-3-7.table-cards td[data-label]::before { display: inline; }
+}
+
+/* The reader keeps its own dark chrome: the few app tokens it borrows stay at their dark values */
+.reader-overlay {
+  --bg-elev: #171a24;
+  --border: #2b3147;
+  --text: #eef1f8;
+  --text-dim: #848da5;
+  --emerald: #10b981;
+  --amber: #f59e0b;
+  --rose: #f43f5e;
+}
+
+/* Card actions: the heart and the status sit at the card's foot, right-aligned. On a pointer screen they appear
+   on hover, except a liked heart and a set status, which are information; touch screens always show them */
+.card-actions { justify-content: flex-end; gap: 6px; }
+@media (hover: hover) {
+  .card-actions .btn-icon:not(.fav-active):not(.has-status) { opacity: 0; transition: opacity 0.15s ease-out; }
+  .book-card:hover .card-actions .btn-icon, .book-card:focus-within .card-actions .btn-icon { opacity: 1; }
+}
+.modal-box .detail-cover { box-shadow: 0 4px 12px rgba(16, 24, 40, 0.15); }
+
+.filter-group.more-filters:not(.open) { display: none; }
+
+/* The ⌄ at the end of the category row opens the other filter rows */
+.more-filters-toggle { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+                       border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elev);
+                       color: var(--text-muted); cursor: pointer; font-size: 16px; }
+.more-filters-toggle:hover { color: var(--text); background: var(--bg-hover); }
+.more-filters-toggle .icon { transition: transform 0.15s ease-out; }
+.more-filters-toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }
+
+/* Filters in force, next to the result count */
+.active-filters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.active-filter { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px;
+                 border: 1px solid var(--border); background: var(--selected-bg); color: var(--text);
+                 font-size: 12px; cursor: pointer; }
+.active-filter .icon { color: var(--text-muted); }
+.active-filter:hover .icon { color: var(--text); }
+.active-filter-clear { border: none; background: none; color: var(--accent-text); font-size: 12px; cursor: pointer; padding: 2px 4px; }
+
+/* Book detail. Head: title first, then people, one quiet meta line, actions. Body: plain sections split by a
+   hairline (简介, 短评, 相似的书), and the things looked up now and then folded at the bottom */
+.detail-head { display: flex; align-items: flex-start; gap: 20px; }
+.detail-title { font-size: 20px; line-height: 1.35; font-weight: 700; cursor: pointer; overflow: hidden;
+                display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.detail-title.expanded { display: block; }
+.detail-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 2px; overflow: hidden;
+                   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.detail-people { font-size: 14px; color: var(--text-muted); margin-top: 8px; }
+.detail-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--text-dim); }
+.detail-score { display: inline-flex; align-items: center; gap: 3px; font-size: 14px; font-weight: 700; color: var(--text); }
+.detail-score .icon { color: #ca8a04; fill: #ca8a04; }
+.detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+
+.detail-section { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.detail-section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.detail-section h3 { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.detail-link { background: none; border: none; padding: 0; font-size: 12px; color: var(--text-muted); cursor: pointer; }
+.detail-link:hover { color: var(--text); text-decoration: underline; }
+.detail-summary { font-size: 16px; line-height: 1.75; color: var(--text); }
+.detail-summary.is-empty { font-size: 14px; color: var(--text-muted); }
+.detail-note { margin-top: 10px; font-size: 14px; line-height: 1.6; color: var(--text-muted); }
+.detail-note b { font-weight: 600; color: var(--text); }
+.detail-note ul { margin-top: 4px; padding-left: 18px; }
+
+.detail-review { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.detail-review:last-child { border-bottom: none; padding-bottom: 0; }
+.detail-review p { font-size: 14px; line-height: 1.6; }
+.detail-review-by { margin-top: 2px; font-size: 12px; color: var(--text-dim); }
+
+.detail-similar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 8px; }
+.detail-similar { display: flex; gap: 10px; min-width: 0; padding: 8px; border-radius: 6px; cursor: pointer; }
+.detail-similar:hover { background: var(--bg-hover); }
+.detail-similar-title { font-size: 14px; font-weight: 600; overflow: hidden;
+                        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.detail-similar-by { font-size: 12px; color: var(--text-muted); }
+
+.detail-folds details { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.detail-folds details:first-child { padding-top: 0; }
+.detail-folds details:last-child { border-bottom: none; }
+.detail-folds summary { cursor: pointer; font-size: 14px; color: var(--text-muted); }
+.detail-folds summary:hover { color: var(--text); }
+.detail-toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 12px;
+              margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+.detail-file { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; font-size: 12px; }
+.detail-file-path { margin-top: 2px; color: var(--text-muted); }
+.detail-edit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 10px; }
+.detail-edit-grid label, .detail-edit-summary { display: block; font-size: 12px; color: var(--text-muted); }
+.detail-edit-grid input { margin-top: 4px; padding: 6px 10px; font-size: 14px; }
+.detail-edit-summary { margin-top: 10px; }
+.detail-title-proposal { margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--ground); }
+.detail-title-proposal label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.detail-title-proposal input { width: 100%; padding: 6px 10px; font-size: 14px; }
+.detail-title-proposal-current { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+.detail-title-proposal-actions { display: flex; gap: 8px; margin-top: 10px; }
+.detail-edit-summary textarea { margin-top: 4px; font-size: 14px; }
