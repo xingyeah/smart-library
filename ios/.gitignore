@@ -1,0 +1,6 @@
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+# The root .gitignore drops every Library/ folder; this one is the app source
+!Library/

@@ -1,0 +1,19 @@
+{
+ "liked_books": 345,
+ "liked_books_without_vector": 0,
+ "unmarked_candidates": 19432,
+ "scorers": {
+  "category_centroid": {
+   "recall_at_100": 0.1015,
+   "recall_at_500": 0.2373,
+   "median_rank": 2064.6667,
+   "evaluated_books": 302.0
+  },
+  "nearest_liked": {
+   "recall_at_100": 0.1202,
+   "recall_at_500": 0.319,
+   "median_rank": 1251.1667,
+   "evaluated_books": 302.0
+  }
+ }
+}

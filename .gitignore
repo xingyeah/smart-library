@@ -1,0 +1,68 @@
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# OS & Editor artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/
+.claude/
+.continue/
+skills-lock.json
+*.swp
+*.swo
+
+# Library Books & Duplicates (Large media files ~81GB)
+Library/
+.duplicates/
+*.epub
+*.pdf
+*.azw3
+*.mobi
+
+# Dynamic Data, Models & SQLite DBs (~3.6GB)
+data/
+*.db
+*.db-shm
+*.db-wal
+*.npy
+*.bin
+*.onnx
+
+# Secrets & local env
+.env
+.env.*
+*.pem
+*.key
+
+# Compiled native libraries (rebuilt automatically via start.sh)
+backend/native/*.dylib
+backend/native/apple_translate
+
+# Temporary logs & files
+*.log
+电子书分类索引与简介目录.xlsx
+电子书分类索引与简介目录.csv
+
+# Eval review sheets list private book titles
+tests/search_eval/review/
+
+# Regression snapshots for architecture refactoring
+tests/snapshots/
+
+# Local backups
+backups/
+

@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <!-- Opened from the home screen, the page runs full screen without the browser's bars -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="我的图书馆" />
+  <title>我的智能图书馆 · 藏书综合管理系统</title>
+  <!-- Same mark as the iPhone app icon (ios/design/app-icon.svg) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20110%20110%22%3E%3Crect%20width%3D%22110%22%20height%3D%22110%22%20rx%3D%2224%22%20fill%3D%22%23EEF2FF%22/%3E%3Crect%20x%3D%2224%22%20y%3D%2230%22%20width%3D%2262%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%2306B6D4%22/%3E%3Crect%20x%3D%2224%22%20y%3D%2249%22%20width%3D%2250%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%23818CF8%22/%3E%3Crect%20x%3D%2224%22%20y%3D%2268%22%20width%3D%2238%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%234F46E5%22/%3E%3Ccircle%20cx%3D%2280%22%20cy%3D%2274%22%20r%3D%226%22%20fill%3D%22%2306B6D4%22/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/png;base64,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" />
+  <script src="/vendor/pdf.min.js"></script>
+  <link rel="stylesheet" href="/assets/css/main.css" />
+  <link rel="stylesheet" href="/assets/css/reader.css" />
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 110 110" aria-hidden="true"><rect width="110" height="110" fill="#E6F4F1"/><rect x="24" y="30" width="62" height="12" rx="6" fill="#11907F"/><rect x="24" y="49" width="50" height="12" rx="6" fill="#5FD1C1"/><rect x="24" y="68" width="38" height="12" rx="6" fill="#0E7C70"/><circle cx="80" cy="74" r="6" fill="#11907F"/></svg>
+      <div>
+        <div class="brand-title">我的智能图书馆</div>
+        <div class="brand-sub" id="top-subtitle">正在连接本地书库引擎...</div>
+      </div>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('shelf')" id="tab-btn-shelf">
+        书架
+        <span class="badge-pill" id="nav-book-count">0</span>
+      </button>
+      <button class="nav-tab" onclick="switchTab('describe')" id="tab-btn-describe">
+        <span class="d-only">按描述找书</span><span class="m-only">找书</span>
+      </button>
+      <button class="nav-tab" onclick="switchTab('interest')" id="tab-btn-interest">
+        <span class="d-only">兴趣推荐</span><span class="m-only">推荐</span>
+      </button>
+      <button class="nav-tab" onclick="switchTab('organize')" id="tab-btn-organize">
+        <span class="d-only">整理与收件箱</span><span class="m-only">整理</span>
+        <span class="badge-pill warn hidden" id="nav-conflict-count">0</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="container">
+
+    <!-- ==================== TAB 1: SHELF & INSTANT SEARCH ==================== -->
+    <section id="view-shelf">
+      <h1 class="sr-only">书架</h1>
+      <div class="search-panel">
+        <div class="search-row">
+          <div class="search-input-wrap">
+            <input
+              type="text"
+              id="shelf-search-input"
+              class="search-input"
+              placeholder="输入书名、作者、拼音 (如 santi / sikao)、自然语言意图 (如 营销经典书籍)、ISBN 即时检索..."
+              oninput="debounceShelfSearch(); updateShelfSearchClear()"
+              enterkeyhint="search"
+              onkeydown="if(event.key==='Enter' && !event.isComposing && !appState.isImeComposing){ clearTimeout(appState.searchTimer); shelfFilters.q = this.value.trim(); loadShelfBooks(1, { ai: true }); }"
+            />
+            <span class="search-Shortcut" id="search-latency-badge">⌘K</span>
+            <button class="m-only m-search-clear hidden" id="m-search-clear" onclick="clearShelfSearch()" aria-label="清空搜索"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <button class="m-only shelf-sort-btn" onclick="openShelfSheet('sort')" aria-label="排序">↕︎</button>
+          <button class="m-only m-filter-btn" id="m-filter-btn" onclick="openShelfSheet('filter')">筛选</button>
+          <select class="select-sm d-only" id="shelf-sort" onchange="appState.shelfSortTouched = true; loadShelfBooks(1)">
+            <option value="imported" selected>按导入时间 (最新在前)</option>
+            <option value="imported_asc">按导入时间 (最早在前)</option>
+            <option value="opened">按最近打开</option>
+            <option value="relevance">按综合相关度 / 权威经典度</option>
+            <option value="pub_desc">按出版时间 (最新到最旧)</option>
+            <option value="pub_asc">按出版时间 (最早到最新)</option>
+            <option value="classic">按权威经典度</option>
+            <option value="quality">按元数据完备度分</option>
+            <option value="rating">按我的星级评分</option>
+            <option value="title">按书名音序</option>
+          </select>
+          <button class="btn d-only" onclick="resetShelfFilters()">重置筛选</button>
+          <label class="filter-label d-only" style="display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;" title="按回车后由 DeepSeek 重新排序前 20 本">
+            <input type="checkbox" id="shelf-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排
+          </label>
+        </div>
+
+        <div class="filter-group" id="cat-filter-row">
+          <span class="filter-label">分类:</span>
+        </div>
+
+        <div class="filter-group more-filters" id="shelf-more-filters">
+          <span class="filter-label">语言:</span>
+          <button class="chip active" data-lang-scope="shelf" data-lang="" onclick="toggleLangFilter('shelf', '', this)">全部</button>
+          <button class="chip" data-lang-scope="shelf" data-lang="zh-CN" onclick="toggleLangFilter('shelf', 'zh-CN', this)" id="lang-btn-shelf-cn">简体中文</button>
+          <button class="chip" data-lang-scope="shelf" data-lang="zh-TW" onclick="toggleLangFilter('shelf', 'zh-TW', this)" id="lang-btn-shelf-tw">繁体中文</button>
+          <button class="chip" data-lang-scope="shelf" data-lang="en" onclick="toggleLangFilter('shelf', 'en', this)" id="lang-btn-shelf-en">英文</button>
+          <span style="font-size:12px; color:var(--text-dim); margin-left:2px;">(可多选组合)</span>
+
+          <span class="filter-label" style="margin-left:14px;">格式:</span>
+          <button class="chip active" data-fmt="" onclick="setFilter('format', '', this)">全部</button>
+          <button class="chip" data-fmt="epub" onclick="setFilter('format', 'epub', this)">EPUB</button>
+          <button class="chip" data-fmt="pdf" onclick="setFilter('format', 'pdf', this)">PDF</button>
+          <button class="chip" data-fmt="azw3" onclick="setFilter('format', 'azw3', this)">AZW3</button>
+          <button class="chip" data-fmt="mobi" onclick="setFilter('format', 'mobi', this)">MOBI</button>
+
+          <span class="filter-label" style="margin-left:14px;">来源:</span>
+          <button class="chip active" data-src="" onclick="setFilter('source_dir', '', this)">全部目录</button>
+          <button class="chip" data-src="微信读书" onclick="setFilter('source_dir', '微信读书', this)">微信读书</button>
+          <button class="chip" data-src="待处理电子书" onclick="setFilter('source_dir', '待处理电子书', this)">待处理电子书</button>
+          <button class="chip" data-src="旧电子书" onclick="setFilter('source_dir', '旧电子书', this)">旧电子书</button>
+
+          <span class="filter-label" style="margin-left:14px;">年代:</span>
+          <button class="chip active" data-period="" onclick="setFilter('pub_period', '', this)">全部年代</button>
+          <button class="chip" data-period="2020s" onclick="setFilter('pub_period', '2020s', this)">2020年代</button>
+          <button class="chip" data-period="2010s" onclick="setFilter('pub_period', '2010s', this)">2010年代</button>
+          <button class="chip" data-period="2000s" onclick="setFilter('pub_period', '2000s', this)">2000年代</button>
+          <button class="chip" data-period="1900s" onclick="setFilter('pub_period', '1900s', this)">20世纪</button>
+          <button class="chip" data-period="pre1900" onclick="setFilter('pub_period', 'pre1900', this)">早期经典</button>
+
+          <span class="filter-label" style="margin-left:14px;">状态:</span>
+          <button class="chip active" data-st="" onclick="setFilter('reading_status', '', this)">全部</button>
+          <button class="chip" data-st="fav" onclick="setFilter('reading_status', 'fav', this)">我的收藏</button>
+          <button class="chip" data-st="reading" onclick="setFilter('reading_status', 'reading', this)">在读</button>
+          <button class="chip" data-st="want" onclick="setFilter('reading_status', 'want', this)">想读</button>
+          <button class="chip" data-st="read" onclick="setFilter('reading_status', 'read', this)">已读</button>
+          <button class="chip" data-st="has_rating" onclick="setFilter('reading_status', 'has_rating', this)">有外部评分/书评</button>
+        </div>
+      </div>
+
+      <div class="m-only m-chip-row" id="m-chip-row"></div>
+
+      <div class="d-only" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div style="font-size:14px; color:var(--text-muted);" id="shelf-result-info">共找到 0 本藏书</div>
+          <div class="active-filters" id="shelf-active-filters"></div>
+        </div>
+        <div style="display:flex; gap:8px;" id="shelf-pagination-top"></div>
+      </div>
+
+      <div class="book-grid" id="shelf-grid"></div>
+
+      <div class="d-only" style="display:flex; justify-content:center; gap:10px; margin-top:26px;" id="shelf-pagination-bottom"></div>
+      <div class="m-only m-load-more" id="m-load-more"></div>
+    </section>
+
+    <!-- ==================== TAB 2: DESCRIBE TO RECOMMEND TOP 10 ==================== -->
+    <section id="view-describe" class="hidden">
+      <div class="section-card">
+        <h1 style="font-size:20px; margin-bottom:6px;">按自然语言描述 · 精准推荐最相关的 10 本书</h1>
+        <p style="font-size:14px; color:var(--text-muted); margin-bottom:14px;">
+          用一句话描述你想读什么，系统按语义理解，从藏书里挑出最相关、最经典的 10 本。
+        </p>
+
+        <textarea
+          id="describe-input"
+          class="textarea-lg"
+          rows="3"
+          placeholder="描述你想找的书，例如：我想看讲认知心理学、大脑决策偏差、行为经济学相关的经典书，最好有实验案例..."
+        ></textarea>
+
+        <div class="preset-pills">
+          <span style="font-size:12px; color:var(--text-dim); align-self:center;">试试点击示例：</span>
+          <button class="chip" onclick="runPresetDescribe('讲解计算机操作系统底层原理、分布式系统架构或算法设计的硬核技术书')">计算机底层与分布式架构</button>
+          <button class="chip" onclick="runPresetDescribe('剖析人类非理性决策、认知偏差、思考快与慢或潜意识行为心理学的经典著作')">认知偏差与行为决策心理学</button>
+          <button class="chip" onclick="runPresetDescribe('关于中国历代王朝兴衰、明清政治制度博弈、资治通鉴或人物传记的深度历史书')">王朝政治博弈与历史兴衰</button>
+          <button class="chip" onclick="runPresetDescribe('讲解价值投资、金融周期、资本市场规律、巴菲特芒格智慧或宏观经济的书')">价值投资与经济金融周期</button>
+          <button class="chip" onclick="runPresetDescribe('格局宏大的硬科幻小说，涉及星际文明、宇宙社会学、时间或人工智能哲学思考')">宏大硬科幻与星际文明</button>
+        </div>
+
+        <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="triggerDescribeRecommend()">
+              立即检索最准 Top 10 推荐
+            </button>
+            <label class="filter-label" style="display:flex; align-items:center; gap:5px; cursor:pointer; min-width:auto;" title="由 DeepSeek 重新排序前 20 本">
+              <input type="checkbox" id="describe-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排
+            </label>
+            <span class="filter-label" style="margin-left:10px; min-width:auto;">语言:</span>
+            <button class="chip active" data-lang-scope="describe" data-lang="" onclick="toggleLangFilter('describe', '', this)">全部</button>
+            <button class="chip" data-lang-scope="describe" data-lang="zh-CN" onclick="toggleLangFilter('describe', 'zh-CN', this)">简体中文</button>
+            <button class="chip" data-lang-scope="describe" data-lang="zh-TW" onclick="toggleLangFilter('describe', 'zh-TW', this)">繁体中文</button>
+            <button class="chip" data-lang-scope="describe" data-lang="en" onclick="toggleLangFilter('describe', 'en', this)">英文</button>
+          </div>
+          <div id="describe-telemetry" style="font-size:12px; color:var(--text-muted);"></div>
+        </div>
+      </div>
+
+      <div id="describe-expansion-bar" class="section-card hidden" style="padding:12px 16px; font-size:12px;"></div>
+      <div class="book-grid" id="describe-grid"></div>
+    </section>
+
+    <!-- ==================== TAB 3: INTEREST COMPASS & RECOMMENDATIONS ==================== -->
+    <section id="view-interest" class="hidden">
+      <div class="section-card">
+        <div>
+          <div>
+            <h1 style="font-size:20px; margin-bottom:6px;">兴趣罗盘</h1>
+            <p style="font-size:14px; color:var(--text-muted); margin-bottom:12px;">
+              系统自动融合你的「阅读足迹（收藏 / 在读 / 高分评价）」与下方的「近期研究与阅读关注点」，拆解为多个独立兴趣簇，按 <b><span id="explore-core-pct">80%</span> 核心兴趣契合 + <span id="explore-pct">20%</span> 跨界高分破茧探索</b> 生成推荐。
+            </p>
+            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">
+              近期研究与阅读兴趣描述（用逗号或分号分隔多个方向）：
+            </label>
+            <textarea id="interest-prompt-input" class="textarea-lg" rows="2" placeholder="例如：认知科学；明清史；分布式系统"></textarea>
+
+            <div style="margin-top:12px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+              <label style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+                跨界探索比例：
+                <input type="range" id="explore-ratio-slider" min="0" max="0.5" step="0.1" value="0.2" oninput="showExploreRatio(this.value)" />
+                <span id="explore-ratio-val" style="color:var(--accent-text); font-weight:700;">20%</span>
+              </label>
+              <button class="btn btn-primary" onclick="saveInterestConfig()">保存兴趣画像并刷新推荐</button>
+              <label class="filter-label" style="display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;" title="DeepSeek 从 100 本候选里挑 10 本并写推荐理由">
+                <input type="checkbox" id="interest-ai-toggle" onchange="setAiRerank(this.checked); loadInterestView()" /> AI 推荐
+              </label>
+              <span id="interest-ai-status" style="font-size:12px; color:var(--text-muted);"></span>
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span class="filter-label" style="min-width:auto;">语言:</span>
+                <button class="chip active" data-lang-scope="interest" data-lang="" onclick="toggleLangFilter('interest', '', this)">全部</button>
+                <button class="chip" data-lang-scope="interest" data-lang="zh-CN" onclick="toggleLangFilter('interest', 'zh-CN', this)">简体中文</button>
+                <button class="chip" data-lang-scope="interest" data-lang="zh-TW" onclick="toggleLangFilter('interest', 'zh-TW', this)">繁体中文</button>
+                <button class="chip" data-lang-scope="interest" data-lang="en" onclick="toggleLangFilter('interest', 'en', this)">英文</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cluster-row">
+            <span class="filter-label" style="min-width:auto;">当前兴趣方向:</span>
+            <div id="active-clusters-list" class="cluster-tags"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="book-grid" id="interest-grid"></div>
+    </section>
+
+    <!-- ==================== TAB 4: ORGANIZE PIPELINE & CONFLICT INBOX ==================== -->
+    <section id="view-organize" class="hidden">
+      <section class="stats-strip" id="stats-strip">
+        <div class="stat-card">
+          <div class="stat-label"><span>藏书</span></div>
+          <div class="stat-val" id="st-total-books">-</div>
+          <div class="stat-sub" id="st-total-files">扫描文件 - 个</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><span>已合并的重复文件</span></div>
+          <div class="stat-val" id="st-merged">-</div>
+          <div class="stat-sub">同一本书的多个副本和格式</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><span>总容量</span></div>
+          <div class="stat-val" id="st-size-gb">- GB</div>
+          <div class="stat-sub">微信读书 / 待处理 / 旧电子书</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><span>收藏与在读</span></div>
+          <div class="stat-val" id="st-fav-count">-</div>
+          <div class="stat-sub" id="st-read-breakdown">驱动多簇兴趣画像</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><span>待确认</span></div>
+          <div class="stat-val" id="st-conflicts">-</div>
+          <div class="stat-sub">缺失作者或疑似同名异书</div>
+        </div>
+      </section>
+      <div class="section-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+          <div>
+            <h1 style="font-size:20px; margin-bottom:4px;">整理书库</h1>
+            <p style="font-size:14px; color:var(--text-muted);">扫描来源目录，把新书归档进书库，重复的自动合并。</p>
+            <details class="how-it-works">
+              <summary>工作原理</summary>
+              <p>扫描已配置的电子书源目录（如 <code>微信读书</code>、<code>待处理电子书</code>、<code>旧电子书</code>），执行 SHA256 与「书名+作者+卷册+版次」四元组判重，按 <code>EPUB &gt; AZW3 &gt; PDF &gt; MOBI</code> 择优，通过同盘硬链接落盘至 <code>Library/{作者}/{书名}/</code>。</p>
+            </details>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <label style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:5px; cursor:pointer;">
+              <input type="checkbox" id="org-ocr-toggle" /> 扫描版 PDF 做文字识别
+            </label>
+            <button class="btn" onclick="startOrganize(100)">快速整理（每个目录 100 本）</button>
+            <button class="btn btn-primary" onclick="startOrganize(null)">全部整理</button>
+          </div>
+        </div>
+
+        <div id="organize-progress-box" style="margin-top:16px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;">
+            <span id="org-status-text">空闲</span>
+            <span id="org-Schedule-info" style="color:var(--text-muted);">定时自动整理：已开启（每 24 小时增量巡检）</span>
+            <span id="ai-usage-info" style="color:var(--text-muted);"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conflict Inbox -->
+      <div class="section-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div>
+            <h3 style="font-size:16px;">需要你确认的书</h3>
+            <p style="font-size:12px; color:var(--text-muted);">
+              作者缺失、书名残缺或疑似同名异书。改好书名和作者后点“确认”。
+            </p>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="chip active" onclick="loadConflicts('pending', this)">待处理</button>
+            <button class="chip" onclick="loadConflicts('resolved', this)">已解决</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="table-clean table-cards">
+            <thead>
+              <tr>
+                <th>来源</th>
+                <th>书名</th>
+                <th>作者</th>
+                <th>原因</th>
+                <th style="width:150px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="conflict-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mismerged Books Detection & Split -->
+      <div class="section-card" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h3 style="font-size:16px;">合并错了的书</h3>
+            <p style="font-size:12px; color:var(--text-muted);">
+              找出被误合并成一本的不同书（常因丛书名或副标题相同），拆开后各自成书。
+            </p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary" onclick="loadMismergedBooks()">扫描</button>
+            <button class="btn" onclick="triggerBatchSplitMismerged()">全部拆分</button>
+          </div>
+        </div>
+
+        <div id="mismerged-list-container">
+          <div style="text-align:center; color:var(--text-muted); padding:20px;">点“扫描”查找合并错了的书。</div>
+        </div>
+      </div>
+
+      <!-- Recent Organize Runs & Rollback -->
+      <div class="section-card">
+        <h3 style="font-size:16px;">整理记录</h3>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">回滚只删除那次整理在书库里建的链接，来源目录的文件不动。</p>
+        <div style="overflow-x:auto;">
+          <table class="table-clean num-cols-3-7 table-cards">
+            <thead>
+              <tr>
+                <th>批次</th>
+                <th>类型</th>
+                <th>扫描</th>
+                <th>新增</th>
+                <th>合并</th>
+                <th>归档</th>
+                <th>待确认</th>
+                <th>时间</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="runs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== BOOK DETAIL & READER MODAL ==================== -->
+  <div class="modal-backdrop" id="book-modal" onclick="if(event.target===this) closeBookModal()">
+    <div class="modal-box" id="book-modal-content"></div>
+  </div>
+
+  <!-- ==================== IMMERSIVE FULL-SCREEN E-BOOK READER ==================== -->
+  <div class="reader-overlay" id="immersive-reader-overlay" data-theme="dark">
+    <header class="reader-topbar">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        <button class="reader-ctrl-btn" onclick="toggleReaderSidebar()" title="展开/收起目录栏">📑 目录</button>
+        <div style="min-width:0;">
+          <div id="reader-top-title" style="font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:340px;"></div>
+          <div id="reader-top-sub" style="font-size:11.5px; color:var(--r-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:340px;"></div>
+        </div>
+      </div>
+
+      <div id="reader-top-chapter-info" style="font-size:13px; color:var(--r-muted); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:380px;"></div>
+
+      <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <!-- Theme Switcher -->
+        <div style="display:flex; align-items:center; gap:5px; padding:0 6px;" title="切换阅读主题配色">
+          <button class="reader-theme-dot active" data-rtheme="dark" style="background:#141822;" onclick="setReaderTheme('dark')" title="暗夜深邃"></button>
+          <button class="reader-theme-dot" data-rtheme="sepia" style="background:#f8f1e4;" onclick="setReaderTheme('sepia')" title="羊皮纸护眼"></button>
+          <button class="reader-theme-dot" data-rtheme="light" style="background:#ffffff;" onclick="setReaderTheme('light')" title="纯白日间"></button>
+          <button class="reader-theme-dot" data-rtheme="green" style="background:#e8f5e9;" onclick="setReaderTheme('green')" title="松石绿护眼"></button>
+        </div>
+
+        <!-- Font Family Selector (Supports 6 fonts across EPUB & PDF bilingual mode) -->
+        <select class="reader-ctrl-btn" id="reader-font-select" onchange="setReaderFont(this.value)" title="选择阅读与译文字体" style="padding:4px 8px; cursor:pointer; background:var(--r-paper); color:var(--r-text); border:1px solid var(--r-border); border-radius:6px; font-size:12px; font-weight:500;">
+          <option value="sans">📑 现代黑体</option>
+          <option value="serif">📖 典雅宋体</option>
+          <option value="kaiti">🖌️ 雅致楷体</option>
+          <option value="fangsong">📜 经典仿宋</option>
+          <option value="yuanti">🍃 柔润圆体</option>
+          <option value="ming">🏛️ 人文明朝</option>
+        </select>
+
+        <!-- Font Size Controls (Controls EPUB body in HTML mode, or bilingual translation cards in PDF mode) -->
+        <div id="reader-fontsize-ctrl" style="display:flex; align-items:center; gap:3px;" title="调整字号 (在PDF双语模式下调节译文字号)">
+          <button class="reader-ctrl-btn" onclick="adjustReaderFontSize(-1)" title="减小字号">A-</button>
+          <span id="reader-fontsize-label" style="font-size:12px; min-width:34px; text-align:center; color:var(--r-muted);">18px</span>
+          <button class="reader-ctrl-btn" onclick="adjustReaderFontSize(1)" title="增大字号">A+</button>
+        </div>
+
+        <select class="reader-ctrl-btn" id="reader-lineheight-select" onchange="setReaderLineHeight(Number(this.value))" title="行距（正文与译文）" style="padding:4px 8px; cursor:pointer; background:var(--r-paper); color:var(--r-text); border:1px solid var(--r-border); border-radius:6px; font-size:12px; font-weight:500;">
+          <option value="0">行距 · 默认</option>
+          <option value="1.55">行距 · 紧凑</option>
+          <option value="1.75">行距 · 标准</option>
+          <option value="1.95">行距 · 宽松</option>
+        </select>
+
+        <!-- Width Toggle -->
+        <button class="reader-ctrl-btn reader-html-ctrl" id="reader-width-btn" onclick="toggleReaderWidth()" title="切换标准版心 / 宽屏模式">↔ 宽屏</button>
+
+        <!-- PDF Zoom & Page Jump Controls -->
+        <div id="reader-pdf-controls" class="hidden" style="display:flex; align-items:center; gap:5px;">
+          <button class="reader-ctrl-btn" onclick="adjustPdfZoom(-0.15)" title="缩小页面">🔍 -</button>
+          <span id="reader-pdf-zoom-label" style="font-size:12px; min-width:38px; text-align:center; color:var(--r-muted);">100%</span>
+          <button class="reader-ctrl-btn" onclick="adjustPdfZoom(0.15)" title="放大页面">🔍 +</button>
+          <button class="reader-ctrl-btn" onclick="setPdfZoomFitWidth()" title="自适应页面宽度">↔ 适宽</button>
+          <div style="display:flex; align-items:center; gap:3px; margin-left:4px;">
+            <input id="reader-pdf-page-input" type="number" min="1" value="1" style="width:48px; background:var(--bg-elev); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:2px 4px; font-size:12px; text-align:center;" onkeydown="if(event.key==='Enter') scrollToPdfPage(this.value)" />
+            <span id="reader-pdf-total-badge" style="font-size:11.5px; color:var(--r-muted);">/ 1 页</span>
+          </div>
+        </div>
+
+        <!-- Chapter Prev/Next in Topbar -->
+        <button class="reader-ctrl-btn" id="reader-top-prev" onclick="stepReaderChapter(-1)">← 上一章</button>
+        <button class="reader-ctrl-btn" id="reader-top-next" onclick="stepReaderChapter(1)">下一章 →</button>
+
+        <!-- Translation & Bilingual Controls -->
+        <button class="reader-ctrl-btn" id="reader-trans-toggle-btn" onclick="toggleReaderTransDrawer()" title="打开/收起英文翻译助手与查词历史">🌐 翻译助手</button>
+        <button class="reader-ctrl-btn" id="reader-bilingual-btn" onclick="toggleBilingualMode()" title="中英双语段落/整页对照">📖 双语对照</button>
+        <button class="reader-ctrl-btn" id="reader-transonly-btn" onclick="toggleTransOnly()" style="display:none;" title="隐藏 PDF 原页面，只看译文对照">📃 仅译文</button>
+
+        <a class="reader-ctrl-btn" id="reader-download-link" href="#" style="text-decoration:none;" title="下载原电子书文件">⬇️ 原书</a>
+        <button class="reader-ctrl-btn" style="border-color:var(--rose); color:var(--rose); font-weight:700;" onclick="closeOnlineReader()">✕ 退出阅读</button>
+      </div>
+    </header>
+
+    <div class="reader-body-wrap">
+      <aside class="reader-sidebar" id="reader-sidebar">
+        <div class="reader-toc-search">
+          <input type="text" id="reader-toc-filter" placeholder="🔍 搜索目录章节..." oninput="filterReaderToc(this.value)" />
+        </div>
+        <div class="reader-toc-list" id="reader-toc-list"></div>
+      </aside>
+
+      <div class="reader-main-scroll" id="reader-main-scroll">
+        <div class="reader-paper font-serif" id="reader-paper">
+          <div id="reader-warning-banner" class="hidden" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:18px;"></div>
+          <article class="reader-article-body" id="reader-article-body"></article>
+          <footer class="reader-nav-footer" id="reader-nav-footer">
+            <button class="reader-ctrl-btn" id="reader-bot-prev" style="padding:10px 18px; font-size:14px;" onclick="stepReaderChapter(-1)">← 上一章</button>
+            <div id="reader-bot-progress" style="font-size:13px; color:var(--r-muted);"></div>
+            <button class="reader-ctrl-btn" id="reader-bot-next" style="padding:10px 18px; font-size:14px;" onclick="stepReaderChapter(1)">下一章 →</button>
+          </footer>
+        </div>
+      </div>
+
+      <!-- Translation Sidebar Drawer -->
+      <aside class="reader-trans-drawer collapsed" id="reader-trans-drawer">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--r-border);">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:14px; font-weight:700;">🌐 英文翻译助手</span>
+            <span class="tag-xs" style="background:#0284c7;color:#fff;">智能词典</span>
+          </div>
+          <button class="reader-ctrl-btn" style="padding:2px 8px; font-size:12px;" onclick="toggleReaderTransDrawer()">✕</button>
+        </div>
+        
+        <div style="padding:10px 14px; border-bottom:1px solid var(--r-border); display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="reader-trans-input" class="search-input" style="padding:6px 10px; font-size:12.5px; flex:1;" placeholder="输入生词或句子查词翻译..." onkeydown="if(event.key==='Enter') executeDrawerTranslate(this.value)" />
+            <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" onclick="executeDrawerTranslate(document.getElementById('reader-trans-input').value)">翻译</button>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding-top:4px;">
+            <span style="font-size:12px; color:var(--r-muted);">段落/整页双语对照</span>
+            <button class="btn btn-emerald" id="drawer-bilingual-btn" style="padding:3px 10px; font-size:11.5px;" onclick="toggleBilingualMode()">开启对照</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label for="reader-trans-engine" style="font-size:12px; color:var(--r-muted); white-space:nowrap;">翻译引擎</label>
+            <select id="reader-trans-engine" class="select-sm" style="flex:1; min-width:0;" onchange="onTransEngineChange(this.value)">
+              <option value="auto">自动（最佳可用）</option>
+              <option value="claude">Claude AI（结合上下文）</option>
+              <option value="deepseek">DeepSeek（结合上下文）</option>
+              <option value="apple">Apple 本机（离线）</option>
+              <option value="google">Google</option>
+              <option value="mymemory">MyMemory</option>
+            </select>
+          </div>
+          <div id="reader-trans-engine-status" style="font-size:11.5px; color:var(--r-muted); text-align:right;"></div>
+        </div>
+
+        <div id="drawer-current-trans-card" style="padding:12px 14px; border-bottom:1px solid var(--r-border); background:rgba(0,0,0,0.12);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-size:11.5px; color:var(--r-muted);">划选即时释义 / 当前查词</span>
+            <div style="display:flex; gap:4px;">
+              <button class="trans-action-icon-btn" id="drawer-speak-btn" onclick="speakDrawerCurrent()" title="朗读发音">🔊</button>
+              <button class="trans-action-icon-btn" id="drawer-copy-btn" onclick="copyDrawerCurrent()" title="复制译文">📋</button>
+            </div>
+          </div>
+          <div id="drawer-cur-orig" style="font-size:13px; font-weight:600; color:var(--r-text); margin-bottom:4px; max-height:80px; overflow-y:auto;">(鼠标在正文划选任意英文，此处将即时呈现释义)</div>
+          <div id="drawer-cur-phonetic" style="font-size:12px; color:#93c5fd; font-family:monospace; margin-bottom:4px;"></div>
+          <div id="drawer-cur-trans" style="font-size:13.5px; line-height:1.5; color:#38bdf8;"></div>
+          <div id="drawer-cur-dict" style="margin-top:6px; font-size:12px; color:var(--r-muted);"></div>
+        </div>
+
+        <div style="padding:8px 14px; font-size:12px; font-weight:700; color:var(--r-muted); display:flex; justify-content:space-between; align-items:center;">
+          <span>📖 本次阅读查词生词本 (<span id="drawer-history-count">0</span>)</span>
+          <button class="reader-ctrl-btn" style="padding:2px 6px; font-size:11px;" onclick="clearTransHistory()">清空</button>
+        </div>
+        <div class="reader-toc-list" id="drawer-trans-history-list" style="padding:4px 10px 20px;"></div>
+      </aside>
+    </div>
+
+    <!-- Mobile reader chrome (shown at <= 768px only) -->
+    <div class="m-reader-ui">
+      <div class="m-status m-status-top" id="m-status-top"></div>
+      <div class="m-status m-status-bottom" id="m-status-bottom"></div>
+
+      <header class="m-bar m-topbar">
+        <button class="m-icon-btn" onclick="closeOnlineReader()" aria-label="返回">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="m-top-title" id="m-top-title"></div>
+        <button class="m-text-btn" id="m-bilingual-btn" onclick="mobileToggleBilingual()">双语</button>
+        <button class="m-icon-btn" onclick="toggleMobileMenu(event)" aria-label="更多">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+        </button>
+        <div class="m-menu hidden" id="m-menu">
+          <button onclick="mobileOpenTransDrawer()">翻译助手</button>
+          <button id="m-pagetext-item" onclick="openPdfPageTextSheet(pdfState.currentPage || 1)">本页文字</button>
+          <button id="m-transonly-item" onclick="toggleTransOnly(); closeMobileMenu();">仅看译文</button>
+          <a id="m-download-link" href="#">下载原书</a>
+        </div>
+      </header>
+
+      <nav class="m-bar m-bottombar">
+        <button class="m-tab-btn" onclick="openMobileSheet('toc')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>目录
+        </button>
+        <button class="m-tab-btn" onclick="openMobileSheet('progress')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h4M17 12h4"/><circle cx="12" cy="12" r="4"/></svg>进度
+        </button>
+        <button class="m-tab-btn" onclick="openMobileSheet('theme')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>主题
+        </button>
+        <button class="m-tab-btn" onclick="openMobileSheet('font')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20L12 4l7 16M8 14h8"/></svg>字体
+        </button>
+      </nav>
+
+      <button class="m-fab" id="m-fab-trans" onclick="mobileToggleBilingual()" aria-label="中英对照">译</button>
+
+      <div class="m-sheet-backdrop" id="m-sheet-backdrop" onclick="closeMobileSheets()"></div>
+      <section class="m-sheet" id="m-sheet-progress"></section>
+      <section class="m-sheet" id="m-sheet-theme">
+        <div class="m-sheet-title">阅读主题</div>
+        <div class="m-row">
+          <button class="m-swatch" data-mtheme="dark" style="background:#141822; color:#e2e8f0;" onclick="setReaderTheme('dark')">暗夜</button>
+          <button class="m-swatch" data-mtheme="sepia" style="background:#f8f1e4; color:#3b2f2f;" onclick="setReaderTheme('sepia')">羊皮纸</button>
+          <button class="m-swatch" data-mtheme="light" style="background:#ffffff; color:#1e293b;" onclick="setReaderTheme('light')">纯白</button>
+          <button class="m-swatch" data-mtheme="green" style="background:#e8f5e9; color:#1b3320;" onclick="setReaderTheme('green')">松石绿</button>
+        </div>
+      </section>
+      <section class="m-sheet" id="m-sheet-font"></section>
+      <section class="m-sheet" id="m-sheet-pagetext">
+        <div class="m-sheet-title" id="m-pagetext-title"></div>
+        <div class="m-pagetext-body" id="m-pagetext-body"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="shelf-sheet-backdrop" id="shelf-sheet-backdrop" onclick="closeShelfSheet()"></div>
+  <div class="shelf-sheet" id="shelf-sheet" role="dialog" aria-modal="true">
+    <div class="shelf-sheet-handle"></div>
+    <div class="shelf-sheet-head" id="shelf-sheet-head"></div>
+    <div class="shelf-sheet-body" id="shelf-sheet-body"></div>
+    <div class="shelf-sheet-foot" id="shelf-sheet-foot"></div>
+  </div>
+
+  <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
