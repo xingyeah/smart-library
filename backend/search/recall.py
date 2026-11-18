@@ -22,6 +22,36 @@ def build_allowed_ids(
     return {int(r["id"]) for r in allowed_rows}
 
 
+_LIKE_COLUMNS = "(title LIKE ? OR subtitle LIKE ? OR author LIKE ? OR category LIKE ? OR tags LIKE ? OR summary LIKE ? OR isbn LIKE ?)"
+
+
+def _direct_hits_in_one_scan(
+    conn: Any, term_groups: List[Tuple[List[str], int]], facet_clauses: List[str], facet_params: List[Any], order_col: str
+) -> List[Set[int]]:
+    """For each (terms, limit) group: the first `limit` books, in `order_col` order, that contain any of its terms.
+
+    One table scan answers every group (each LIKE scan of the books table costs ~40 ms, and a query has up to five
+    groups); the per-group limits are applied while reading the ordered rows, so a rare term is never crowded out
+    by a broad one.
+    """
+    group_conditions = ["(" + " OR ".join(_LIKE_COLUMNS for _ in terms) + ")" for terms, _ in term_groups]
+    group_params = [f"%{term}%" for terms, _ in term_groups for term in terms for _ in range(7)]
+    flags = ", ".join(f"{condition} AS g{index}" for index, condition in enumerate(group_conditions))
+    sql = (
+        f"SELECT id, {flags} FROM books WHERE ({' OR '.join(group_conditions)}) AND {' AND '.join(facet_clauses)} "
+        f"ORDER BY {order_col}"
+    )
+    hits: List[Set[int]] = [set() for _ in term_groups]
+    for row in conn.execute(sql, group_params + group_params + facet_params):
+        for index, (_, limit) in enumerate(term_groups):
+            if row[index + 1] and len(hits[index]) < limit:
+                hits[index].add(int(row["id"]))
+        if all(len(group_hits) >= limit for group_hits, (_, limit) in zip(hits, term_groups)):
+            break
+    return hits
+
+
+
 def execute_dual_path_recall(
     conn: Any,
     intent: Dict[str, Any],
@@ -123,25 +153,13 @@ def execute_dual_path_recall(
         # One query per primary term so a rare anchor ('赫拉利', 3 books) is never crowded out by a
         # broad synonym ('历史与地缘政治', 1,115 books) under a shared LIMIT.
         order_col = "classic_score DESC" if wants_classic else "quality_score DESC"
-        like_cols = "(title LIKE ? OR subtitle LIKE ? OR author LIKE ? OR category LIKE ? OR tags LIKE ? OR summary LIKE ? OR isbn LIKE ?)"
         term_groups = [([pt], 80) for pt in primary_terms[:4]]
         syn_only = [st for st in synonym_terms[:6] if st not in primary_terms]
         if syn_only:
             term_groups.append((syn_only, 120))
-        for terms, limit in term_groups:
-            like_params: List[Any] = []
-            for st in terms:
-                like_params.extend([f"%{st}%"] * 7)
-            sql_direct = f"""
-                SELECT id FROM books
-                WHERE ({' OR '.join(like_cols for _ in terms)})
-                  AND {' AND '.join(facet_clauses)}
-                ORDER BY {order_col}
-                LIMIT {limit}
-            """
-            hit_set = synonym_direct_ids if terms is syn_only else direct_hit_ids
-            for dr in conn.execute(sql_direct, like_params + facet_params).fetchall():
-                hit_set.add(int(dr["id"]))
+        group_hits = _direct_hits_in_one_scan(conn, term_groups, facet_clauses, facet_params, order_col)
+        for (terms, _limit), hits in zip(term_groups, group_hits):
+            (synonym_direct_ids if terms is syn_only else direct_hit_ids).update(hits)
 
     # Recall via DeepSeek keywords: a book whose own text never says 'blockchain' can still be found
     if not is_pinyin:
