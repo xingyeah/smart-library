@@ -16,6 +16,17 @@ def completed(returncode: int, stdout: str = "") -> subprocess.CompletedProcess:
 
 
 class TailscaleIpTest(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch.object(network, "_is_tailscale_process_alive", return_value=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_closed_app_is_never_launched(self):
+        with mock.patch.object(network, "_is_tailscale_process_alive", return_value=False), \
+             mock.patch.object(network, "_run_tailscale") as run:
+            self.assertIsNone(network.get_tailscale_ip())
+        run.assert_not_called()
+
     def test_running_returns_tailnet_ip(self):
         replies = {"status": completed(0), "ip": completed(0, "100.78.44.4\n")}
         with mock.patch.object(network, "_run_tailscale", side_effect=lambda *a: replies[a[0]]):

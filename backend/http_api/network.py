@@ -6,6 +6,8 @@ import subprocess
 from typing import Optional
 
 TAILSCALE_APP_CLI = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+# GUI app (Mac App Store / standalone) and the open-source daemon
+TAILSCALE_PROCESS_NAMES = ("Tailscale", "tailscaled")
 COMMAND_TIMEOUT_SECONDS = 2
 
 
@@ -47,8 +49,24 @@ def _run_tailscale(*args: str) -> Optional[subprocess.CompletedProcess]:
         return None
 
 
+def _is_tailscale_process_alive() -> bool:
+    for name in TAILSCALE_PROCESS_NAMES:
+        try:
+            if subprocess.run(["pgrep", "-qx", name], timeout=COMMAND_TIMEOUT_SECONDS).returncode == 0:
+                return True
+        except (OSError, subprocess.SubprocessError):
+            return False
+    return False
+
+
 def is_tailscale_running() -> bool:
-    """True when Tailscale is installed and connected; `tailscale status` exits non-zero when it is stopped."""
+    """True when Tailscale is installed and connected; `tailscale status` exits non-zero when it is stopped.
+
+    On macOS the CLI is the app's own executable, so calling it while the app is closed launches the app
+    (and its "add VPN configuration" prompt). The CLI is only called when Tailscale is already running.
+    """
+    if not _is_tailscale_process_alive():
+        return False
     result = _run_tailscale("status")
     return result is not None and result.returncode == 0
 
