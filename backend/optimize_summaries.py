@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from archiver import rebuild_vector_cache
-from config import BASE_DIR, DB_PATH
+from config import BASE_DIR, DB_PATH, INDEX_CSV_PATHS
 from database import get_conn
 from parser import (
     build_cjk_search_tokens,
@@ -82,9 +82,7 @@ def load_xlsx_records(xlsx_path: Path = XLSX_PATH) -> Dict[str, Dict[str, str]]:
     t0 = time.time()
     records: Dict[str, Dict[str, str]] = {}
 
-    csv_paths = [
-        BASE_DIR / "电子书分类索引与简介目录.csv",
-    ]
+    csv_paths = [*INDEX_CSV_PATHS, BASE_DIR / "电子书分类索引与简介目录.csv"]
     for cp in csv_paths:
         if cp.exists():
             import csv

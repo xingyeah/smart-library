@@ -66,3 +66,6 @@ tests/snapshots/
 # Local backups
 backups/
 
+# This machine's config: its own local git repo, never pushed
+local/
+

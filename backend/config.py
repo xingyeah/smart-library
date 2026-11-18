@@ -9,7 +9,12 @@ logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 BASE_DIR = Path(os.environ.get("LIBRARY_BASE_DIR") or _REPO_ROOT).expanduser().resolve()
 DATA_DIR = Path(os.environ.get("LIBRARY_DATA_DIR") or (BASE_DIR / "data")).expanduser().resolve()
-CONFIG_PATH = Path(os.environ.get("LIBRARY_CONFIG_PATH") or (DATA_DIR / "config.json")).expanduser().resolve()
+# This machine's own setup (paths, sources) lives in local/, a git repo of its own that is never pushed
+_LOCAL_CONFIG_PATH = BASE_DIR / "local" / "config.json"
+CONFIG_PATH = Path(
+    os.environ.get("LIBRARY_CONFIG_PATH")
+    or (_LOCAL_CONFIG_PATH if _LOCAL_CONFIG_PATH.exists() else DATA_DIR / "config.json")
+).expanduser().resolve()
 
 _DEFAULT_SOURCE_DIRS: List[Dict[str, Any]] = [
     {"path": str(BASE_DIR / "books" / "inbox"), "name": "待处理电子书", "trust_weight": 1.0, "priority": 1},
@@ -50,6 +55,8 @@ _cfg_sources = _RUNTIME_CFG.get("source_dirs")
 SOURCE_DIRS: List[Dict[str, Any]] = (
     _cfg_sources if isinstance(_cfg_sources, list) else list(_DEFAULT_SOURCE_DIRS)
 )
+# Curated catalog CSVs read before the one in the repo root
+INDEX_CSV_PATHS: List[Path] = [_resolve_dir(p, BASE_DIR) for p in (_RUNTIME_CFG.get("index_csv_paths") or [])]
 GOOGLE_BOOKS_API_KEY: str = (
     os.environ.get("GOOGLE_BOOKS_API_KEY")
     or os.environ.get("GOOGLE_API_KEY")
