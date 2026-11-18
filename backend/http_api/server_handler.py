@@ -13,6 +13,7 @@ logger = logging.getLogger("http_api.handler")
 class LibraryRequestHandler(BaseHTTPRequestHandler):
     """HTTP request dispatcher matching paths via declarative routing table."""
 
+    protocol_version = "HTTP/1.1"
     router = build_default_router()
 
     def log_message(self, format: str, *args: Any) -> None:

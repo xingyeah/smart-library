@@ -3,23 +3,55 @@ import json
 import sqlite3
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Set
 from config import DB_PATH
 from migrations import apply_migrations
 
 _db_lock = threading.RLock()
+_wal_lock = threading.Lock()
+_wal_initialized: Set[str] = set()
 
 
-def get_conn(db_path: Path = DB_PATH) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(db_path), timeout=30.0, check_same_thread=False)
+def _configure_conn(conn: sqlite3.Connection, db_path: Path) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL;")
+    key = str(Path(db_path).resolve())
+    if key not in _wal_initialized:
+        with _wal_lock:
+            if key not in _wal_initialized:
+                conn.execute("PRAGMA journal_mode=WAL;")
+                _wal_initialized.add(key)
     conn.execute("PRAGMA synchronous=NORMAL;")
     conn.execute("PRAGMA temp_store=MEMORY;")
     conn.execute("PRAGMA cache_size=-20000;")
     conn.execute("PRAGMA foreign_keys=ON;")
     return conn
+
+
+def get_conn(db_path: Path = DB_PATH) -> sqlite3.Connection:
+    conn = sqlite3.connect(str(db_path), timeout=30.0, check_same_thread=False)
+    return _configure_conn(conn, db_path)
+
+
+@contextmanager
+def write_tx(db_path: Path = DB_PATH, conn_factory: Any = None) -> Iterator[sqlite3.Connection]:
+    """Open a serialized IMMEDIATE write transaction and commit or roll back cleanly."""
+    if conn_factory is not None:
+        conn = conn_factory()
+        conn.isolation_level = None
+    else:
+        conn = sqlite3.connect(str(db_path), timeout=30.0, check_same_thread=False, isolation_level=None)
+        _configure_conn(conn, db_path)
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        yield conn
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db(db_path: Path = DB_PATH) -> None:

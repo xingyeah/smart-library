@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from config import LIBRARY_DIR, REMOVED_BOOKS_DIR, is_path_within
-from database import get_conn
+from database import get_conn, write_tx
 from http_api.background import spawn_reindex
 from same_work import DIFFERENT, UNCERTAIN, plan_book_split
 
@@ -172,12 +172,21 @@ def _persist_removal_records(
     )
 
 
-def remove_book_and_relocate_files(book_id: int, confirmed_file_ids: Optional[List[int]] = None) -> Dict[str, Any]:
-    """Safely archive all files for book into removed_books folder and mark as soft-deleted.
+def _rollback_moved_files(file_rows: List[Dict[str, Any]], file_id_map: Dict[int, str], book_id: int) -> None:
+    orig_by_id = {r["id"]: (r.get("original_path") or "").strip() for r in file_rows}
+    for fid, new_path in file_id_map.items():
+        orig = orig_by_id.get(fid, "")
+        if orig and os.path.exists(new_path) and not os.path.exists(orig):
+            try:
+                shutil.move(new_path, orig)
+            except OSError as exc:
+                logger.warning("Rollback move failed %s -> %s: %s", new_path, orig, exc)
+    with write_tx(conn_factory=get_conn) as conn:
+        conn.execute("UPDATE books SET is_deleted = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (book_id,))
 
-    A book with more than one file raises DeleteNeedsConfirmation unless confirmed_file_ids is exactly its
-    current file ids, so a stale or partial confirmation never moves files the user was not shown.
-    """
+
+def remove_book_and_relocate_files(book_id: int, confirmed_file_ids: Optional[List[int]] = None) -> Dict[str, Any]:
+    """Safely archive all files for book into removed_books folder and mark as soft-deleted."""
     conn = get_conn()
     try:
         book = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
@@ -185,36 +194,32 @@ def remove_book_and_relocate_files(book_id: int, confirmed_file_ids: Optional[Li
             raise BookNotFoundError(f"Book #{book_id} not found")
         if int(book["is_deleted"] or 0) == 1:
             raise BookAlreadyDeletedError(f"Book #{book_id} is already deleted")
-
         title = book["title"]
         file_rows, hardlinks = _collect_book_file_targets(conn, book_id)
         if len(file_rows) > 1 and set(confirmed_file_ids or []) != {int(r["id"]) for r in file_rows}:
             raise DeleteNeedsConfirmation(describe_book_files(book, file_rows))
         if book["archived_path"]:
             hardlinks.add(book["archived_path"])
-
-        removed_links: List[str] = []
-        for hl in hardlinks:
-            if _remove_library_hardlink(hl):
-                removed_links.append(hl)
-
-        safe_name = _sanitize_folder_name(title)
-        dest_dir = REMOVED_BOOKS_DIR / f"{book_id}_{safe_name}"
-        dest_dir.mkdir(parents=True, exist_ok=True)
-
-        moved_paths, file_id_map = _process_file_relocation(file_rows, dest_dir)
-        _persist_removal_records(conn, book_id, moved_paths, file_id_map)
-        conn.commit()
     finally:
         conn.close()
+
+    with write_tx(conn_factory=get_conn) as conn:
+        conn.execute("UPDATE books SET is_deleted = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (book_id,))
+
+    removed_links = [hl for hl in hardlinks if _remove_library_hardlink(hl)]
+    dest_dir = REMOVED_BOOKS_DIR / f"{book_id}_{_sanitize_folder_name(title)}"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    moved_paths, file_id_map = _process_file_relocation(file_rows, dest_dir)
+    try:
+        with write_tx(conn_factory=get_conn) as conn:
+            _persist_removal_records(conn, book_id, moved_paths, file_id_map)
+    except Exception:
+        _rollback_moved_files(file_rows, file_id_map, book_id)
+        raise
 
     spawn_reindex({book_id})
     logger.info("Successfully soft-deleted book #%s (%s), moved %s files", book_id, title, len(moved_paths))
     return {
-        "ok": True,
-        "book_id": book_id,
-        "title": title,
-        "moved_files": moved_paths,
-        "removed_links": removed_links,
-        "dest_dir": str(dest_dir),
+        "ok": True, "book_id": book_id, "title": title,
+        "moved_files": moved_paths, "removed_links": removed_links, "dest_dir": str(dest_dir),
     }

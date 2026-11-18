@@ -31,7 +31,7 @@ def handle_get_reader_content(
     bid = int(book_id)
     conn = get_conn()
     try:
-        row = conn.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone()
+        row = conn.execute("SELECT * FROM books WHERE id = ? AND is_deleted = 0", (bid,)).fetchone()
     finally:
         conn.close()
 
@@ -60,7 +60,7 @@ def handle_get_epub_asset(
     conn = get_conn()
     try:
         row = conn.execute(
-            "SELECT primary_path, archived_path FROM books WHERE id = ?", (bid,)
+            "SELECT primary_path, archived_path FROM books WHERE id = ? AND is_deleted = 0", (bid,)
         ).fetchone()
     finally:
         conn.close()
@@ -93,7 +93,7 @@ def handle_get_mobi_image(
     conn = get_conn()
     try:
         row = conn.execute(
-            "SELECT primary_path, archived_path FROM books WHERE id = ?", (bid,)
+            "SELECT primary_path, archived_path FROM books WHERE id = ? AND is_deleted = 0", (bid,)
         ).fetchone()
     finally:
         conn.close()
@@ -116,6 +116,14 @@ def handle_get_mobi_image(
     handler.wfile.write(data)
 
 
+_BOOK_FILE_MIME_TYPES = {
+    "pdf": "application/pdf",
+    "epub": "application/epub+zip",
+    "mobi": "application/x-mobipocket-ebook",
+    "azw3": "application/vnd.amazon.ebook",
+}
+
+
 def handle_get_book_file(
     handler: Any, qs: Dict[str, List[str]], body: Dict[str, Any], book_id: str, mode: str
 ) -> None:
@@ -126,12 +134,14 @@ def handle_get_book_file(
     try:
         if file_id:
             frow = conn.execute(
-                "SELECT original_path, archived_path, format FROM book_files WHERE id = ? AND book_id = ?",
+                "SELECT bf.original_path, bf.archived_path, bf.format FROM book_files bf "
+                "JOIN books b ON b.id = bf.book_id WHERE bf.id = ? AND bf.book_id = ? AND b.is_deleted = 0",
                 (int(file_id), bid),
             ).fetchone()
         else:
             frow = conn.execute(
-                "SELECT primary_path AS original_path, archived_path, primary_format AS format, title FROM books WHERE id = ?",
+                "SELECT primary_path AS original_path, archived_path, primary_format AS format, title "
+                "FROM books WHERE id = ? AND is_deleted = 0",
                 (bid,),
             ).fetchone()
     finally:
@@ -141,14 +151,7 @@ def handle_get_book_file(
         handler.send_error(404, "Book file not found")
         return
 
-    ext = (frow["format"] or "").lower()
-    mime_map = {
-        "pdf": "application/pdf",
-        "epub": "application/epub+zip",
-        "mobi": "application/x-mobipocket-ebook",
-        "azw3": "application/vnd.amazon.ebook",
-    }
-    ctype = mime_map.get(ext, "application/octet-stream")
+    ctype = _BOOK_FILE_MIME_TYPES.get((frow["format"] or "").lower(), "application/octet-stream")
 
     final_path = next(
         (

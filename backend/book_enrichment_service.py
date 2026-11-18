@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from archiver import ArchiveTarget, safe_hardlink_to_library
 from book_reader.payload import extract_book_reader_content
 from config import LIBRARY_DIR, is_path_within
-from database import get_conn
+from database import get_conn, write_tx
 import deepseek_client as ds
 from ebook_parser import build_cjk_pinyin_search_tokens, strip_html
 import enrich_ai
@@ -322,23 +322,24 @@ def refresh_book_ai_metadata(
     """Analyze ground-truth content, refresh LLM metadata & summary, and sync vectors."""
     conn = get_conn()
     try:
-        row = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
-        if not row:
+        db_row = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
+        if not db_row:
             raise BookNotFoundError(f"book {book_id} not found")
-
-        sample_text = _extract_sample_content(row)
-        if not sample_text.strip():
-            raise NoReadableTextError(f"book {book_id} has no readable text; metadata left unchanged")
-        enriched = _call_llm_enrichment(row, sample_text, feature=feature)
-
-        enriched["proposed_title"] = title_needing_confirmation(row["title"], enriched["clean_title"])
-        if enriched["proposed_title"]:
-            enriched["clean_title"] = row["title"]
-        _update_books_metadata(conn, row, enriched)
-        _upsert_ai_metadata(conn, book_id, enriched)
-        conn.commit()
+        row = dict(db_row)
     finally:
         conn.close()
+
+    sample_text = _extract_sample_content(row)
+    if not sample_text.strip():
+        raise NoReadableTextError(f"book {book_id} has no readable text; metadata left unchanged")
+    enriched = _call_llm_enrichment(row, sample_text, feature=feature)
+
+    enriched["proposed_title"] = title_needing_confirmation(row["title"], enriched["clean_title"])
+    if enriched["proposed_title"]:
+        enriched["clean_title"] = row["title"]
+    with write_tx(conn_factory=get_conn) as conn:
+        _update_books_metadata(conn, row, enriched)
+        _upsert_ai_metadata(conn, book_id, enriched)
 
     _start_cover_fetch(book_id, row)
     logger.info("book %s refreshed; previous title=%r category=%r", book_id, row["title"], row["category"])

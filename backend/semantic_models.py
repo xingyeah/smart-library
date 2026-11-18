@@ -76,10 +76,14 @@ class BgeM3Engine:
         self._query_vec_cache = _LRUCache(capacity=512)
         self._rerank_cache = _LRUCache(capacity=256)
 
-        self._index_mtime: float = 0.0
+        self._index_lock = threading.Lock()
+        self._index_mtime: Tuple[int, int] = (0, 0)
         self._book_ids: List[int] = []
         # (matrix, book ids per row) swapped in one assignment: a search on another thread reads a matching pair
         self._index: Tuple[Optional[np.ndarray], np.ndarray] = (None, np.zeros(0, dtype=np.int64))
+        self._index_snap: Tuple[Optional[np.ndarray], np.ndarray, Dict[int, int]] = (
+            None, np.zeros(0, dtype=np.int64), {}
+        )
         self._id_to_row: Dict[int, int] = {}
         self._matrix: Optional[np.ndarray] = None  # shape (N, 1024) float32 L2-normalized
 
@@ -207,25 +211,33 @@ class BgeM3Engine:
         """Load contiguous (N, 1024) float32 matrix from disk if updated."""
         if not BGE_VEC_NPY_PATH.exists() or not BGE_VEC_META_PATH.exists():
             return False
-        mtime = BGE_VEC_NPY_PATH.stat().st_mtime
+        mtime = (BGE_VEC_NPY_PATH.stat().st_mtime_ns, BGE_VEC_META_PATH.stat().st_mtime_ns)
         if self._matrix is not None and mtime == self._index_mtime:
             return True
-        try:
-            with open(BGE_VEC_META_PATH, "r", encoding="utf-8") as mf:
-                meta = json.load(mf)
-            book_ids = [int(x) for x in (meta.get("book_ids") or [])]
-            mat = np.load(str(BGE_VEC_NPY_PATH))
-            if mat.ndim == 2 and mat.shape[0] == len(book_ids) and mat.shape[1] == EMBED_DIM:
-                self._matrix = np.ascontiguousarray(mat, dtype=np.float32)
-                self._book_ids = book_ids
-                self._index = (self._matrix, np.array(book_ids, dtype=np.int64))
-                self._id_to_row = {bid: idx for idx, bid in enumerate(book_ids)}
-                self._index_mtime = mtime
+        with self._index_lock:
+            mtime = (BGE_VEC_NPY_PATH.stat().st_mtime_ns, BGE_VEC_META_PATH.stat().st_mtime_ns)
+            if self._matrix is not None and mtime == self._index_mtime:
                 return True
-        except Exception:
-            # Memory-mapped vector index reloading fails when index file is being rebuilt or corrupted
-            logging.getLogger(__name__).warning("vector index could not be loaded; semantic search is off until it reloads", exc_info=True)
-        return False
+            try:
+                with open(BGE_VEC_META_PATH, "r", encoding="utf-8") as mf:
+                    meta = json.load(mf)
+                book_ids = [int(x) for x in (meta.get("book_ids") or [])]
+                mat = np.load(str(BGE_VEC_NPY_PATH))
+                if mat.ndim == 2 and mat.shape[0] == len(book_ids) and mat.shape[1] == EMBED_DIM:
+                    norm_mat = np.ascontiguousarray(mat, dtype=np.float32)
+                    row_arr = np.array(book_ids, dtype=np.int64)
+                    id_to_row = {bid: idx for idx, bid in enumerate(book_ids)}
+                    self._matrix = norm_mat
+                    self._book_ids = book_ids
+                    self._id_to_row = id_to_row
+                    self._index = (norm_mat, row_arr)
+                    self._index_snap = (norm_mat, row_arr, id_to_row)
+                    self._index_mtime = mtime
+                    return True
+            except Exception:
+                # Memory-mapped vector index reloading fails when index file is being rebuilt or corrupted
+                logging.getLogger(__name__).warning("vector index could not be loaded; semantic search is off until it reloads", exc_info=True)
+            return False
 
     def dense_search(
         self,
@@ -237,30 +249,33 @@ class BgeM3Engine:
         Compute exact cosine similarity between query and all books in <1.5ms.
         Returns (scores_by_book_id, ranks_by_book_id).
         """
-        if not self.load_vector_index() or self._matrix is None:
+        if not self.load_vector_index():
+            return {}, {}
+        matrix, row_book_ids, _ = self._index_snap
+        if matrix is None:
             return {}, {}
         q_vec = self.encode_query(query)
         if q_vec is None:
             return {}, {}
 
-        sims = np.dot(self._matrix, q_vec)  # (N,)
+        sims = np.dot(matrix, q_vec)  # (N,)
+        is_cand = np.isfinite(sims)
+        if allowed_ids is not None:
+            is_cand &= np.isin(row_book_ids, _id_array(allowed_ids))
+        hit_count = min(top_k * 3, int(is_cand.sum()))
+        if hit_count <= 0:
+            return {}, {}
+
+        sort_keys = np.where(is_cand, -sims, np.inf)
+        best = np.argpartition(sort_keys, hit_count - 1)[:hit_count]
+        best = best[np.lexsort((best, sort_keys[best]))]
         scores_by_id: Dict[int, float] = {}
         ranks_by_id: Dict[int, int] = {}
-
-        # Sort descending
-        order = np.argsort(-sims)
-        rank = 0
-        for idx in order:
-            bid = self._book_ids[int(idx)]
-            if allowed_ids is not None and bid not in allowed_ids:
-                continue
-            sc = float(sims[int(idx)])
-            scores_by_id[bid] = sc
-            rank += 1
+        for rank, idx in enumerate(best, start=1):
+            bid = int(row_book_ids[idx])
+            scores_by_id[bid] = float(sims[idx])
             if rank <= top_k:
                 ranks_by_id[bid] = rank
-            elif rank > top_k * 3:
-                break
         return scores_by_id, ranks_by_id
 
     def dense_search_by_vector(
@@ -306,18 +321,21 @@ class BgeM3Engine:
 
     def get_book_vectors(self, book_ids: List[int]) -> Tuple[List[int], np.ndarray]:
         """Retrieve normalized vectors for a list of book IDs."""
-        if not self.load_vector_index() or self._matrix is None:
+        if not self.load_vector_index():
+            return [], np.zeros((0, EMBED_DIM), dtype=np.float32)
+        matrix, _, id_to_row = self._index_snap
+        if matrix is None:
             return [], np.zeros((0, EMBED_DIM), dtype=np.float32)
         valid_ids: List[int] = []
         rows: List[int] = []
         for bid in book_ids:
-            r_idx = self._id_to_row.get(int(bid))
+            r_idx = id_to_row.get(int(bid))
             if r_idx is not None:
                 valid_ids.append(int(bid))
                 rows.append(r_idx)
         if not rows:
             return [], np.zeros((0, EMBED_DIM), dtype=np.float32)
-        return valid_ids, self._matrix[rows]
+        return valid_ids, matrix[rows]
 
     def rerank_pairs(
         self, query: str, docs: List[Tuple[int, str]], max_length: int = 128, batch_size: int = 4

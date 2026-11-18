@@ -1,10 +1,12 @@
 import logging
+import signal
 import sys
 import threading
 from http.server import ThreadingHTTPServer
 
-from auto_summary_refresher import start_background_auto_summary_refresher
-from enrichers.scheduler import start_background_slow_enricher
+from auto_summary_refresher import start_background_auto_summary_refresher, stop_background_auto_summary_refresher
+from catalog_sync import stop_catalog_sync
+from enrichers.scheduler import start_background_slow_enricher, stop_background_slow_enricher
 from database import init_db
 from http_api import background, gate, responses, state
 from http_api.network import get_local_lan_ip, get_tailscale_ip
@@ -12,6 +14,27 @@ from http_api.server_handler import LibraryRequestHandler
 from search_engine import warmup_search_engine
 
 logger = logging.getLogger("http_api")
+
+
+class LibraryHTTPServer(ThreadingHTTPServer):
+    request_queue_size = 64
+    daemon_threads = True
+
+
+def _install_shutdown_handlers(httpd: ThreadingHTTPServer) -> None:
+    if threading.current_thread() is not threading.main_thread():
+        return
+
+    def _on_signal(signum: int, _frame) -> None:
+        logger.info("Received signal %s; shutting down HTTP server and background workers", signum)
+        background.stop_background_daemons()
+        stop_background_slow_enricher()
+        stop_background_auto_summary_refresher()
+        stop_catalog_sync()
+        threading.Thread(target=httpd.shutdown, daemon=True).start()
+
+    signal.signal(signal.SIGINT, _on_signal)
+    signal.signal(signal.SIGTERM, _on_signal)
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8765) -> None:
@@ -25,7 +48,8 @@ def run_server(host: str = "0.0.0.0", port: int = 8765) -> None:
     start_background_slow_enricher()
     start_background_auto_summary_refresher()
 
-    httpd = ThreadingHTTPServer((host, port), LibraryRequestHandler)
+    httpd = LibraryHTTPServer((host, port), LibraryRequestHandler)
+    _install_shutdown_handlers(httpd)
     lan_ip = get_local_lan_ip()
 
     print("=" * 60)
@@ -35,7 +59,7 @@ def run_server(host: str = "0.0.0.0", port: int = 8765) -> None:
         if sys.stdout.isatty():
             lan_url = f"http://{lan_ip}:{port}/?token={state.LAN_TOKEN}"
         else:
-            lan_url = f"http://{lan_ip}:{port}/?token=<口令见 data/.lan_token>"
+            lan_url = f"http://{lan_ip}:{port}/?token=<口令见 data/lan_token>"
         print(f"   ▶ 局域网访问: {lan_url} (手机/平板首次打开此地址，之后免口令)")
     tailscale_ip = get_tailscale_ip()
     if tailscale_ip:
@@ -43,7 +67,10 @@ def run_server(host: str = "0.0.0.0", port: int = 8765) -> None:
     else:
         print("   ⚠️ Tailscale 未运行，外网无法访问")
     print("=" * 60)
-    httpd.serve_forever()
+    try:
+        httpd.serve_forever()
+    finally:
+        httpd.server_close()
 
 
 __all__ = [

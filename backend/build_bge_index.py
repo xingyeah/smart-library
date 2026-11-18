@@ -1,4 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import hashlib
 import json
 import os
 import sys
@@ -113,6 +114,52 @@ def sync_bge_m3_index(force_full: bool = False, batch_size: int = 48, reencode_i
         return _sync_bge_m3_index(force_full, batch_size, reencode_ids)
 
 
+def _load_existing_bge_cache(force_full: bool) -> Tuple[Dict[int, np.ndarray], Dict[int, str]]:
+    existing_map: Dict[int, np.ndarray] = {}
+    existing_hashes: Dict[int, str] = {}
+    if force_full or not (BGE_VEC_NPY_PATH.exists() and BGE_VEC_META_PATH.exists()):
+        return existing_map, existing_hashes
+    try:
+        with open(BGE_VEC_META_PATH, "r", encoding="utf-8") as mf:
+            meta = json.load(mf)
+        old_ids = [int(x) for x in (meta.get("book_ids") or [])]
+        old_hashes = meta.get("passage_hashes") or []
+        old_mat = np.load(str(BGE_VEC_NPY_PATH))
+        if old_mat.ndim == 2 and old_mat.shape[0] == len(old_ids) and old_mat.shape[1] == EMBED_DIM:
+            for idx, bid in enumerate(old_ids):
+                existing_map[bid] = old_mat[idx]
+            if len(old_hashes) == len(old_ids):
+                existing_hashes = {bid: str(h) for bid, h in zip(old_ids, old_hashes)}
+    except Exception:
+        return {}, {}
+    return existing_map, existing_hashes
+
+
+def _write_bge_outputs(final_mat: np.ndarray, all_ids: List[int], all_hashes: List[str]) -> None:
+    tmp_npy = BGE_VEC_NPY_PATH.with_suffix(".tmp.npy")
+    tmp_meta = BGE_VEC_META_PATH.with_suffix(".tmp.json")
+    try:
+        np.save(str(tmp_npy), final_mat)
+        tmp_npy.replace(BGE_VEC_NPY_PATH)
+        with open(tmp_meta, "w", encoding="utf-8") as mf:
+            json.dump(
+                {
+                    "count": len(all_ids),
+                    "dim": EMBED_DIM,
+                    "model": "BAAI/bge-m3",
+                    "book_ids": all_ids,
+                    "passage_hashes": all_hashes,
+                    "updated_at": time.time(),
+                },
+                mf,
+            )
+        tmp_meta.replace(BGE_VEC_META_PATH)
+    except BaseException:
+        tmp_npy.unlink(missing_ok=True)
+        tmp_meta.unlink(missing_ok=True)
+        raise
+
+
 def _sync_bge_m3_index(force_full: bool, batch_size: int, reencode_ids) -> Dict[str, Any]:
     t0 = time.time()
     engine = get_bge_engine()
@@ -122,37 +169,32 @@ def _sync_bge_m3_index(force_full: bool, batch_size: int, reencode_ids) -> Dict[
     conn = get_conn()
     try:
         rows = conn.execute(
-            "SELECT id, title, subtitle, author, category, summary, toc_text FROM books ORDER BY id ASC"
+            "SELECT id, title, subtitle, author, category, summary, toc_text FROM books WHERE is_deleted = 0 ORDER BY id ASC"
         ).fetchall()
     finally:
         conn.close()
 
-    existing_map: Dict[int, np.ndarray] = {}
-    if not force_full and BGE_VEC_NPY_PATH.exists() and BGE_VEC_META_PATH.exists():
-        try:
-            with open(BGE_VEC_META_PATH, "r", encoding="utf-8") as mf:
-                meta = json.load(mf)
-            old_ids = [int(x) for x in (meta.get("book_ids") or [])]
-            old_mat = np.load(str(BGE_VEC_NPY_PATH))
-            if old_mat.ndim == 2 and old_mat.shape[0] == len(old_ids) and old_mat.shape[1] == EMBED_DIM:
-                for idx, bid in enumerate(old_ids):
-                    existing_map[bid] = old_mat[idx]
-        except Exception:
-            existing_map = {}
-
+    existing_map, existing_hashes = _load_existing_bge_cache(force_full)
     all_ids: List[int] = []
+    all_hashes: List[str] = []
     missing_indices: List[int] = []
     missing_texts: List[str] = []
     final_mat = np.zeros((len(rows), EMBED_DIM), dtype=np.float32)
 
     for i, r in enumerate(rows):
         bid = int(r["id"])
+        passage = build_book_passage(r)
+        p_hash = hashlib.sha256(passage.encode("utf-8")).hexdigest()[:16]
         all_ids.append(bid)
-        if bid in existing_map and bid not in reencode_ids:
+        all_hashes.append(p_hash)
+        cache_valid = bid in existing_map and bid not in reencode_ids and (
+            bid not in existing_hashes or existing_hashes[bid] == p_hash
+        )
+        if cache_valid:
             final_mat[i] = existing_map[bid]
         else:
             missing_indices.append(i)
-            missing_texts.append(build_book_passage(r))
+            missing_texts.append(passage)
 
     total_to_encode = len(missing_texts)
     print(
@@ -191,23 +233,7 @@ def _sync_bge_m3_index(force_full: bool, batch_size: int, reencode_ids) -> Dict[
                         flush=True,
                     )
 
-    tmp_npy = BGE_VEC_NPY_PATH.with_suffix(".tmp.npy")
-    np.save(str(tmp_npy), final_mat)
-    tmp_npy.replace(BGE_VEC_NPY_PATH)
-
-    with open(BGE_VEC_META_PATH, "w", encoding="utf-8") as mf:
-        json.dump(
-            {
-                "count": len(all_ids),
-                "dim": EMBED_DIM,
-                "model": "BAAI/bge-m3",
-                "book_ids": all_ids,
-                "updated_at": time.time(),
-            },
-            mf,
-        )
-
-    # Reload in-memory index
+    _write_bge_outputs(final_mat, all_ids, all_hashes)
     engine.load_vector_index()
     elapsed_total = round(time.time() - t0, 2)
     return {

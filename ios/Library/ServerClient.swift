@@ -62,8 +62,8 @@ final class ServerClient {
     /// Each later address starts this much after the one before, so a LAN address that answers wins over Tailscale.
     private static let probeStagger: UInt64 = 300_000_000
     private static let probePath = "/api/connection"
-    private nonisolated static let passedHeaders = ["Range", "Content-Type", "Accept"]
-    private nonisolated static let returnedHeaders = ["Content-Type", "Content-Range", "Accept-Ranges", "Content-Disposition"]
+    private nonisolated static let passedHeaders = ["Range", "Content-Type", "Accept", "If-None-Match"]
+    private nonisolated static let returnedHeaders = ["Content-Type", "Content-Range", "Accept-Ranges", "Content-Disposition", "ETag", "Cache-Control"]
 
     private(set) var config: ServerConfig
     private(set) var activeBaseURL: URL

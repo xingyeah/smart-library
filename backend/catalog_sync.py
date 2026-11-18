@@ -113,13 +113,18 @@ def write_minimal_xlsx(rows: List[Dict[str, str]], xlsx_path: Path) -> None:
         'Target="worksheets/sheet1.xml"/>'
         "</Relationships>"
     )
-    with zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("[Content_Types].xml", content_types)
-        zf.writestr("_rels/.rels", root_rels)
-        zf.writestr("xl/workbook.xml", workbook_xml)
-        zf.writestr("xl/_rels/workbook.xml.rels", wb_rels)
-        zf.writestr("xl/worksheets/sheet1.xml", _build_sheet_xml(rows))
-    os.replace(tmp_path, xlsx_path)
+    try:
+        with zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("[Content_Types].xml", content_types)
+            zf.writestr("_rels/.rels", root_rels)
+            zf.writestr("xl/workbook.xml", workbook_xml)
+            zf.writestr("xl/_rels/workbook.xml.rels", wb_rels)
+            zf.writestr("xl/worksheets/sheet1.xml", _build_sheet_xml(rows))
+        os.replace(tmp_path, xlsx_path)
+    except BaseException:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def _collect_book_filenames(conn: Any) -> Dict[int, List[str]]:
@@ -209,12 +214,17 @@ def _read_existing_csv(csv_path: Path) -> List[Dict[str, str]]:
 def _write_csv_atomic(rows: List[Dict[str, str]], csv_path: Path) -> None:
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = csv_path.with_name(f".{csv_path.name}.{os.getpid()}.tmp")
-    with open(tmp_path, "w", encoding="utf-8-sig", newline="") as fp:
-        writer = csv.DictWriter(fp, fieldnames=CATALOG_FIELDS)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({col: row.get(col, "") for col in CATALOG_FIELDS})
-    os.replace(tmp_path, csv_path)
+    try:
+        with open(tmp_path, "w", encoding="utf-8-sig", newline="") as fp:
+            writer = csv.DictWriter(fp, fieldnames=CATALOG_FIELDS)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow({col: row.get(col, "") for col in CATALOG_FIELDS})
+        os.replace(tmp_path, csv_path)
+    except BaseException:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def _merge_protected_into_rows(
@@ -304,3 +314,12 @@ def enqueue_catalog_sync(db_path: Path = DB_PATH) -> None:
         timer.daemon = True
         _pending_timer = timer
         timer.start()
+
+
+def stop_catalog_sync() -> None:
+    """Cancel any pending debounced catalog sync timer on shutdown."""
+    global _pending_timer
+    with _debounce_lock:
+        if _pending_timer is not None:
+            _pending_timer.cancel()
+            _pending_timer = None

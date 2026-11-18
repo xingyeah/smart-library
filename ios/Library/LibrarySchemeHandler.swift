@@ -20,7 +20,7 @@ final class LibrarySchemeHandler: NSObject, WKURLSchemeHandler, ObservableObject
     @Published private(set) var hasCheckedServer = false
     private let client: ServerClient
     private let store: OfflineStore
-    private var activeTasks = Set<ObjectIdentifier>()
+    private var activeTasks = [ObjectIdentifier: Task<Void, Never>]()
     private var hasFlushedProgress = false
     private var isFlushing = false
     private var recoveryTask: Task<Void, Never>?
@@ -42,55 +42,89 @@ final class LibrarySchemeHandler: NSObject, WKURLSchemeHandler, ObservableObject
         if await client.probe() { markOnline() } else { markOffline() }
     }
 
+    private enum FetchOutcome {
+        case response(ProxyResponse)
+        case offlineFallback
+        case cancelled
+    }
+
     func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
-        activeTasks.insert(ObjectIdentifier(task))
+        let key = ObjectIdentifier(task)
         let request = Self.proxyRequest(from: task.request)
-        Task {
-            let response = await respond(to: request)
-            finish(task, with: response)
+        activeTasks[key] = Task { [weak self] in
+            guard let self else { return }
+            let response = await self.respondIfActive(to: request)
+            guard !Task.isCancelled, let response else {
+                self.activeTasks.removeValue(forKey: key)
+                return
+            }
+            self.finish(task, with: response)
         }
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {
-        activeTasks.remove(ObjectIdentifier(task))
+        activeTasks.removeValue(forKey: ObjectIdentifier(task))?.cancel()
     }
 
     func respond(to request: ProxyRequest) async -> ProxyResponse {
+        await respondCore(to: request) ?? OfflineResponder.respond(to: request, store: store)
+    }
+
+    private func respondIfActive(to request: ProxyRequest) async -> ProxyResponse? {
+        guard !Task.isCancelled else { return nil }
+        return await respondCore(to: request)
+    }
+
+    private func respondCore(to request: ProxyRequest) async -> ProxyResponse? {
         if request.method == "POST", let bookID = request.bookID, request.path.hasSuffix("/progress") {
             return await saveProgress(request, bookID: bookID)
         }
         await startupCheck?.value
+        guard !Task.isCancelled else { return nil }
         if isOffline { return OfflineResponder.respond(to: request, store: store) }
-        guard let response = await sendWithRetry(request) else {
+        switch await sendWithRetry(request) {
+        case .cancelled:
+            return nil
+        case .offlineFallback:
             return OfflineResponder.respond(to: request, store: store)
+        case let .response(response):
+            remember(response, for: request)
+            return response
         }
-        remember(response, for: request)
-        return response
     }
 
-    /// Nil when the server cannot be reached on any address (the app is then offline) or the page cancelled it.
-    private func sendWithRetry(_ request: ProxyRequest) async -> ProxyResponse? {
+    private func sendWithRetry(_ request: ProxyRequest) async -> FetchOutcome {
+        guard !Task.isCancelled else { return .cancelled }
         do {
             let response = try await client.send(request)
             markOnline()
-            return response
+            return .response(response)
+        } catch is CancellationError {
+            return .cancelled
         } catch let error as URLError where error.code == .cancelled {
-            return nil
+            return .cancelled
         } catch {
             NSLog("Request failed, probing addresses: path=%@ error=%@", request.path, error.localizedDescription)
         }
+        guard !Task.isCancelled else { return .cancelled }
         guard await client.probe() else {
+            guard !Task.isCancelled else { return .cancelled }
             markOffline()
-            return nil
+            return .offlineFallback
         }
+        guard !Task.isCancelled else { return .cancelled }
         do {
             let response = try await client.send(request)
             markOnline()
-            return response
+            return .response(response)
+        } catch is CancellationError {
+            return .cancelled
+        } catch let error as URLError where error.code == .cancelled {
+            return .cancelled
         } catch {
             // The server answered the probe, so one slow request does not make the app offline
             NSLog("Request failed after retry: path=%@ error=%@", request.path, error.localizedDescription)
-            return nil
+            return .offlineFallback
         }
     }
 
@@ -101,7 +135,7 @@ final class LibrarySchemeHandler: NSObject, WKURLSchemeHandler, ObservableObject
         store.saveLastProgress(body, bookID: bookID)
         let stamped = ProxyRequest(method: "POST", pathAndQuery: request.pathAndQuery, body: body, headers: request.headers)
         await startupCheck?.value
-        if !isOffline, let response = await sendWithRetry(stamped) { return response }
+        if !isOffline, case let .response(response) = await sendWithRetry(stamped) { return response }
         store.queueProgress(body, bookID: bookID)
         return .json(["ok": true, "queued": true])
     }
@@ -124,7 +158,7 @@ final class LibrarySchemeHandler: NSObject, WKURLSchemeHandler, ObservableObject
             do {
                 let response = try await client.send(request)
                 // A 4xx body will never be accepted; dropping it keeps the queue from sticking
-                if response.status < 500 { store.clearPendingProgress(item.bookID) }
+                if response.status < 500 { store.clearPendingProgress(item.bookID, ifMatching: item.body) }
             } catch {
                 NSLog("Progress replay failed: bookId=%d error=%@", item.bookID, error.localizedDescription)
                 return
@@ -170,7 +204,7 @@ final class LibrarySchemeHandler: NSObject, WKURLSchemeHandler, ObservableObject
         guard response.status == 200 else { return }
         if request.method == "GET", let bookID = request.bookID, !store.isDownloaded(bookID),
            !Self.uncachedBookSuffixes.contains(where: request.path.hasSuffix) {
-            store.putReadThrough(response, for: request, bookID: bookID)
+            store.putReadThroughAsync(response, for: request, bookID: bookID)
             return
         }
         let isShell = request.path == "/" || request.path == "/index.html"
@@ -178,23 +212,28 @@ final class LibrarySchemeHandler: NSObject, WKURLSchemeHandler, ObservableObject
         let isTranslation = request.method == "POST" && request.path.hasPrefix("/api/translate")
         // shortcut: translations are kept forever with no size cap; add eviction if the folder grows large
         guard isShell || isTranslation else { return }
-        store.put(response, key: OfflineStore.key(for: OfflineResponder.shellRequest(request)), bookID: nil)
+        store.putAsync(response, key: OfflineStore.key(for: OfflineResponder.shellRequest(request)), bookID: nil)
     }
 
     private func finish(_ task: WKURLSchemeTask, with response: ProxyResponse) {
-        guard activeTasks.remove(ObjectIdentifier(task)) != nil, let url = task.request.url else { return }
+        guard activeTasks.removeValue(forKey: ObjectIdentifier(task)) != nil, let url = task.request.url else { return }
         var headers = response.headers
-        headers["Content-Length"] = String(response.body.count)
-        // WebKit would otherwise keep scripts in its own cache and never ask again, so the offline copy and the
-        // page would both stay on an old version after a frontend update
-        headers["Cache-Control"] = "no-cache"
+        if response.status != 204 && response.status != 304 {
+            headers["Content-Length"] = String(response.body.count)
+        }
+        let path = url.path
+        let isShellPageOrAppBundle = path.isEmpty || path == "/" || path == "/index.html" || path.hasPrefix("/assets/")
+        if isShellPageOrAppBundle || headers["Cache-Control"] == nil {
+            // Keep app shell/assets fresh on update while honoring backend cache headers on covers, vendor libs, and rendered pages
+            headers["Cache-Control"] = "no-cache"
+        }
         guard let http = HTTPURLResponse(url: url, statusCode: response.status, httpVersion: "HTTP/1.1",
                                          headerFields: headers) else {
             task.didFailWithError(URLError(.badServerResponse))
             return
         }
         task.didReceive(http)
-        task.didReceive(response.body)
+        if !response.body.isEmpty { task.didReceive(response.body) }
         task.didFinish()
     }
 

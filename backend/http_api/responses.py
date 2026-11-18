@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Tuple
 logger = logging.getLogger("http_api.responses")
 
 MAX_JSON_BODY_BYTES = 2 * 1024 * 1024
+RANGE_CHUNK_BYTES = 1024 * 1024
 
 
 class PayloadTooLargeError(ValueError):
@@ -75,6 +76,18 @@ def read_json_body(handler: Any) -> Dict[str, Any]:
     return parsed
 
 
+def _stream_file_range(final_path: str, start: int, length: int, wfile: Any) -> None:
+    remaining = length
+    with open(final_path, "rb") as fp:
+        fp.seek(start)
+        while remaining > 0:
+            chunk = fp.read(min(RANGE_CHUNK_BYTES, remaining))
+            if not chunk:
+                break
+            wfile.write(chunk)
+            remaining -= len(chunk)
+
+
 def send_range_stream(
     handler: Any,
     final_path: str,
@@ -91,21 +104,20 @@ def send_range_stream(
         rng = parse_bytes_range(range_hdr, total_len)
         if rng is not None:
             start, end = rng
-            with open(final_path, "rb") as fp:
-                fp.seek(start)
-                chunk = fp.read(end - start + 1)
+            length = end - start + 1
             handler.send_response(206)
             handler.send_header("Content-Type", content_type)
-            handler.send_header("Content-Length", str(len(chunk)))
+            handler.send_header("Content-Length", str(length))
             handler.send_header("Content-Range", f"bytes {start}-{end}/{total_len}")
             handler.send_header("Accept-Ranges", "bytes")
             handler.send_header("Content-Disposition", disp)
             handler.end_headers()
-            handler.wfile.write(chunk)
+            _stream_file_range(final_path, start, length, handler.wfile)
             return
 
         handler.send_response(416)
         handler.send_header("Content-Range", f"bytes */{total_len}")
+        handler.send_header("Content-Length", "0")
         handler.end_headers()
         return
 
@@ -116,4 +128,4 @@ def send_range_stream(
     handler.send_header("Content-Disposition", disp)
     handler.end_headers()
     with open(final_path, "rb") as fp:
-        shutil.copyfileobj(fp, handler.wfile, 1024 * 1024)
+        shutil.copyfileobj(fp, handler.wfile, RANGE_CHUNK_BYTES)

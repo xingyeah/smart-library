@@ -8,6 +8,12 @@ from database import backup_database, get_conn
 from http_api import state
 
 logger = logging.getLogger("http_api.background")
+_bg_stop = threading.Event()
+
+
+def stop_background_daemons() -> None:
+    """Signal scheduler and backup daemons to stop waiting."""
+    _bg_stop.set()
 
 
 def start_background_organize(
@@ -79,8 +85,9 @@ def scheduler_tick(now_ts: float) -> bool:
 
 def scheduler_daemon() -> None:
     """Periodic background scheduler that checks every 60s whether a scheduled book organization is due."""
-    while True:
-        time.sleep(60)
+    while not _bg_stop.is_set():
+        if _bg_stop.wait(60):
+            break
         try:
             scheduler_tick(time.time())
         except Exception:
@@ -89,12 +96,13 @@ def scheduler_daemon() -> None:
 
 def backup_daemon() -> None:
     """Daily consistent DB snapshot into backups/ (first one immediately)."""
-    while True:
+    while not _bg_stop.is_set():
         try:
             backup_database()
         except Exception:
             logger.exception("Database backup failed in background daemon")
-        time.sleep(24 * 3600)
+        if _bg_stop.wait(24 * 3600):
+            break
 
 
 def reindex_in_background(book_ids: List[int]) -> None:

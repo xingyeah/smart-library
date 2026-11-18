@@ -2,6 +2,7 @@ import html
 import logging
 import os
 import struct
+import threading
 import urllib.parse
 import zipfile
 from collections import OrderedDict
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 _BOOK_STRUCT_CACHE: "OrderedDict[Tuple[int, float], Dict[str, Any]]" = OrderedDict()
 _MAX_CACHE_BOOKS = 12
+_CACHE_LOCK = threading.Lock()
 
 
 def _chapter_list(chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -31,18 +33,20 @@ def _chapter_list(chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def cache_get(book_id: int, mtime: float) -> Optional[Dict[str, Any]]:
     key = (book_id, mtime)
-    if key in _BOOK_STRUCT_CACHE:
-        _BOOK_STRUCT_CACHE.move_to_end(key)
-        return _BOOK_STRUCT_CACHE[key]
+    with _CACHE_LOCK:
+        if key in _BOOK_STRUCT_CACHE:
+            _BOOK_STRUCT_CACHE.move_to_end(key)
+            return _BOOK_STRUCT_CACHE[key]
     return None
 
 
 def cache_put(book_id: int, mtime: float, data: Dict[str, Any]) -> None:
     key = (book_id, mtime)
-    _BOOK_STRUCT_CACHE[key] = data
-    _BOOK_STRUCT_CACHE.move_to_end(key)
-    while len(_BOOK_STRUCT_CACHE) > _MAX_CACHE_BOOKS:
-        _BOOK_STRUCT_CACHE.popitem(last=False)
+    with _CACHE_LOCK:
+        _BOOK_STRUCT_CACHE[key] = data
+        _BOOK_STRUCT_CACHE.move_to_end(key)
+        while len(_BOOK_STRUCT_CACHE) > _MAX_CACHE_BOOKS:
+            _BOOK_STRUCT_CACHE.popitem(last=False)
 
 
 def extract_book_reader_content(book_row: Any, chapter_idx: int = 0) -> Dict[str, Any]:

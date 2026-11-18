@@ -87,7 +87,6 @@ class MultiSourceSlowEnricher:
         self.douban = DoubanEnricher()
         self.google_books = GoogleBooksEnricher()
         self.open_library = OpenLibraryEnricher()
-        self.stop_event = threading.Event()
 
     def _select_channel_order(self, lang: str) -> List[BaseBookEnricher]:
         """Route priority based on language."""
@@ -117,45 +116,32 @@ class MultiSourceSlowEnricher:
     def _update_book_records(self, bid: int, res: EnrichedBookMeta, current_score: float) -> None:
         """Persist metadata to book_external_meta and update books classic score, summary & cover."""
         database.upsert_external_meta(
-            self.db_path,
-            book_id=bid,
-            source=res.source,
-            external_id=res.external_id,
-            rating=res.rating,
-            raw_rating=res.raw_rating,
-            votes=res.votes,
-            description=res.description,
-            reviews=res.reviews,
-            status=res.status,
+            self.db_path, book_id=bid, source=res.source, external_id=res.external_id,
+            rating=res.rating, raw_rating=res.raw_rating, votes=res.votes,
+            description=res.description, reviews=res.reviews, status=res.status,
         )
-
         conn = database.get_conn(self.db_path)
         try:
-            bonus = compute_external_bonus(res.rating, res.votes)
-            new_score = round(min(99.5, max(10.0, current_score + bonus)), 2)
-            book_row = conn.execute("SELECT summary, cover_path FROM books WHERE id = ?", (bid,)).fetchone()
-            curr_sum = (book_row["summary"] or "").strip() if book_row else ""
-            curr_cover = (book_row["cover_path"] or "").strip() if book_row else ""
+            book_row = conn.execute("SELECT classic_score, summary, cover_path FROM books WHERE id = ?", (bid,)).fetchone()
+        finally:
+            conn.close()
 
-            new_cover = curr_cover
-            if not curr_cover and res.cover_url:
-                dl_cover = _download_channel_cover(res.source, res.external_id, res.cover_url)
-                if dl_cover:
-                    new_cover = dl_cover
+        base_score = float(book_row["classic_score"] or current_score) if book_row else current_score
+        new_score = round(min(99.5, max(10.0, base_score + compute_external_bonus(res.rating, res.votes))), 2)
+        curr_sum = (book_row["summary"] or "").strip() if book_row else ""
+        curr_cover = (book_row["cover_path"] or "").strip() if book_row else ""
+        new_cover = curr_cover
+        if not curr_cover and res.cover_url:
+            new_cover = _download_channel_cover(res.source, res.external_id, res.cover_url) or ""
 
+        with database.write_tx(self.db_path) as conn:
             if len(curr_sum) < 50 and len(res.description) >= 60:
                 conn.execute(
                     "UPDATE books SET classic_score = ?, summary = ?, summary_source = ?, cover_path = ? WHERE id = ?",
                     (new_score, res.description, f"ext_{res.source}", new_cover, bid),
                 )
             else:
-                conn.execute(
-                    "UPDATE books SET classic_score = ?, cover_path = ? WHERE id = ?",
-                    (new_score, new_cover, bid),
-                )
-            conn.commit()
-        finally:
-            conn.close()
+                conn.execute("UPDATE books SET classic_score = ?, cover_path = ? WHERE id = ?", (new_score, new_cover, bid))
         if res.rating > 0:
             from auto_summary_refresher import enqueue_book_summary_refresh
 
@@ -195,10 +181,15 @@ def _fetch_next_enrich_candidate(conn) -> Any:
         """
         SELECT b.* FROM books b
         LEFT JOIN book_external_meta em ON b.id = em.book_id
-        WHERE em.id IS NULL AND b.is_anthology = 0
+        WHERE em.id IS NULL AND b.is_anthology = 0 AND b.is_deleted = 0
         ORDER BY b.classic_score DESC, b.id ASC LIMIT 1
         """
     ).fetchone()
+
+
+def stop_background_slow_enricher() -> None:
+    """Signal the slow enricher daemon thread to stop."""
+    _slow_enricher_stop.set()
 
 
 def _enricher_daemon_loop(enricher: MultiSourceSlowEnricher, db_path: Path, interval_sec: float) -> None:

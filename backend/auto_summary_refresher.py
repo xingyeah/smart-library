@@ -9,8 +9,9 @@ import logging
 import queue
 import re
 import threading
+import time
 from pathlib import Path
-from typing import Any, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from config import DB_PATH
 from database import get_conn
@@ -24,14 +25,32 @@ REINDEX_BATCH_SIZE = 10
 SWEEP_IDLE_WAIT_SEC = 60.0
 CAP_COOLDOWN_SEC = 600.0
 ITEM_COOLDOWN_SEC = 2.0
+FAILURE_BACKOFF_SEC = 1800.0
 
 _FRONTMATTER_NOISE = ("isbn", "copyright", "all rights reserved", "table of contents", "printed in")
 
 _queue: "queue.Queue[int]" = queue.Queue()
 _queued_lock = threading.Lock()
 _queued_ids: Set[int] = set()
+_backoff_lock = threading.Lock()
+_failed_until: Dict[int, float] = {}
 _worker_thread: Optional[threading.Thread] = None
 _stop_event = threading.Event()
+
+
+def _is_in_backoff(book_id: int) -> bool:
+    now = time.time()
+    with _backoff_lock:
+        until = _failed_until.get(book_id, 0.0)
+        if until > now:
+            return True
+        _failed_until.pop(book_id, None)
+        return False
+
+
+def _record_failure_backoff(book_id: int) -> None:
+    with _backoff_lock:
+        _failed_until[book_id] = time.time() + FAILURE_BACKOFF_SEC
 
 
 def is_summary_valid_chinese(summary: str) -> bool:
@@ -152,6 +171,9 @@ def fetch_next_missing_target_book(conn: Any) -> Optional[int]:
         (UNREADABLE_MODEL_MARKER, MIN_VALID_SUMMARY_CHARS),
     ).fetchall()
     for r in rows:
+        bid = int(r["id"])
+        if _is_in_backoff(bid):
+            continue
         if (
             r["meta_book_id"] is None
             or (r["summary_source"] or "") != "ai_refreshed"
@@ -159,7 +181,7 @@ def fetch_next_missing_target_book(conn: Any) -> Optional[int]:
             or not (r["target_audience"] or "").strip()
             or (r["core_points"] or "").strip() in ("", "[]")
         ):
-            return int(r["id"])
+            return bid
     return None
 
 
@@ -200,7 +222,8 @@ def _process_candidate(
         logger.info("Auto summary refresh paused: %s", e)
         return False
     except Exception as e:
-        logger.warning("Auto summary refresh failed for book #%s: %s", book_id, e)
+        _record_failure_backoff(book_id)
+        logger.warning("Auto summary refresh failed for book #%s (backoff %.0fs): %s", book_id, FAILURE_BACKOFF_SEC, e)
     return True
 
 
@@ -258,3 +281,8 @@ def start_background_auto_summary_refresher(db_path: Path = DB_PATH) -> None:
         name="AutoSummaryRefresher",
     )
     _worker_thread.start()
+
+
+def stop_background_auto_summary_refresher() -> None:
+    """Signal the auto summary refresher daemon thread to stop."""
+    _stop_event.set()
