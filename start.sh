@@ -3,16 +3,13 @@ set -e
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${REPO_DIR}"
 
-if [ ! -f "backend/native/libmacbookai.dylib" ] || [ backend/native/libmacbookai.m -nt backend/native/libmacbookai.dylib ]; then
-  echo "Compiling native macOS acceleration engine..."
-  clang -dynamiclib -O3 -fobjc-arc \
-    -framework Foundation -framework Vision -framework PDFKit -framework NaturalLanguage -framework AppKit \
-    backend/native/libmacbookai.m -o backend/native/libmacbookai.dylib
-fi
+bash scripts/build_native.sh
 
-if [ ! -f "backend/native/apple_translate" ] && command -v swiftc >/dev/null; then
-  echo "Compiling on-device translation helper (macOS 26 Translation framework)..."
-  swiftc -O -parse-as-library backend/native/apple_translate.swift -o backend/native/apple_translate || echo "  skipped: Apple translation needs macOS 26"
+# API keys written by install.sh (never committed: local/ is ignored)
+if [ -f local/.env ]; then
+  set -a
+  . local/.env
+  set +a
 fi
 
 # caffeinate -s keeps the Mac awake while plugged in, so the phone can reach the server; on battery it sleeps as usual

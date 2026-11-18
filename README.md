@@ -72,26 +72,32 @@ flowchart LR
 
 ## 快速开始
 
-环境：macOS（原生加速库用到 PDFKit 等系统框架）、Python 3.9 以上、Xcode 命令行工具（提供 `clang`）。
+环境：macOS、Xcode 命令行工具（`xcode-select --install`，同时提供 `clang` 和 Python 3.9）。
 
 ```bash
-python3 -m venv .venv
+./install.sh
 ```
+
+安装脚本是交互式的，可以重复运行，已完成的步骤会跳过。它依次：
+
+1. 检查环境，挑一个 3.9–3.12 的 Python（依赖锁定的版本不支持更新的 Python）；
+2. 建 `.venv` 并安装依赖；
+3. 编译原生加速库；
+4. 询问要扫描的电子书目录、归档和数据库的位置，写入 `local/config.json`；
+5. 询问 DeepSeek、Anthropic、Google Books 的 API key（都可跳过），写入 `local/.env`（仅本人可读、不进 git）；
+6. 询问是否从 Hugging Face 下载语义模型（约 1.1 GB）：`Xenova/bge-m3` 和 `onnx-community/bge-reranker-v2-m3-ONNX`。不下载时退回纯关键词搜索。网络不通可以用镜像：`HF_ENDPOINT=https://hf-mirror.com ./install.sh`；
+7. 询问是否立即整理书源并建立搜索索引。
+
+装好后启动：
 
 ```bash
-.venv/bin/pip install -r requirements.txt
+./start.sh
 ```
-
-```bash
-bash start.sh
-```
-
-`start.sh` 会在需要时编译原生库，然后启动服务并打印访问地址：
 
 - 本机：`http://127.0.0.1:8765`
 - 手机或平板：用启动时打印的局域网地址，口令在 `data/lan_token`
 
-语义搜索和推荐需要两个模型放在 `data/models/` 下：`bge-m3/` 和 `bge-reranker-v2-m3/`（ONNX 量化版加 `tokenizer.json`）。没有模型时退回纯关键词搜索。书的向量索引用 `backend/build_bge_index.py` 生成。
+手动安装：用 3.9–3.12 的 Python 建 `.venv`，`pip install -r requirements.txt`，把两个模型放进 `data/models/bge-m3/` 和 `data/models/bge-reranker-v2-m3/`（`onnx/` 下的量化模型加 `tokenizer.json`），写好 `local/config.json`，然后 `./start.sh`。`start.sh` 会在需要时编译原生库。
 
 ## 配置
 
