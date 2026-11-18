@@ -6,7 +6,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from config import LIBRARY_DIR, SOURCE_DIRS, SUPPORTED_EXTENSIONS
+from config import LIBRARY_DIR, SOURCE_DIRS, SUPPORTED_EXTENSIONS, is_path_within
 from database import get_conn
 from enricher import enrich_parsed_book
 from parser import parse_ebook_full
@@ -477,14 +477,11 @@ def rollback_organize_run(run_id: int) -> Dict[str, Any]:
     """Safely remove hardlinks created in a specific organize run without touching source files."""
     conn = get_conn()
     try:
-        ops = conn.execute(
-            "SELECT id, src_path, dst_path FROM file_ops_log WHERE run_id = ? AND rolled_back = 0",
-            (run_id,),
-        ).fetchall()
+        ops = conn.execute("SELECT id, src_path, dst_path FROM file_ops_log WHERE run_id = ? AND rolled_back = 0", (run_id,)).fetchall()
         removed = kept = 0
         for op in ops:
             dst, src = op["dst_path"], op["src_path"]
-            if dst and dst != src and os.path.exists(dst) and str(dst).startswith(str(LIBRARY_DIR)):
+            if dst and dst != src and os.path.exists(dst) and is_path_within(dst, LIBRARY_DIR):
                 if os.stat(dst).st_nlink < 2:
                     kept += 1
                     continue

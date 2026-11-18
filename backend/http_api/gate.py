@@ -41,7 +41,10 @@ def check_lan_gate(handler: Any) -> bool:
         )
         kept = [(k, v) for k, v in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True) if k != "token"]
         query = urllib.parse.urlencode(kept)
-        handler.send_header("Location", (parsed.path or "/") + (f"?{query}" if query else ""))
+        safe_path = parsed.path or "/"
+        if not safe_path.startswith("/") or safe_path.startswith("//") or "\\" in safe_path:
+            safe_path = "/"
+        handler.send_header("Location", safe_path + (f"?{query}" if query else ""))
         handler.send_header("Content-Length", "0")
         handler.end_headers()
         return False

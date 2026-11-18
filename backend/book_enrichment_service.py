@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from archiver import ArchiveTarget, safe_hardlink_to_library
 from book_reader.payload import extract_book_reader_content
-from config import LIBRARY_DIR
+from config import LIBRARY_DIR, is_path_within
 from database import get_conn
 import deepseek_client as ds
 from ebook_parser import build_cjk_pinyin_search_tokens, strip_html
@@ -168,7 +168,7 @@ def _sanitize_llm_response(data: Dict[str, Any], fallback_row: Any) -> Dict[str,
 
 def remove_stale_hardlink(old_path: str) -> None:
     """Safely unlink previous hardlink and prune empty parent folder if under Library."""
-    if not (old_path and os.path.exists(old_path) and str(old_path).startswith(str(LIBRARY_DIR))):
+    if not (old_path and os.path.exists(old_path) and is_path_within(old_path, LIBRARY_DIR)):
         return
     try:
         os.unlink(old_path)

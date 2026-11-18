@@ -41,6 +41,18 @@ def _resolve_dir(raw_value: Any, fallback: Path) -> Path:
     return candidate if candidate.is_absolute() else (BASE_DIR / candidate).resolve()
 
 
+def is_path_within(candidate: Any, base_dir: Path) -> bool:
+    """Return True only when resolved candidate sits strictly inside resolved base_dir."""
+    if not candidate:
+        return False
+    try:
+        resolved = Path(candidate).resolve()
+        base = base_dir.resolve()
+        return resolved.is_relative_to(base) and resolved != base
+    except OSError:
+        return False
+
+
 _RUNTIME_CFG = load_runtime_config(CONFIG_PATH)
 
 LIBRARY_DIR = _resolve_dir(_RUNTIME_CFG.get("library_dir"), BASE_DIR / "Library")

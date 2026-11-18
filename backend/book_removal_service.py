@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from config import LIBRARY_DIR, REMOVED_BOOKS_DIR
+from config import LIBRARY_DIR, REMOVED_BOOKS_DIR, is_path_within
 from database import get_conn
 from http_api.background import spawn_reindex
 from same_work import DIFFERENT, UNCERTAIN, plan_book_split
@@ -72,7 +72,7 @@ def _remove_library_hardlink(link_path: str) -> bool:
     """Unlink a normalized Library hardlink and prune empty author directory."""
     if not (link_path and os.path.exists(link_path)):
         return False
-    if not str(link_path).startswith(str(LIBRARY_DIR)):
+    if not is_path_within(link_path, LIBRARY_DIR):
         return False
     try:
         os.unlink(link_path)

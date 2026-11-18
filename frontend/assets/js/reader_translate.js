@@ -548,7 +548,7 @@ export function ensurePdfTransPanels() {
             <button class="trans-action-icon-btn" onclick="adjustReaderFontSize(1)" title="增大译文字号 (A+)">A+</button>
             <span style="width:1px;height:12px;background:var(--r-border);margin:0 2px;"></span>
             <button class="trans-action-icon-btn" onclick="speakPdfPage(${p})" title="朗读本页英文">🔊</button>
-            <button class="trans-action-icon-btn" onclick="copyPdfPageTrans(${p})" title="复制本页译文">📋</button>
+            <button class="trans-action-icon-btn" onclick="copyPdfPageTrans(${p}, this)" title="复制本页译文">📋</button>
           </div>
         </div>
         <div class="pdf-trans-body" id="pdf-trans-body-${p}">
@@ -753,13 +753,12 @@ export function speakPdfPage(pageNo) {
   speakEnglishText(fullEn);
 }
 
-export async function copyPdfPageTrans(pageNo) {
+export async function copyPdfPageTrans(pageNo, btn = null) {
   const transList = pdfState.pageTranslations.get(pageNo);
   if (!transList || !transList.length) return;
   const fullZh = transList.map(t => t.translation).filter(Boolean).join('\n\n');
   try {
     await navigator.clipboard.writeText(fullZh);
-    const btn = event?.currentTarget;
     if (btn) {
       btn.textContent = '✅';
       setTimeout(() => { btn.textContent = '📋'; }, 800);

@@ -82,10 +82,7 @@ class BaseBookEnricher(abc.ABC):
             import certifi
             return ssl.create_default_context(cafile=certifi.where())
         except Exception:
-            try:
-                return ssl.create_default_context()
-            except Exception:
-                return ssl._create_unverified_context()
+            return ssl.create_default_context()
 
     @abc.abstractmethod
     def fetch(self, query: BookQuery) -> Optional[EnrichedBookMeta]:

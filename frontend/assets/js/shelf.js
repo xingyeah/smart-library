@@ -11,6 +11,8 @@ import { aiRerankOn, setAiRerank, applyShelfAiRerank, loadStats, loadAiUsage } f
 import { runPresetDescribe, triggerDescribeRecommend, loadInterestView } from './recommend.js';
 import { loadConflicts, loadMismergedBooks } from './organize.js';
 
+const isMobileViewport = () => window.matchMedia(MOBILE_QUERY).matches;
+
 export function initCategoryChips() {
   const row = document.getElementById('cat-filter-row');
   let html = '<span class="filter-label">分类:</span>';
@@ -356,7 +358,7 @@ export function shelfHasMore() {
 }
 
 export async function loadMoreShelfBooks() {
-  if (appState.shelfIsAppending || !shelfHasMore() || appState.currentTab !== 'shelf' || !MOBILE_QUERY.matches) return;
+  if (appState.shelfIsAppending || !shelfHasMore() || appState.currentTab !== 'shelf' || !isMobileViewport()) return;
   appState.shelfIsAppending = true;
   appState.shelfLoadFailed = false;
   renderShelfLoadMore();
@@ -392,7 +394,7 @@ export function initShelfLoadMore() {
 }
 
 export function initMobileShelf() {
-  if (MOBILE_QUERY.matches) document.getElementById('shelf-search-input').placeholder = '搜索书名、作者、拼音';
+  if (isMobileViewport()) document.getElementById('shelf-search-input').placeholder = '搜索书名、作者、拼音';
   initShelfSheetDrag();
   initShelfLoadMore();
 }
@@ -400,7 +402,7 @@ export function initMobileShelf() {
 /** Page and page size to request. On a phone the list is endless, so reloading page N fetches pages 1..N in
  * one request and the cards already scrolled past stay. */
 export function shelfRequestWindow(page, opts) {
-  if (!MOBILE_QUERY.matches || opts.append || page <= 1) return { page, size: shelfFilters.page_size, loadedPages: page };
+  if (!isMobileViewport() || opts.append || page <= 1) return { page, size: shelfFilters.page_size, loadedPages: page };
   const pages = Math.min(page, Math.floor(SHELF_MAX_PAGE_SIZE / shelfFilters.page_size));
   return { page: 1, size: pages * shelfFilters.page_size, loadedPages: pages };
 }

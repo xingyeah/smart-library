@@ -178,6 +178,7 @@ int mac_parse_pdf(const char *utf8_pdf_path, const char *utf8_cover_out, int ena
     if (!utf8_pdf_path || !out_json || max_len <= 2) return -1;
     @autoreleasepool {
         NSString *pdfPath = [NSString stringWithUTF8String:utf8_pdf_path];
+        if (!pdfPath) return -1;
         NSURL *url = [NSURL fileURLWithPath:pdfPath];
         PDFDocument *doc = [[PDFDocument alloc] initWithURL:url];
         if (!doc) {
@@ -237,8 +238,10 @@ int mac_parse_pdf(const char *utf8_pdf_path, const char *utf8_cover_out, int ena
                         NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithCGImage:cgRef];
                         NSData *jpg = [rep representationUsingType:NSBitmapImageFileTypeJPEG properties:@{NSImageCompressionFactor: @(0.82)}];
                         if (jpg) {
-                            NSString *coverPath = [NSString stringWithUTF8String:utf8_cover_out];
-                            coverSaved = [jpg writeToFile:coverPath atomically:YES];
+                            NSString *coverPath = utf8_cover_out ? [NSString stringWithUTF8String:utf8_cover_out] : nil;
+                            if (coverPath) {
+                                coverSaved = [jpg writeToFile:coverPath atomically:YES];
+                            }
                         }
                     }
                 }
@@ -345,6 +348,7 @@ int mac_pdf_outline(const char *utf8_pdf_path, char *out_json, int max_len) {
     if (!utf8_pdf_path || !out_json || max_len <= 2) return -1;
     @autoreleasepool {
         NSString *pdfPath = [NSString stringWithUTF8String:utf8_pdf_path];
+        if (!pdfPath) return -1;
         NSURL *url = [NSURL fileURLWithPath:pdfPath];
         PDFDocument *doc = [[PDFDocument alloc] initWithURL:url];
         if (!doc) {
@@ -379,6 +383,7 @@ static NSObject *g_pdfLock = nil;
 
 // Keyed by path, size and modification time: a file replaced at the same path must be read again
 static PDFDocument *openSharedPdf(NSString *path) {
+    if (!path) return nil;
     NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
     if (!attrs) return nil;
     NSString *key = [NSString stringWithFormat:@"%@|%llu|%f", path, attrs.fileSize,
@@ -456,7 +461,8 @@ int mac_pdf_render_page(const char *utf8_pdf_path, int page_index, int width_px,
         NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithCGImage:image];
         CGImageRelease(image);
         NSData *jpg = [rep representationUsingType:NSBitmapImageFileTypeJPEG properties:@{NSImageCompressionFactor: @(jpeg_quality)}];
-        return (jpg && [jpg writeToFile:[NSString stringWithUTF8String:utf8_out_path] atomically:YES]) ? 1 : 0;
+        NSString *outPath = utf8_out_path ? [NSString stringWithUTF8String:utf8_out_path] : nil;
+        return (jpg && outPath && [jpg writeToFile:outPath atomically:YES]) ? 1 : 0;
     }
 }
 

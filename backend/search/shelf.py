@@ -160,8 +160,10 @@ def _build_pub_period_clause(period: str) -> str:
         return "b.pub_year GLOB '201[0-9]*'"
     if period == "2000s":
         return "b.pub_year GLOB '200[0-9]*'"
-    if period == "1990s":
-        return "b.pub_year GLOB '199[0-9]*'"
+    if period in ("1990s", "1900s"):
+        return "b.pub_year GLOB '199[0-9]*'" if period == "1990s" else "b.pub_year GLOB '19[0-9][0-9]*'"
+    if period == "pre1900":
+        return "b.pub_year != '' AND b.pub_year GLOB '[0-9]*' AND CAST(b.pub_year AS INT) < 1900"
     if period == "ancient":
         return "b.pub_year != '' AND (b.pub_year GLOB '19[0-8][0-9]*' OR b.pub_year GLOB '1[0-8][0-9][0-9]*' OR CAST(b.pub_year AS INT) < 1990)"
     return ""

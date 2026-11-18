@@ -7,6 +7,16 @@ from typing import Any, Dict, Optional, Tuple
 
 logger = logging.getLogger("http_api.responses")
 
+MAX_JSON_BODY_BYTES = 2 * 1024 * 1024
+
+
+class PayloadTooLargeError(ValueError):
+    """Raised when Content-Length exceeds MAX_JSON_BODY_BYTES."""
+
+
+class InvalidJsonBodyError(ValueError):
+    """Raised when request Content-Length or JSON body is invalid."""
+
 
 def parse_bytes_range(spec: str, total_len: int) -> Optional[Tuple[int, int]]:
     """Parse a single `bytes=` range; None on malformed or unsatisfiable. Suffix ranges supported."""
@@ -42,16 +52,27 @@ def send_json(handler: Any, data: Any, status: int = 200) -> None:
 
 
 def read_json_body(handler: Any) -> Dict[str, Any]:
-    """Read and parse JSON request payload safely."""
-    length = int(handler.headers.get("Content-Length") or 0)
-    if length <= 0:
+    """Read and parse JSON request payload safely with size and object-type guards."""
+    raw_len = handler.headers.get("Content-Length") or "0"
+    try:
+        length = int(raw_len)
+    except ValueError as exc:
+        raise InvalidJsonBodyError("Invalid Content-Length header") from exc
+    if length < 0:
+        raise InvalidJsonBodyError("Negative Content-Length header")
+    if length == 0:
         return {}
+    if length > MAX_JSON_BODY_BYTES:
+        raise PayloadTooLargeError(f"Request body exceeds {MAX_JSON_BODY_BYTES} bytes")
     raw = handler.rfile.read(length).decode("utf-8", errors="ignore")
     try:
-        return json.loads(raw)
-    except Exception as e:
-        logger.warning("Failed to parse request JSON payload: %s (err: %s)", raw[:100], e)
-        return {}
+        parsed = json.loads(raw)
+    except Exception as exc:
+        logger.warning("Failed to parse request JSON payload: %s (err: %s)", raw[:100], exc)
+        raise InvalidJsonBodyError("Malformed JSON body") from exc
+    if not isinstance(parsed, dict):
+        raise InvalidJsonBodyError("Request body must be a JSON object")
+    return parsed
 
 
 def send_range_stream(

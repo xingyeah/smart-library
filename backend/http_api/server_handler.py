@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any, Dict
 
 from http_api.gate import check_lan_gate, verify_json_content_type
-from http_api.responses import read_json_body, send_json
+from http_api.responses import InvalidJsonBodyError, PayloadTooLargeError, read_json_body, send_json
 from http_api.routes import build_default_router
 
 logger = logging.getLogger("http_api.handler")
@@ -68,7 +68,14 @@ class LibraryRequestHandler(BaseHTTPRequestHandler):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         qs = urllib.parse.parse_qs(parsed_url.query)
-        body = self._read_json_body()
+        try:
+            body = self._read_json_body()
+        except PayloadTooLargeError as exc:
+            self._send_json({"error": str(exc)}, 413)
+            return
+        except InvalidJsonBodyError as exc:
+            self._send_json({"error": str(exc)}, 400)
+            return
         matched = self.router.dispatch(self, "POST", path, qs=qs, body=body)
         if not matched:
             self._send_json({"error": "Unknown endpoint"}, 404)

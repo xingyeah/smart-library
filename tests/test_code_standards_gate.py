@@ -100,6 +100,7 @@ ALLOWED_PARAM_EXEMPTIONS: Dict[Tuple[str, str], str] = {
     ("translator.py", "translate_text"): "Translation options: text, from_lang, to_lang, max_retries, timeout",
     ("translator.py", "batch_translate_paragraphs"): "Batch translation options",
     ("http_api/handlers/books.py", "handle_get_book_detail"): "Standard HTTP handler signature (handler, params, body, query)",
+    ("http_api/handlers/books.py", "handle_get_similar_books"): "Standard HTTP handler signature",
     ("http_api/handlers/books.py", "handle_post_book_progress"): "Standard HTTP handler signature",
     ("http_api/handlers/books.py", "handle_post_book_meta"): "Standard HTTP handler signature",
     ("http_api/handlers/books.py", "handle_post_book_enrich_refresh"): "Standard HTTP handler signature",

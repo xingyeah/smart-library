@@ -38,7 +38,7 @@ import {
   onReaderScrollProgress, flushReaderProgress, migrateLocalReaderProgress,
   setReaderTheme, setReaderFont, adjustReaderFontSize, toggleReaderWidth,
   toggleReaderSidebar, closeOnlineReader, filterReaderToc,
-  onReaderTocClick, stepReaderChapter, navigateReaderChapter, openOnlineReader,
+  onReaderTocClick, stepReaderChapter, navigateReaderChapter, openOnlineReader, scrollToReaderAnchor,
 } from './reader.js';
 
 export function postToLibraryApp(message) {
@@ -101,7 +101,7 @@ Object.assign(window, {
   toggleMobileMenu, closeMobileMenu, mobileOpenTransDrawer, mobileToggleBilingual,
   setReaderTheme, setReaderFont, adjustReaderFontSize, toggleReaderWidth,
   toggleReaderSidebar, closeOnlineReader, filterReaderToc,
-  onReaderTocClick, stepReaderChapter, navigateReaderChapter, openOnlineReader,
+  onReaderTocClick, stepReaderChapter, navigateReaderChapter, openOnlineReader, scrollToReaderAnchor,
   toggleAppOfflineCopy, libraryAppSetOffline,
 });
 

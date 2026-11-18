@@ -20,6 +20,12 @@ CLAUDE_MODEL = "claude-haiku-5-5"
 APPLE_TRANSLATE_BIN = Path(__file__).resolve().parent / "native" / "apple_translate"
 _TARGET_NAMES = {"zh-CN": "简体中文", "zh-TW": "繁體中文", "en": "English", "ja": "日本語"}
 _APPLE_LANG = {"zh-CN": "zh-Hans", "zh-TW": "zh-Hant"}
+_LANG_CODE_RE = re.compile(r"^(?:auto|[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,4})?)$")
+
+
+def is_valid_lang_code(code: str) -> bool:
+    """Validate BCP-47/auto language code before URL or argv interpolation."""
+    return bool(_LANG_CODE_RE.fullmatch(code or ""))
 _CLAUDE_SYSTEM = (
     "你是资深的图书译者，负责把读者正在阅读的书籍段落译成{target}。\n"
     "要求：\n"
@@ -110,8 +116,10 @@ def save_cached_translation(
 
 
 def _translate_via_google(text: str, source_lang: str = "auto", target_lang: str = "zh-CN") -> Optional[Dict[str, Any]]:
+    sl_q = urllib.parse.quote(source_lang, safe="")
+    tl_q = urllib.parse.quote(target_lang, safe="")
     quoted = urllib.parse.quote(text)
-    url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&dt=bd&dt=rm&q={quoted}"
+    url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl_q}&tl={tl_q}&dt=t&dt=bd&dt=rm&q={quoted}"
     req = urllib.request.Request(
         url,
         headers={
@@ -340,8 +348,9 @@ def _translate_single(engine: str, text: str, source_lang: str, target_lang: str
 def _translate_via_mymemory(text: str, source_lang: str = "en", target_lang: str = "zh-CN") -> Optional[Dict[str, Any]]:
     sl = "en" if source_lang == "auto" else source_lang
     tl = target_lang
+    pair = urllib.parse.quote(f"{sl}|{tl}", safe="|")
     quoted = urllib.parse.quote(text[:500])  # MyMemory free tier recommends <= 500 chars
-    url = f"https://api.mymemory.translated.net/get?q={quoted}&langpair={sl}|{tl}"
+    url = f"https://api.mymemory.translated.net/get?q={quoted}&langpair={pair}"
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0"},

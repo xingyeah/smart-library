@@ -104,7 +104,12 @@ export const pdfState = {
   isJumping: false,
 };
 
-export const AI_FALLBACK_TEXT = '（注：本次未能启用 DeepSeek 精排，已按本地向量与关键词为您展示结果）';
+export const AI_FALLBACK_TEXT = {
+  nokey: '未配置 DeepSeek API Key，已保留标准检索',
+  cap: '已达今日 AI 预算上限，已保留标准检索',
+  empty: '无可重排结果，已保留标准检索',
+  error: 'AI 精排暂时不可用，已保留标准检索',
+};
 
 export const CATEGORIES = [
   '全部',
@@ -154,10 +159,10 @@ export const CONFLICT_LABELS = { title: '书名冲突', author: '作者冲突', 
   ambiguous_duplicate: '疑似同名异书', missing_author: '缺少作者', corrupted_title: '书名残缺', stem_mismatch: '无法确定是否同一本' };
 
 export const MOBILE_FONTS = [
-  ['', '默认'],
-  ["'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif", '宋体'],
-  ["'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif", '黑体'],
-  ["'Kaiti SC', 'STKaiti', serif", '楷体'],
+  ['sans', '黑体'],
+  ['serif', '宋体'],
+  ['kaiti', '楷体'],
+  ['fangsong', '仿宋'],
 ];
 export const MOBILE_LINE_HEIGHTS = [['1.55', '紧凑'], ['1.75', '标准'], ['1.95', '宽松']];
 export const MOBILE_DEFAULT_LINE_HEIGHT = 1.75;

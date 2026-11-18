@@ -456,26 +456,6 @@ def build_fts_query(
     return " OR ".join(all_q[:8])
 
 
-def _parse_language_filter(language: str) -> List[str]:
-    if not language or language.strip() in ("", "全部", "all"):
-        return []
-    valid = {"zh-CN", "zh-TW", "en"}
-    parts = [p.strip() for p in language.split(",") if p.strip() in valid]
-    return [] if len(parts) >= 3 else parts
-
-
-def _build_pub_period_clause(period: str) -> str:
-    """Build SQL condition for decade / publication era filter."""
-    m = {
-        "2020s": "b.pub_year >= '2020'",
-        "2010s": "b.pub_year >= '2010' AND b.pub_year < '2020'",
-        "2000s": "b.pub_year >= '2000' AND b.pub_year < '2010'",
-        "1900s": "b.pub_year >= '1900' AND b.pub_year < '2000'",
-        "pre1900": "b.pub_year < '1900' AND length(trim(b.pub_year)) > 0",
-    }
-    return m.get(period or "", "")
-
-
 _QUERY_TRANSLATION_CACHE: Dict[str, str] = {}
 _QUERY_TRANSLATION_CACHE_MAX = 512
 

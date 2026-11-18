@@ -95,16 +95,9 @@ def _ssl_context() -> Optional[ssl.SSLContext]:
 
 
 def _send_deepseek_request(req: urllib.request.Request, timeout: float) -> Dict[str, Any]:
-    """Execute HTTPS request with certifi verification and fallback to unverified if MITM/local certs trip."""
-    try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except (ssl.SSLCertVerificationError, urllib.error.URLError) as e:
-        if "CERTIFICATE_VERIFY_FAILED" in str(e):
-            logger.warning("DeepSeek SSL verification failed (%s), retrying with unverified context", e)
-            with urllib.request.urlopen(req, timeout=timeout, context=ssl._create_unverified_context()) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        raise
+    """Execute HTTPS request with verified TLS context."""
+    with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
+        return json.loads(resp.read().decode("utf-8"))
 
 
 def api_key() -> Optional[str]:
