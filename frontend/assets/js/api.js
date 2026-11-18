@@ -9,7 +9,7 @@ export function aiRerankOn() {
 export function setAiRerank(on) {
   try { localStorage.setItem('aiRerank', on ? '1' : '0'); } catch (e) {}
   ['shelf-ai-toggle', 'describe-ai-toggle', 'interest-ai-toggle', 'm-ai-toggle'].forEach(id => {
-    const el = document.getElementById(id);
+    const el = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
     if (el) el.checked = on;
   });
 }

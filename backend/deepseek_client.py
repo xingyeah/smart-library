@@ -29,21 +29,12 @@ class DailyCapReached(RuntimeError):
     pass
 
 
-def _usage_conn():
-    conn = get_conn()
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS ai_usage (day TEXT, feature TEXT, calls INTEGER DEFAULT 0, tokens_in INTEGER DEFAULT 0, "
-        "tokens_out INTEGER DEFAULT 0, cost REAL DEFAULT 0, PRIMARY KEY (day, feature))"
-    )
-    return conn
-
-
 def _today() -> str:
     return datetime.date.today().isoformat()
 
 
 def today_cost(features=CAPPED_FEATURES) -> float:
-    conn = _usage_conn()
+    conn = get_conn()
     try:
         ph = ",".join("?" for _ in features)
         row = conn.execute(f"SELECT SUM(cost) FROM ai_usage WHERE day = ? AND feature IN ({ph})", [_today(), *features]).fetchone()
@@ -56,7 +47,7 @@ def record_usage(feature: str, model: str, usage: Dict[str, Any]) -> None:
     tin, tout = int(usage.get("prompt_tokens") or 0), int(usage.get("completion_tokens") or 0)
     pin, pout = _PRICE.get(model, _FLASH_PRICE)
     cost = tin / 1e6 * pin + tout / 1e6 * pout
-    conn = _usage_conn()
+    conn = get_conn()
     try:
         conn.execute(
             "INSERT INTO ai_usage (day, feature, calls, tokens_in, tokens_out, cost) VALUES (?, ?, 1, ?, ?, ?) "
@@ -70,7 +61,7 @@ def record_usage(feature: str, model: str, usage: Dict[str, Any]) -> None:
 
 
 def usage_summary() -> Dict[str, Any]:
-    conn = _usage_conn()
+    conn = get_conn()
     try:
         today = {r["feature"]: round(r["cost"], 4) for r in conn.execute("SELECT feature, cost FROM ai_usage WHERE day = ?", (_today(),))}
         totals = {r["feature"]: round(r["cost"] or 0, 2) for r in conn.execute("SELECT feature, SUM(cost) AS cost FROM ai_usage GROUP BY feature")}

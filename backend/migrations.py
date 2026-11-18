@@ -121,6 +121,44 @@ def _migrate_v8(conn: sqlite3.Connection) -> None:
         "OR COALESCE(reading_status, 'unread') NOT IN ('unread', '') OR COALESCE(user_rating, 0) > 0)")
 
 
+def _migrate_v9(conn: sqlite3.Connection) -> None:
+    """Consolidate ai_usage, ai_rerank_cache, and title_repair into schema migrations."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ai_usage (
+            day TEXT,
+            feature TEXT,
+            calls INTEGER DEFAULT 0,
+            tokens_in INTEGER DEFAULT 0,
+            tokens_out INTEGER DEFAULT 0,
+            cost REAL DEFAULT 0,
+            PRIMARY KEY (day, feature)
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ai_rerank_cache (
+            key TEXT PRIMARY KEY,
+            scores TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS title_repair (
+            book_id INTEGER PRIMARY KEY,
+            old_title TEXT,
+            en_title TEXT,
+            en_source TEXT,
+            zh_title TEXT,
+            status TEXT DEFAULT 'planned'
+        )
+        """
+    )
+
+
 _MIGRATIONS = [
     (1, _migrate_v1),
     (2, _migrate_v2),
@@ -130,6 +168,7 @@ _MIGRATIONS = [
     (6, _migrate_v6),
     (7, _migrate_v7),
     (8, _migrate_v8),
+    (9, _migrate_v9),
 ]
 
 

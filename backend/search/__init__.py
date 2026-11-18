@@ -9,6 +9,12 @@ from search.corpus_stats import (
     get_corpus_idf_mult,
     reset_corpus_caches,
 )
+from search.filters import (
+    build_book_facet_where,
+    build_language_clause,
+    build_pub_period_clause,
+    parse_language_filter,
+)
 from search.finalize import finalize_ranked_pool
 from search.intent import (
     analyze_query_intent,
@@ -119,6 +125,10 @@ def instant_search(
 __all__ = [
     "ShelfFilters",
     "ShelfQuery",
+    "build_book_facet_where",
+    "build_language_clause",
+    "build_pub_period_clause",
+    "parse_language_filter",
     "search_shelf",
     "instant_search",
     "recommend_by_description",

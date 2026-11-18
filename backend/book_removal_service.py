@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from config import LIBRARY_DIR, REMOVED_BOOKS_DIR, is_path_within
 from database import get_conn, write_tx
-from http_api.background import spawn_reindex
+from jobs import spawn_reindex
 from same_work import DIFFERENT, UNCERTAIN, plan_book_split
 
 logger = logging.getLogger("book_removal")

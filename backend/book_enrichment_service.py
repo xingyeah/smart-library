@@ -21,7 +21,7 @@ from database import get_conn, write_tx
 import deepseek_client as ds
 from ebook_parser import build_cjk_pinyin_search_tokens, strip_html
 import enrich_ai
-from http_api.background import spawn_reindex
+from jobs import spawn_reindex
 
 logger = logging.getLogger("book_enrichment_service")
 

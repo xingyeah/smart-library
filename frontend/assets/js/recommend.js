@@ -4,12 +4,12 @@ import { renderBookCard } from './shelf_render.js';
 import { aiRerankOn, aiRerankItems, loadAiUsage } from './api.js';
 
 export function runPresetDescribe(text) {
-  document.getElementById('describe-input').value = text;
+  /** @type {HTMLInputElement} */ (document.getElementById('describe-input')).value = text;
   triggerDescribeRecommend();
 }
 
 export async function triggerDescribeRecommend() {
-  const desc = document.getElementById('describe-input').value.trim();
+  const desc = /** @type {HTMLInputElement} */ (document.getElementById('describe-input')).value.trim();
   if (!desc) return;
   const langParam = Array.from(langSelections.describe).join(',');
   const aiOn = aiRerankOn();
@@ -98,8 +98,8 @@ export async function loadInterestView() {
     document.getElementById('interest-grid').innerHTML = '';
     return;
   }
-  document.getElementById('interest-prompt-input').value = d.interest_prompt || '';
-  document.getElementById('explore-ratio-slider').value = d.exploration_ratio ?? 0.2;
+  /** @type {HTMLInputElement} */ (document.getElementById('interest-prompt-input')).value = d.interest_prompt || '';
+  /** @type {HTMLInputElement} */ (document.getElementById('explore-ratio-slider')).value = String(d.exploration_ratio ?? 0.2);
   showExploreRatio(d.exploration_ratio ?? 0.2);
 
   // A direction from marked books reads as its category and book count; one from the prompt as the phrase itself
@@ -115,8 +115,8 @@ export async function loadInterestView() {
 }
 
 export async function saveInterestConfig() {
-  const prompt = document.getElementById('interest-prompt-input').value.trim();
-  const ratio = parseFloat(document.getElementById('explore-ratio-slider').value || '0.2');
+  const prompt = /** @type {HTMLInputElement} */ (document.getElementById('interest-prompt-input')).value.trim();
+  const ratio = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('explore-ratio-slider')).value || '0.2');
   const r = await fetch('/api/interests/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

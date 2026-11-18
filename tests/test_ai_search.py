@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
 import ai_search  # noqa: E402
 import deepseek_client as ds  # noqa: E402
+import migrations  # noqa: E402
 
 
 class _Conn:
@@ -19,6 +20,7 @@ class _Conn:
     def __init__(self):
         self.db = sqlite3.connect(":memory:")
         self.db.row_factory = sqlite3.Row
+        migrations._migrate_v9(self.db)
 
     def __getattr__(self, name):
         return getattr(self.db, name)

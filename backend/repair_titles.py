@@ -86,18 +86,10 @@ def accept_translations(reply: Dict[str, Any], en_titles: Dict[int, str], taken:
     return accepted
 
 
-def _staging(conn: Any) -> None:
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS title_repair (book_id INTEGER PRIMARY KEY, old_title TEXT, en_title TEXT, "
-        "en_source TEXT, zh_title TEXT, status TEXT DEFAULT 'planned')"
-    )
-
-
 def cmd_plan() -> None:
     init_db()
     conn = get_conn()
     try:
-        _staging(conn)
         rows = conn.execute(
             "SELECT b.id, b.title, (SELECT original_path FROM book_files f WHERE f.book_id = b.id "
             "ORDER BY f.is_primary DESC LIMIT 1) AS path FROM books b WHERE b.title GLOB ?",

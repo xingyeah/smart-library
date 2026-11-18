@@ -21,6 +21,7 @@ import database  # noqa: E402
 import http_api  # noqa: E402
 from http_api import background, gate, responses, state  # noqa: E402
 from http_api.handlers import books, organize, reading, recommend, translate  # noqa: E402
+import jobs  # noqa: E402
 import reader  # noqa: E402
 import server  # noqa: E402
 
@@ -396,7 +397,7 @@ class FtsTriggerTest(TempDbCase):
 
 class ReindexTest(unittest.TestCase):
     def test_background_reindex_calls_rebuild(self):
-        with mock.patch.object(background, "rebuild_vector_cache") as rebuild:
+        with mock.patch.object(jobs, "rebuild_vector_cache") as rebuild:
             server._reindex_in_background([7])
         rebuild.assert_called_once_with(reencode_ids=[7])
 

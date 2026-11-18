@@ -145,7 +145,7 @@ export function showReaderSelectionBubble(rect, selectedText) {
     hideReaderTransPopover();
     closeOnlineReader();
     switchTab('shelf');
-    const qInput = document.getElementById('shelf-search-input');
+    const qInput = /** @type {HTMLInputElement | null} */ (document.getElementById('shelf-search-input'));
     if (qInput) {
       qInput.value = selectedText.slice(0, 40);
       shelfFilters.q = qInput.value;
@@ -372,7 +372,7 @@ export function addTransToHistory(text, data) {
 export function renderTransHistoryList() {
   const listEl = document.getElementById('drawer-trans-history-list');
   const countEl = document.getElementById('drawer-history-count');
-  if (countEl) countEl.textContent = appState.readerTransHistory.length;
+  if (countEl) countEl.textContent = String(appState.readerTransHistory.length);
   if (!listEl) return;
 
   if (!appState.readerTransHistory.length) {
@@ -493,9 +493,11 @@ export function resetPdfSplit() {
 // While dragging only the panel width changes; the page is redrawn once, on release
 export function initPdfSplitDrag() {
   const scrollEl = document.getElementById('reader-main-scroll');
-  scrollEl.addEventListener('dblclick', (e) => { if (e.target.classList.contains('pdf-split-handle')) resetPdfSplit(); });
+  scrollEl.addEventListener('dblclick', (e) => {
+    if (e.target instanceof Element && e.target.classList.contains('pdf-split-handle')) resetPdfSplit();
+  });
   scrollEl.addEventListener('mousedown', (e) => {
-    if (!e.target.classList.contains('pdf-split-handle')) return;
+    if (!(e.target instanceof Element) || !e.target.classList.contains('pdf-split-handle')) return;
     e.preventDefault();
     const wrapper = document.getElementById('pdf-stream-wrapper');
     const box = wrapper.getBoundingClientRect();
@@ -527,7 +529,7 @@ export function ensurePdfTransPanels() {
       container = document.createElement('div');
       container.className = 'pdf-page-container';
       container.id = `pdf-page-container-${p}`;
-      container.setAttribute('data-page', p);
+      container.setAttribute('data-page', String(p));
       slot.parentNode.insertBefore(container, slot);
       container.appendChild(slot);
     }
@@ -535,7 +537,7 @@ export function ensurePdfTransPanels() {
       const panel = document.createElement('div');
       panel.className = `pdf-trans-panel ${readerState.isBilingual ? '' : 'hidden'}`;
       panel.id = `pdf-trans-${p}`;
-      panel.style.minHeight = pdfState.imageMode ? '' : (slot.style.minHeight || '600px');
+      panel.style.minHeight = pdfState.imageMode ? '' : (/** @type {HTMLElement} */ (slot).style.minHeight || '600px');
       panel.innerHTML = `
         <div class="pdf-trans-header">
           <div style="display:flex;align-items:center;gap:6px;">

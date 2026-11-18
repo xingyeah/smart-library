@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Set
 from config import DB_PATH
 from database import get_conn
 from deepseek_client import DailyCapReached
+from jobs import spawn_reindex
 
 logger = logging.getLogger("auto_summary_refresher")
 
@@ -230,7 +231,6 @@ def _process_candidate(
 def _flush_pending_reindex(pending_reindex: List[int]) -> None:
     if not pending_reindex:
         return
-    from http_api.background import spawn_reindex
 
     batch = list(dict.fromkeys(pending_reindex))
     pending_reindex.clear()

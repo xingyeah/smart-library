@@ -30,7 +30,7 @@ class SplitAndUndoTest(unittest.TestCase):
                     mock.patch.object(split_undo, "LIBRARY_DIR", lib), mock.patch.object(book_removal_service, "LIBRARY_DIR", lib),
                     mock.patch.object(ms, "DECISIONS_PATH", self.root / "none.json"),
                     mock.patch.object(ms, "_after_split"), mock.patch.object(ms, "backup_database", lambda: "b"),
-                    mock.patch("http_api.background.spawn_reindex")]
+                    mock.patch("split_undo.spawn_reindex")]
         for p in patches:
             p.start()
             self.addCleanup(p.stop)

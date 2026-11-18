@@ -4,7 +4,7 @@ import { loadStats } from './api.js';
 import { loadShelfBooks } from './shelf.js';
 
 export async function startOrganize(limitPerDir) {
-  const enableOcr = document.getElementById('org-ocr-toggle').checked;
+  const enableOcr = /** @type {HTMLInputElement} */ (document.getElementById('org-ocr-toggle')).checked;
   await fetch('/api/organize/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -86,8 +86,8 @@ export async function loadConflicts(status = 'pending', btn = null) {
 }
 
 export async function resolveConflict(cid, action) {
-  const title = document.getElementById(`conf-title-${cid}`)?.value || '';
-  const author = document.getElementById(`conf-author-${cid}`)?.value || '';
+  const title = /** @type {HTMLInputElement | null} */ (document.getElementById(`conf-title-${cid}`))?.value || '';
+  const author = /** @type {HTMLInputElement | null} */ (document.getElementById(`conf-author-${cid}`))?.value || '';
   await fetch(`/api/conflicts/${cid}/resolve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

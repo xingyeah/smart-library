@@ -4,6 +4,12 @@ from typing import Any, Dict, List, Optional
 
 from database import get_conn
 from ratings import composite_rating
+from search.filters import (
+    build_book_facet_where,
+    build_pub_period_clause as _build_pub_period_clause,
+    parse_language_filter as _parse_language_filter,
+)
+from search.types import ShelfFilters
 
 
 def _format_book_row(row: Any, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -117,58 +123,6 @@ def attach_ai_meta(items: List[Dict[str, Any]], conn: Any = None) -> List[Dict[s
     return items
 
 
-_LANG_LOOKUP = {
-    "zh-cn": ["zh-CN", "zh-cn", "zh"],
-    "cn": ["zh-CN", "zh-cn", "zh"],
-    "简体": ["zh-CN", "zh-cn", "zh"],
-    "简体中文": ["zh-CN", "zh-cn", "zh"],
-    "zh-tw": ["zh-TW", "zh-tw"],
-    "tw": ["zh-TW", "zh-tw"],
-    "繁体": ["zh-TW", "zh-tw"],
-    "繁体中文": ["zh-TW", "zh-tw"],
-    "zh": ["zh-CN", "zh-cn", "zh-TW", "zh-tw", "zh"],
-    "chinese": ["zh-CN", "zh-cn", "zh-TW", "zh-tw", "zh"],
-    "中文": ["zh-CN", "zh-cn", "zh-TW", "zh-tw", "zh"],
-    "en": ["en", "EN", "en-US", "en-GB"],
-    "english": ["en", "EN", "en-US", "en-GB"],
-    "英文": ["en", "EN", "en-US", "en-GB"],
-}
-
-
-def _parse_language_filter(language: str) -> List[str]:
-    """Parse comma-separated language values into whitelist list with case-safe variants."""
-    if not language or language in ("all", "全部"):
-        return []
-    parts = [p.strip().lower() for p in language.split(",") if p.strip()]
-    res = []
-    for p in parts:
-        matched = _LANG_LOOKUP.get(p)
-        if matched:
-            res.extend(matched)
-        else:
-            res.extend([p, p.upper(), p.lower()])
-    return list(dict.fromkeys(res))
-
-
-def _build_pub_period_clause(period: str) -> str:
-    """Map publication year era filter to SQL condition."""
-    if not period or period == "全部":
-        return ""
-    if period == "2020s":
-        return "b.pub_year GLOB '202[0-9]*'"
-    if period == "2010s":
-        return "b.pub_year GLOB '201[0-9]*'"
-    if period == "2000s":
-        return "b.pub_year GLOB '200[0-9]*'"
-    if period in ("1990s", "1900s"):
-        return "b.pub_year GLOB '199[0-9]*'" if period == "1990s" else "b.pub_year GLOB '19[0-9][0-9]*'"
-    if period == "pre1900":
-        return "b.pub_year != '' AND b.pub_year GLOB '[0-9]*' AND CAST(b.pub_year AS INT) < 1900"
-    if period == "ancient":
-        return "b.pub_year != '' AND (b.pub_year GLOB '19[0-8][0-9]*' OR b.pub_year GLOB '1[0-8][0-9][0-9]*' OR CAST(b.pub_year AS INT) < 1990)"
-    return ""
-
-
 def apply_shelf_sort(items: List[Dict[str, Any]], sort_by: str) -> None:
     """Sort retrieved books in-place according to user-selected dropdown."""
     if sort_by in ("quality", "classic"):
@@ -228,37 +182,19 @@ def search_empty_shelf(
     t0 = start_time or time.perf_counter()
     conn = get_conn()
     try:
-        where_clauses = ["b.is_deleted = 0"]
-        params: List[Any] = []
-
-        if category and category != "全部":
-            where_clauses.append("b.category = ?")
-            params.append(category)
-        if lang_list:
-            ph = ",".join("?" for _ in lang_list)
-            where_clauses.append(f"b.language COLLATE NOCASE IN ({ph})")
-            params.extend(lang_list)
-        if fmt and fmt != "全部":
-            where_clauses.append("b.primary_format = ?")
-            params.append(fmt.lower())
-        if source_dir and source_dir != "全部":
-            where_clauses.append("b.source_dir = ?")
-            params.append(source_dir)
-        if reading_status and reading_status != "全部":
-            where_clauses.append("b.reading_status = ?")
-            params.append(reading_status)
-        if only_favorite:
-            where_clauses.append("b.is_favorite = 1")
-        if has_rating:
-            where_clauses.append(
-                "(b.douban_rating > 0 OR EXISTS ("
-                "SELECT 1 FROM book_external_meta em "
-                "WHERE em.book_id = b.id AND (em.rating > 0 OR (em.reviews_json IS NOT NULL AND em.reviews_json != '[]'))"
-                "))"
-            )
-        p_clause = _build_pub_period_clause(pub_period)
-        if p_clause:
-            where_clauses.append(p_clause)
+        where_clauses, params = build_book_facet_where(
+            ShelfFilters(
+                category=category,
+                fmt=fmt,
+                source_dir=source_dir,
+                reading_status=reading_status,
+                only_favorite=only_favorite,
+                pub_period=pub_period,
+                has_rating=has_rating,
+            ),
+            table_alias="b",
+            lang_list=lang_list or [],
+        )
 
         order_map = {
             "relevance": "b.classic_score DESC, b.quality_score DESC, b.id DESC",

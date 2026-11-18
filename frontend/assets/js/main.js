@@ -107,7 +107,7 @@ Object.assign(window, {
 
 // Initial boot
 initLibraryAppHooks();
-document.getElementById('reader-trans-engine').value = getTransEngine();
+/** @type {HTMLSelectElement} */ (document.getElementById('reader-trans-engine')).value = getTransEngine();
 setAiRerank(aiRerankOn());
 document.getElementById('reader-main-scroll').addEventListener('scroll', onReaderScrollProgress, { passive: true });
 document.getElementById('reader-main-scroll').addEventListener('scroll', onMobileReaderScroll, { passive: true });

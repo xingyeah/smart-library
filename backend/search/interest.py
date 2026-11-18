@@ -27,8 +27,10 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Tuple
 import numpy as np
 
 from database import get_conn
+from search.filters import build_book_facet_where, parse_language_filter
 from search.intent import analyze_query_intent
-from search.shelf import _format_book_row, _parse_language_filter, attach_ai_meta
+from search.shelf import _format_book_row, attach_ai_meta
+from search.types import ShelfFilters
 from search.diverse_picks import UNKNOWN_AUTHOR, CandidateGroup, pick_round_robin
 from search.taste import (
     NEAREST_LIKED_BOOKS, SAME_WORK_COSINE, SourceScores, centred_unit_rows, nearest_source_scores,
@@ -200,13 +202,12 @@ def _load_marks(conn: Any, excluded_categories: List[str]) -> Tuple[List[Any], S
 
 
 def _language_ids(conn: Any, language: str) -> Optional[Set[int]]:
-    """Ids of the books in the languages of the comma-separated filter; None when it names none."""
-    languages = _parse_language_filter(language)
-    if not languages:
+    """Ids of the non-deleted books in the languages of the comma-separated filter; None when it names none."""
+    if not parse_language_filter(language):
         return None
-    placeholders = ",".join("?" for _ in languages)
+    clauses, params = build_book_facet_where(ShelfFilters(language=language))
     return {int(row["id"]) for row in conn.execute(
-        f"SELECT id FROM books WHERE language IN ({placeholders})", languages)}
+        f"SELECT id FROM books WHERE {' AND '.join(clauses)}", params)}
 
 
 def _taste_channel(session: _PickSession, liked: List[Any]) -> Optional[_Channel]:

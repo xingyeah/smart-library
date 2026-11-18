@@ -59,18 +59,18 @@ class ConfigAndMigrationsTest(unittest.TestCase):
                     apply_migrations(conn)
                     conn.commit()
                     self.assertEqual(dict(conn.execute("SELECT id, marked_at FROM books").fetchall()), expected)
-                self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 8)
+                self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 9)
             finally:
                 conn.close()
 
-    def test_init_db_applies_all_migrations_to_v8(self):
+    def test_init_db_applies_all_migrations_to_v9(self):
         with tempfile.TemporaryDirectory() as tmp:
             db_file = Path(tmp) / "test.db"
             init_db(db_file)
             conn = get_conn(db_file)
             try:
                 version = conn.execute("PRAGMA user_version").fetchone()[0]
-                self.assertEqual(version, 8)
+                self.assertEqual(version, 9)
                 indexes = {r["name"] for r in conn.execute("PRAGMA index_list(books)").fetchall()}
                 self.assertIn("idx_books_category_classic", indexes)
                 bf_cols = {r["name"] for r in conn.execute("PRAGMA table_info(book_files)").fetchall()}
@@ -78,6 +78,8 @@ class ConfigAndMigrationsTest(unittest.TestCase):
                 b_cols = {r["name"] for r in conn.execute("PRAGMA table_info(books)").fetchall()}
                 self.assertIn("is_deleted", b_cols)
                 self.assertIn("marked_at", b_cols)
+                tables = {r["name"] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+                self.assertTrue({"ai_usage", "ai_rerank_cache", "title_repair"}.issubset(tables))
             finally:
                 conn.close()
 

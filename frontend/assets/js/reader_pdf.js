@@ -231,7 +231,7 @@ export function alignPdfTransBlocks(pageNo) {
   const panel = document.getElementById(`pdf-trans-${pageNo}`);
   const slot = document.getElementById(`pdf-slot-${pageNo}`);
   if (!panel || !slot) return;
-  const blocks = panel.querySelectorAll('.pdf-trans-para[data-top]');
+  const blocks = /** @type {NodeListOf<HTMLElement>} */ (panel.querySelectorAll('.pdf-trans-para[data-top]'));
   blocks.forEach(el => { el.style.marginTop = ''; });
   if (!isPdfSideBySide(panel)) return;
   const pageHeight = slot.getBoundingClientRect().height;
@@ -269,8 +269,10 @@ export function initPdfLongPress() {
   let startY = 0;
   const cancel = () => { clearTimeout(pressTimer); pressTimer = null; };
   scrollEl.addEventListener('touchstart', (e) => {
-    const slot = pdfState.imageMode && e.touches.length === 1 && e.target.closest('.pdf-page-slot');
-    if (!slot) return;
+    const slot = pdfState.imageMode && e.touches.length === 1 && e.target instanceof Element
+      ? e.target.closest('.pdf-page-slot')
+      : null;
+    if (!(slot instanceof HTMLElement)) return;
     startY = e.touches[0].clientY;
     pressTimer = setTimeout(() => {
       appState.pdfLongPressAt = Date.now();
@@ -296,7 +298,7 @@ export async function renderPdfPage(pageNo) {
 
   try {
     const page = await pdfState.doc.getPage(pageNo);
-    const canvas = document.getElementById(`pdf-canvas-${pageNo}`);
+    const canvas = /** @type {HTMLCanvasElement | null} */ (document.getElementById(`pdf-canvas-${pageNo}`));
     const slot = document.getElementById(`pdf-slot-${pageNo}`);
     const spinner = document.getElementById(`pdf-spin-${pageNo}`);
     if (!canvas || !slot || isPdfPageDistant(pageNo)) return;  // scrolled past while queued
@@ -377,7 +379,7 @@ export function releaseDistantPdfPages() {
     img.remove();
     pdfState.renderedPages.delete(pageNo);
   });
-  document.querySelectorAll('#pdf-stream-wrapper canvas').forEach(canvas => {
+  /** @type {NodeListOf<HTMLCanvasElement>} */ (document.querySelectorAll('#pdf-stream-wrapper canvas')).forEach(canvas => {
     const pageNo = parseInt(canvas.id.slice('pdf-canvas-'.length), 10);
     if (canvas.width === 0 || !isPdfPageDistant(pageNo)) return;
     canvas.width = 0;
@@ -412,9 +414,9 @@ export function onPdfViewScroll() {
   releaseDistantPdfPages();
 
   // Update page input
-  const pInput = document.getElementById('reader-pdf-page-input');
+  const pInput = /** @type {HTMLInputElement | null} */ (document.getElementById('reader-pdf-page-input'));
   if (pInput && document.activeElement !== pInput) {
-    pInput.value = visiblePage;
+    pInput.value = String(visiblePage);
   }
 
   // Match hierarchical TOC item by page range
@@ -467,8 +469,8 @@ export function scrollToPdfPage(pageNo, smooth = true) {
     if (pageNo + 1 <= pdfState.pageCount) renderPdfPage(pageNo + 1);
     if (pageNo - 1 >= 1) renderPdfPage(pageNo - 1);
   }
-  const pInput = document.getElementById('reader-pdf-page-input');
-  if (pInput) pInput.value = pageNo;
+  const pInput = /** @type {HTMLInputElement | null} */ (document.getElementById('reader-pdf-page-input'));
+  if (pInput) pInput.value = String(pageNo);
 
   // Match TOC item
   const toc = readerState.toc || [];
@@ -534,19 +536,19 @@ export function applyPdfScale(scale) {
     const unscaled = p.getViewport({ scale: 1.0 });
     const w = Math.round(unscaled.width * scale);
     const h = Math.round(unscaled.height * scale);
-    document.querySelectorAll('.pdf-page-slot').forEach(slot => {
+    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.pdf-page-slot')).forEach(slot => {
       slot.style.width = `${w}px`;
       slot.style.minHeight = `${h}px`;
       slot.style.height = `${h}px`;
     });
-    document.querySelectorAll('.pdf-trans-panel').forEach(panel => {
+    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.pdf-trans-panel')).forEach(panel => {
       panel.style.minHeight = `${h}px`;
     });
-    document.querySelectorAll('.textLayer').forEach(tl => {
+    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.textLayer')).forEach(tl => {
       tl.innerHTML = '';
       tl.style.width = `${w}px`;
       tl.style.height = `${h}px`;
-      tl.style.setProperty('--scale-factor', scale);
+      tl.style.setProperty('--scale-factor', String(scale));
     });
     const cur = pdfState.currentPage || 1;
     renderPdfPage(cur);

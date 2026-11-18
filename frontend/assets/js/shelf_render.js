@@ -57,7 +57,7 @@ export function sourceQualityText(b) {
  * book can sit in several lists at once. state: { isFavorite?, readingStatus? }; a field left out is not touched. */
 export function syncBookCards(bookId, state) {
   document.querySelectorAll(`.book-card[data-book-id="${Number(bookId)}"]`).forEach(card => {
-    const fav = card.querySelector('.card-fav');
+    const fav = /** @type {HTMLElement | null} */ (card.querySelector('.card-fav'));
     if (fav && state.isFavorite !== undefined) {
       fav.classList.toggle('fav-active', state.isFavorite);
       fav.title = state.isFavorite ? '已喜欢' : '喜欢';
@@ -127,6 +127,7 @@ export function renderBookCard(b, opts = {}) {
   `;
 }
 
+/** @returns {Array<number | { type: string, jumpTo: number }>} */
 export function generatePaginationItems(current, total) {
   if (total <= 1) return [];
   if (total <= 10) {
@@ -146,6 +147,7 @@ export function generatePaginationItems(current, total) {
     left = total - 7;
   }
 
+  /** @type {Array<number | { type: string, jumpTo: number }>} */
   const items = [1];
   if (left > 2) {
     items.push({ type: 'ellipsis', jumpTo: Math.max(1, current - 5) });

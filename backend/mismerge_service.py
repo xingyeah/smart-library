@@ -23,6 +23,7 @@ from database import backup_database, get_conn
 from ebook_parser.filenames import clean_spam_text, english_title_from_path, normalize_for_dedup
 from ebook_parser.pipeline import parse_ebook
 from enricher import enrich_parsed_book
+from jobs import reindex_in_background
 from enrichers.base import search_title
 from same_work import DIFFERENT, SAME, UNCERTAIN, file_facts, is_placeholder_title, judge_same_work, plan_book_split
 
@@ -341,8 +342,6 @@ def _drop_replaced_links(run_id: int) -> None:
 
 def _after_split(run_id: int, affected_ids: List[int], new_ids: List[int]) -> None:
     """Off the request thread: drop superseded links, re-encode vectors, AI title and tags for new books."""
-    from http_api.background import reindex_in_background
-
     def work() -> None:
         _drop_replaced_links(run_id)
         reindex_in_background(affected_ids)

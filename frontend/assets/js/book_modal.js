@@ -279,12 +279,12 @@ export async function toggleModalFavorite(bookId) {
 }
 
 export async function saveBookMeta(bookId) {
-  const title = document.getElementById('edit-title').value.trim();
-  const author = document.getElementById('edit-author').value.trim();
-  const category = document.getElementById('edit-category').value.trim();
-  const pub_year = (document.getElementById('edit-pub-year')?.value || '').trim();
-  const publisher = (document.getElementById('edit-publisher')?.value || '').trim();
-  const summary = document.getElementById('edit-summary').value.trim();
+  const title = /** @type {HTMLInputElement} */ (document.getElementById('edit-title')).value.trim();
+  const author = /** @type {HTMLInputElement} */ (document.getElementById('edit-author')).value.trim();
+  const category = /** @type {HTMLInputElement} */ (document.getElementById('edit-category')).value.trim();
+  const pub_year = (/** @type {HTMLInputElement | null} */ (document.getElementById('edit-pub-year'))?.value || '').trim();
+  const publisher = (/** @type {HTMLInputElement | null} */ (document.getElementById('edit-publisher'))?.value || '').trim();
+  const summary = /** @type {HTMLTextAreaElement} */ (document.getElementById('edit-summary')).value.trim();
   await fetch(`/api/books/${bookId}/meta`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -311,7 +311,7 @@ function showTitleProposal(bookId, currentTitle, proposedTitle) {
 }
 
 export async function acceptProposedTitle(bookId) {
-  const title = document.getElementById('proposed-title-input').value.trim();
+  const title = /** @type {HTMLInputElement} */ (document.getElementById('proposed-title-input')).value.trim();
   if (!title) return;
   const resp = await fetch(`/api/books/${bookId}/meta`, {
     method: 'POST',
@@ -324,7 +324,7 @@ export async function acceptProposedTitle(bookId) {
 }
 
 export async function triggerAiRefresh(bookId) {
-  const btn = document.getElementById('btn-ai-refresh');
+  const btn = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-ai-refresh'));
   if (!btn || btn.disabled) return;
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
@@ -388,8 +388,6 @@ export async function triggerDeleteBook(bookId) {
     alert(`已删除《${displayTitle}》，文件已移至 data/removed_books/`);
     if (typeof appState.currentTab !== 'undefined' && appState.currentTab === 'shelf' && typeof loadShelfBooks === 'function') {
       loadShelfBooks(shelfFilters.page);
-    } else if (typeof doSearch === 'function') {
-      doSearch();
     }
     if (typeof loadStats === 'function') loadStats();
   } catch (err) {

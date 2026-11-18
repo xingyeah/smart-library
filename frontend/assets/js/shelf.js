@@ -123,7 +123,7 @@ export function setFilter(key, val, btn) {
 
 export function resetShelfFilters() {
   appState.shelfSortTouched = false;
-  document.getElementById('shelf-search-input').value = '';
+  /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).value = '';
   Object.assign(shelfFilters, {
     q: '', category: '', language: '', format: '', source_dir: '',
     reading_status: '', pub_period: '', only_favorite: false, has_rating: false, page: 1, page_size: 24
@@ -142,7 +142,7 @@ export function debounceShelfSearch() {
   clearTimeout(appState.searchTimer);
   appState.searchTimer = setTimeout(() => {
     if (appState.isImeComposing) return;
-    shelfFilters.q = document.getElementById('shelf-search-input').value.trim();
+    shelfFilters.q = /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).value.trim();
     loadShelfBooks(1);
   }, 260);
 }
@@ -204,12 +204,14 @@ export function syncDesktopShelfChips() {
                    period: shelfFilters.pub_period, st: shelfStatusKey() };
   Object.entries(picked).forEach(([attr, val]) => {
     document.querySelectorAll(`#view-shelf [data-${attr}]`).forEach(el => {
-      el.classList.toggle('active', el.dataset[attr] === (val || ''));
+      const h = /** @type {HTMLElement} */ (el);
+      h.classList.toggle('active', h.dataset[attr] === (val || ''));
     });
   });
   document.querySelectorAll('[data-lang-scope="shelf"]').forEach(el => {
-    const code = el.dataset.lang || '';
-    el.classList.toggle('active', code ? langSelections.shelf.has(code) : langSelections.shelf.size === 0);
+    const h = /** @type {HTMLElement} */ (el);
+    const code = h.dataset.lang || '';
+    h.classList.toggle('active', code ? langSelections.shelf.has(code) : langSelections.shelf.size === 0);
   });
 }
 
@@ -263,12 +265,12 @@ export function renderMobileShelfUi() {
 }
 
 export function updateShelfSearchClear() {
-  const input = document.getElementById('shelf-search-input');
+  const input = /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input'));
   document.getElementById('m-search-clear').classList.toggle('hidden', !input.value);
 }
 
 export function clearShelfSearch() {
-  document.getElementById('shelf-search-input').value = '';
+  /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).value = '';
   shelfFilters.q = '';
   loadShelfBooks(1, { scrollToTop: true });
 }
@@ -314,7 +316,7 @@ export function renderFilterSheet() {
 }
 
 export function renderSortSheet() {
-  const current = document.getElementById('shelf-sort').value;
+  const current = /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort')).value;
   document.getElementById('shelf-sheet-head').innerHTML = '<span>排序</span>';
   document.getElementById('shelf-sheet-body').innerHTML = Object.entries(SORT_SHORT_LABELS).map(([v, label]) =>
     `<button class="shelf-sort-option ${v === current ? 'active' : ''}" onclick="pickShelfSort('${v}')">`
@@ -323,7 +325,7 @@ export function renderSortSheet() {
 }
 
 export function pickShelfSort(value) {
-  document.getElementById('shelf-sort').value = value;
+  /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort')).value = value;
   appState.shelfSortTouched = true;
   closeShelfSheet();
   loadShelfBooks(1, { scrollToTop: true });
@@ -334,7 +336,7 @@ export function initShelfSheetDrag() {
   const sheet = document.getElementById('shelf-sheet');
   let startY = null;
   sheet.addEventListener('touchstart', e => {
-    if (e.target.closest('.shelf-sheet-body')) return;
+    if (e.target instanceof Element && e.target.closest('.shelf-sheet-body')) return;
     startY = e.touches[0].clientY;
     sheet.style.transition = 'none';
   }, { passive: true });
@@ -394,7 +396,7 @@ export function initShelfLoadMore() {
 }
 
 export function initMobileShelf() {
-  if (isMobileViewport()) document.getElementById('shelf-search-input').placeholder = '搜索书名、作者、拼音';
+  if (isMobileViewport()) /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).placeholder = '搜索书名、作者、拼音';
   initShelfSheetDrag();
   initShelfLoadMore();
 }
@@ -415,11 +417,12 @@ export async function loadShelfBooks(page = 1, opts = {}) {
       window.scrollTo({ top: Math.max(0, topEl.offsetTop - 60), behavior: 'smooth' });
     }
   }
-  const currentInputVal = document.getElementById('shelf-search-input')
-    ? document.getElementById('shelf-search-input').value.trim()
+  const searchInput = /** @type {HTMLInputElement | null} */ (document.getElementById('shelf-search-input'));
+  const currentInputVal = searchInput
+    ? searchInput.value.trim()
     : shelfFilters.q;
   shelfFilters.q = currentInputVal;
-  const sortEl = document.getElementById('shelf-sort');
+  const sortEl = /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort'));
   // A picked sort holds for the search it was picked on; a new search ranks by relevance again
   if (currentInputVal !== appState.shelfLastQuery) appState.shelfSortTouched = false;
   appState.shelfLastQuery = currentInputVal;

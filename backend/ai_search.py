@@ -23,10 +23,25 @@ def _cache_key(query: str, ids: List[int]) -> str:
     return hashlib.sha1(f"v{ENRICH_VERSION}|{query.strip()}|{','.join(map(str, ids))}".encode("utf-8")).hexdigest()
 
 
-def _cached(conn: Any, key: str) -> Dict[str, int]:
-    conn.execute("CREATE TABLE IF NOT EXISTS ai_rerank_cache (key TEXT PRIMARY KEY, scores TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)")
-    row = conn.execute("SELECT scores FROM ai_rerank_cache WHERE key = ?", (key,)).fetchone()
-    return json.loads(row["scores"]) if row else {}
+def _read_cache(key: str) -> Dict[str, Any]:
+    conn = get_conn()
+    try:
+        row = conn.execute("SELECT scores FROM ai_rerank_cache WHERE key = ?", (key,)).fetchone()
+        return json.loads(row["scores"]) if row else {}
+    finally:
+        conn.close()
+
+
+def _write_cache(key: str, payload: Dict[str, Any]) -> None:
+    conn = get_conn()
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO ai_rerank_cache (key, scores) VALUES (?, ?)",
+            (key, json.dumps(payload, ensure_ascii=False)),
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def score_books(query: str, items: List[Dict[str, Any]], feature: str = "search") -> Tuple[Dict[int, int], str]:
@@ -36,41 +51,38 @@ def score_books(query: str, items: List[Dict[str, Any]], feature: str = "search"
         return {}, "nokey"
     ids = [int(b["id"]) for b in items]
     key = _cache_key(query, ids)
-    conn = get_conn()
+    cached = _read_cache(key)
+    if cached:
+        return {int(k): v for k, v in cached.items()}, ""
+
+    lines = "\n".join(
+        f"[{b['id']}] 《{(b.get('clean_title') or b.get('title') or '')[:60]}》 | {(b.get('author') or '')[:30]} | "
+        f"{b.get('ai_level') or ''}/{b.get('ai_kind') or ''} | {(b.get('summary') or '')[:150]}"
+        for b in items
+    )
     try:
-        cached = _cached(conn, key)
-        if cached:
-            return {int(k): v for k, v in cached.items()}, ""
-        lines = "\n".join(
-            f"[{b['id']}] 《{(b.get('clean_title') or b.get('title') or '')[:60]}》 | {(b.get('author') or '')[:30]} | "
-            f"{b.get('ai_level') or ''}/{b.get('ai_kind') or ''} | {(b.get('summary') or '')[:150]}"
-            for b in items
+        out, _ = ds.chat_json(
+            [{"role": "system", "content": RERANK_SYSTEM}, {"role": "user", "content": f"读者查询：{query}\n\n候选书：\n{lines}"}],
+            max_tokens=2000, timeout=10, feature=feature,
         )
+    except ds.DailyCapReached:
+        return {}, "cap"
+    except Exception as e:
+        logger.warning(f"AI rerank failed, keeping standard order: {e}")
+        return {}, "error"
+
+    valid = set(ids)
+    scores: Dict[int, int] = {}
+    for k, v in (out.get("scores") or {}).items():  # trust boundary: known ids, integer 0-10
         try:
-            out, _ = ds.chat_json(
-                [{"role": "system", "content": RERANK_SYSTEM}, {"role": "user", "content": f"读者查询：{query}\n\n候选书：\n{lines}"}],
-                max_tokens=2000, timeout=10, feature=feature,
-            )
-        except ds.DailyCapReached:
-            return {}, "cap"
-        except Exception as e:
-            logger.warning(f"AI rerank failed, keeping standard order: {e}")
-            return {}, "error"
-        valid = set(ids)
-        scores = {}
-        for k, v in (out.get("scores") or {}).items():  # trust boundary: known ids, integer 0-10
-            try:
-                bid, sc = int(k), int(v)
-            except (TypeError, ValueError):
-                continue
-            if bid in valid and 0 <= sc <= 10:
-                scores[bid] = sc
-        if scores:
-            conn.execute("INSERT OR REPLACE INTO ai_rerank_cache (key, scores) VALUES (?, ?)", (key, json.dumps(scores)))
-            conn.commit()
-        return scores, "" if scores else "error"
-    finally:
-        conn.close()
+            bid, sc = int(k), int(v)
+        except (TypeError, ValueError):
+            continue
+        if bid in valid and 0 <= sc <= 10:
+            scores[bid] = sc
+    if scores:
+        _write_cache(key, scores)
+    return scores, "" if scores else "error"
 
 
 def rerank(
@@ -123,40 +135,37 @@ def pick_books(
         return [], "nokey"
     ids = [int(b["id"]) for b in items]
     key = _cache_key(f"pick{top_k}|{profile}", ids)
-    conn = get_conn()
+    cached = _read_cache(key)
+    if cached and "picks" in cached:
+        return [(int(i), r) for i, r in cached["picks"]], ""
+
+    lines = "\n".join(
+        f"[{b['id']}] 《{(b.get('clean_title') or b.get('title') or '')[:60]}》 | {(b.get('author') or '')[:30]} | "
+        f"{b.get('category') or ''} | {(b.get('summary') or '')[:120]}"
+        for b in items
+    )
     try:
-        cached = _cached(conn, key)
-        if cached:
-            return [(int(i), r) for i, r in cached["picks"]], ""
-        lines = "\n".join(
-            f"[{b['id']}] 《{(b.get('clean_title') or b.get('title') or '')[:60]}》 | {(b.get('author') or '')[:30]} | "
-            f"{b.get('category') or ''} | {(b.get('summary') or '')[:120]}"
-            for b in items
+        out, _ = ds.chat_json(
+            [{"role": "system", "content": PICK_SYSTEM.format(n=top_k)},
+             {"role": "user", "content": f"{profile}\n\n候选书：\n{lines}"}],
+            max_tokens=2000, timeout=60, feature=feature,
         )
+    except ds.DailyCapReached:
+        return [], "cap"
+    except Exception as e:
+        logger.warning(f"AI pick failed, keeping standard recommendations: {e}")
+        return [], "error"
+
+    valid, picks = set(ids), []
+    for p in out.get("picks") or []:  # trust boundary: known ids, no repeats, short text
         try:
-            out, _ = ds.chat_json(
-                [{"role": "system", "content": PICK_SYSTEM.format(n=top_k)},
-                 {"role": "user", "content": f"{profile}\n\n候选书：\n{lines}"}],
-                max_tokens=2000, timeout=60, feature=feature,
-            )
-        except ds.DailyCapReached:
-            return [], "cap"
-        except Exception as e:
-            logger.warning(f"AI pick failed, keeping standard recommendations: {e}")
-            return [], "error"
-        valid, picks = set(ids), []
-        for p in out.get("picks") or []:  # trust boundary: known ids, no repeats, short text
-            try:
-                bid, reason = int(p["id"]), str(p.get("reason") or "").strip()[:80]
-            except (TypeError, ValueError, KeyError):
-                continue
-            if bid in valid and bid not in {i for i, _ in picks}:
-                picks.append((bid, reason))
-            if len(picks) >= top_k:
-                break
-        if picks:
-            conn.execute("INSERT OR REPLACE INTO ai_rerank_cache (key, scores) VALUES (?, ?)", (key, json.dumps({"picks": picks}, ensure_ascii=False)))
-            conn.commit()
-        return picks, "" if picks else "error"
-    finally:
-        conn.close()
+            bid, reason = int(p["id"]), str(p.get("reason") or "").strip()[:80]
+        except (TypeError, ValueError, KeyError):
+            continue
+        if bid in valid and bid not in {i for i, _ in picks}:
+            picks.append((bid, reason))
+        if len(picks) >= top_k:
+            break
+    if picks:
+        _write_cache(key, {"picks": picks})
+    return picks, "" if picks else "error"

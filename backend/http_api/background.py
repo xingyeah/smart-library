@@ -3,9 +3,10 @@ import threading
 import time
 from typing import Any, Dict, List, Optional
 
-from archiver import rebuild_vector_cache, run_organize_pipeline
+from archiver import run_organize_pipeline
 from database import backup_database, get_conn
 from http_api import state
+from jobs import reindex_in_background, spawn_reindex
 
 logger = logging.getLogger("http_api.background")
 _bg_stop = threading.Event()
@@ -103,17 +104,3 @@ def backup_daemon() -> None:
             logger.exception("Database backup failed in background daemon")
         if _bg_stop.wait(24 * 3600):
             break
-
-
-def reindex_in_background(book_ids: List[int]) -> None:
-    """Actual reindex work, serialized to avoid racing .npy writes."""
-    try:
-        with state._reindex_lock:
-            rebuild_vector_cache(reencode_ids=list(book_ids))
-    except Exception:
-        logger.exception("Background vector reindex failed for books %s", book_ids)
-
-
-def spawn_reindex(book_ids: List[int]) -> None:
-    """Re-encode changed books' vectors off the request thread."""
-    threading.Thread(target=reindex_in_background, args=(book_ids,), daemon=True).start()

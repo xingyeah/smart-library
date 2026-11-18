@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 from config import LIBRARY_DIR
 from database import get_conn
+from jobs import spawn_reindex
 
 logger = logging.getLogger("split_undo")
 
@@ -75,8 +76,6 @@ def _drop_run_links(conn, ops: List[Any]) -> int:
 
 def undo_split_run(run_id: int) -> Dict[str, Any]:
     """Reverse every split of `run_id`. Raises when the run has nothing left to undo."""
-    from http_api.background import spawn_reindex
-
     conn = get_conn()
     try:
         ops = _split_ops(conn, run_id)

@@ -2,11 +2,12 @@ import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from database import get_conn
+from search.filters import build_book_facet_where
 from search.finalize import finalize_ranked_pool, _finalize_ranked_pool, rerank_and_fuse_candidates
 from search.intent import analyze_query_intent, _translate_english_query
 from search.recall import build_allowed_ids, execute_dual_path_recall
 from search.scoring import pre_score_candidates
-from search.shelf import _build_pub_period_clause, _parse_language_filter
+from search.types import ShelfFilters
 
 
 def _execute_unified_hybrid_retrieval(raw_query: str, **options: Any) -> Dict[str, Any]:
@@ -55,7 +56,6 @@ def _retrieve_one_language(
     t0 = time.perf_counter()
     intent = analyze_query_intent(raw_query)
     inferred_cats: List[str] = intent.get("inferred_categories") or []
-    lang_list = _parse_language_filter(language)
 
     # Smart Category Conflict Relaxation
     category_relaxed = False
@@ -68,36 +68,18 @@ def _retrieve_one_language(
     conn = get_conn()
     try:
         # Build SQL filter for hard metadata facets (category, language, format, source, status, favorite)
-        facet_clauses = ["is_deleted = 0"]
-        facet_params: List[Any] = []
-        if effective_category and effective_category != "全部":
-            facet_clauses.append("category = ?")
-            facet_params.append(effective_category)
-        if lang_list:
-            ph = ",".join("?" for _ in lang_list)
-            facet_clauses.append(f"language COLLATE NOCASE IN ({ph})")
-            facet_params.extend(lang_list)
-        if fmt and fmt != "全部":
-            facet_clauses.append("primary_format = ?")
-            facet_params.append(fmt.lower())
-        if source_dir and source_dir != "全部":
-            facet_clauses.append("source_dir = ?")
-            facet_params.append(source_dir)
-        if reading_status and reading_status != "全部":
-            facet_clauses.append("reading_status = ?")
-            facet_params.append(reading_status)
-        if only_favorite:
-            facet_clauses.append("is_favorite = 1")
-        if has_rating:
-            facet_clauses.append(
-                "(douban_rating > 0 OR EXISTS ("
-                "SELECT 1 FROM book_external_meta em "
-                "WHERE em.book_id = books.id AND (em.rating > 0 OR (em.reviews_json IS NOT NULL AND em.reviews_json != '[]'))"
-                "))"
+        facet_clauses, facet_params = build_book_facet_where(
+            ShelfFilters(
+                category=effective_category,
+                language=language,
+                fmt=fmt,
+                source_dir=source_dir,
+                reading_status=reading_status,
+                only_favorite=only_favorite,
+                pub_period=pub_period,
+                has_rating=has_rating,
             )
-        p_clause = _build_pub_period_clause(pub_period)
-        if p_clause:
-            facet_clauses.append(p_clause.replace("b.", ""))
+        )
 
         allowed_ids = build_allowed_ids(conn, facet_clauses, facet_params)
         if len(facet_clauses) > 1 and not allowed_ids:

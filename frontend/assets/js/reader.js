@@ -72,7 +72,7 @@ export function openMobileSheet(name) {
   closeMobileSheets();
   closeMobileMenu();
   if (name === 'toc') {
-    renderReaderTocList(document.getElementById('reader-toc-filter').value);
+    renderReaderTocList(/** @type {HTMLInputElement} */ (document.getElementById('reader-toc-filter')).value);
     document.getElementById('reader-sidebar').classList.add('m-open');
   } else {
     if (name === 'progress') renderMobileProgressSheet();
@@ -202,7 +202,7 @@ export function syncMobileButtons() {
 
 export async function onMobileReaderLoaded(d) {
   document.getElementById('m-top-title').textContent = d.book_title || '';
-  document.getElementById('m-download-link').href = `/api/books/${readerState.bookId}/download`;
+  /** @type {HTMLAnchorElement} */ (document.getElementById('m-download-link')).href = `/api/books/${readerState.bookId}/download`;
   setMobileChrome(false);
   if (readerState.mode === 'pdf') setPdfZoomFitWidth();
   if (!readerState.isEnglish && readerState.mode !== 'pdf' && isMostlyLatinText()) {
@@ -295,7 +295,7 @@ export function applyReaderPreferences() {
   bodyEl.lang = readerState.isEnglish ? 'en' : 'zh-CN';  // hyphenation follows the text's language
   if (readerState.lineHeight) overlay.style.setProperty('--m-line-height', String(readerState.lineHeight));
   else overlay.style.removeProperty('--m-line-height');
-  const lineHeightSelect = document.getElementById('reader-lineheight-select');
+  const lineHeightSelect = /** @type {HTMLSelectElement | null} */ (document.getElementById('reader-lineheight-select'));
   if (lineHeightSelect) lineHeightSelect.value = String(readerState.lineHeight || 0);
 
   document.querySelectorAll('.reader-theme-dot').forEach(dot => {
@@ -305,7 +305,7 @@ export function applyReaderPreferences() {
     sw.classList.toggle('active', sw.getAttribute('data-mtheme') === readerState.theme);
   });
 
-  const fontSelect = document.getElementById('reader-font-select');
+  const fontSelect = /** @type {HTMLSelectElement | null} */ (document.getElementById('reader-font-select'));
   if (fontSelect && fontSelect.value !== effectiveReaderFont()) {
     fontSelect.value = effectiveReaderFont();
   }
@@ -703,7 +703,7 @@ export async function openOnlineReader(bookId, chapterIdx = null, anchor = '', t
 
     document.getElementById('reader-top-title').textContent = d.book_title || '在线阅读';
     document.getElementById('reader-top-sub').textContent = `${d.author || '未知作者'} · ${(d.format || 'EBOOK').toUpperCase()}`;
-    document.getElementById('reader-download-link').href = `/api/books/${bookId}/download`;
+    /** @type {HTMLAnchorElement} */ (document.getElementById('reader-download-link')).href = `/api/books/${bookId}/download`;
 
     if (d.warning) {
       warnEl.textContent = `⚠️ ${d.warning}`;
@@ -718,8 +718,8 @@ export async function openOnlineReader(bookId, chapterIdx = null, anchor = '', t
       document.getElementById('reader-pdf-controls').classList.remove('hidden');
       document.getElementById('reader-paper').classList.add('mode-pdf');
       footerEl.classList.add('hidden');
-      document.getElementById('reader-top-prev').disabled = false;
-      document.getElementById('reader-top-next').disabled = false;
+      /** @type {HTMLButtonElement} */ (document.getElementById('reader-top-prev')).disabled = false;
+      /** @type {HTMLButtonElement} */ (document.getElementById('reader-top-next')).disabled = false;
 
       cleanupPdfReader();
       applyReaderPreferences();
@@ -746,10 +746,10 @@ export async function openOnlineReader(bookId, chapterIdx = null, anchor = '', t
 
       const disablePrev = curIdx <= 0;
       const disableNext = curIdx >= tot - 1;
-      document.getElementById('reader-top-prev').disabled = disablePrev;
-      document.getElementById('reader-bot-prev').disabled = disablePrev;
-      document.getElementById('reader-top-next').disabled = disableNext;
-      document.getElementById('reader-bot-next').disabled = disableNext;
+      /** @type {HTMLButtonElement} */ (document.getElementById('reader-top-prev')).disabled = disablePrev;
+      /** @type {HTMLButtonElement} */ (document.getElementById('reader-bot-prev')).disabled = disablePrev;
+      /** @type {HTMLButtonElement} */ (document.getElementById('reader-top-next')).disabled = disableNext;
+      /** @type {HTMLButtonElement} */ (document.getElementById('reader-bot-next')).disabled = disableNext;
 
       const prevChap = curIdx > 0 && readerState.chapters[curIdx - 1] ? readerState.chapters[curIdx - 1].title : '';
       const nextChap = curIdx < tot - 1 && readerState.chapters[curIdx + 1] ? readerState.chapters[curIdx + 1].title : '';
@@ -785,7 +785,7 @@ export async function openOnlineReader(bookId, chapterIdx = null, anchor = '', t
       initHtmlScrollSpy();
     }
 
-    renderReaderTocList(document.getElementById('reader-toc-filter').value);
+    renderReaderTocList(/** @type {HTMLInputElement} */ (document.getElementById('reader-toc-filter')).value);
     if (isMobileReader()) await onMobileReaderLoaded(d);
   } catch (err) {
     bodyEl.innerHTML = `<div style="color:var(--rose); padding:30px; text-align:center;">读取异常：${escapeHtml(String(err))}</div>`;
@@ -807,7 +807,7 @@ window.addEventListener('keydown', (e) => {
     } else {
       closeBookModal();
     }
-  } else if (readerState.isOpen && !['INPUT', 'TEXTAREA'].includes((e.target && e.target.tagName) || '')) {
+  } else if (readerState.isOpen && !['INPUT', 'TEXTAREA'].includes(e.target instanceof Element ? e.target.tagName : '')) {
     if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey) {
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed && sel.toString().trim()) {
