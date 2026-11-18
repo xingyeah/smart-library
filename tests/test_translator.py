@@ -117,6 +117,11 @@ class DeepSeekTest(unittest.TestCase):
             self.assertEqual(tr._translate_batch_via_deepseek(["Hi there."]), {})
             self.assertIsNone(tr._deepseek_key())
 
+    def test_deepseek_key_follows_deepseek_client(self):
+        with mock.patch.object(tr, "_deepseek_paused_until", 0.0), \
+                mock.patch.object(tr.deepseek_client, "api_key", return_value="saved-in-settings"):
+            self.assertEqual(tr._deepseek_key(), "saved-in-settings")
+
 
 if __name__ == "__main__":
     unittest.main()

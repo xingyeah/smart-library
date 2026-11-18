@@ -232,10 +232,10 @@ def _parse_tagged(out_text: str, n: int) -> Dict[int, str]:
 
 
 def _deepseek_key() -> Optional[str]:
-    """DEEPSEEK_API_KEY, or None when unset or paused after an API error."""
+    """The key deepseek_client resolves (env var, then the saved setting), or None while paused after an API error."""
     if time.time() < _deepseek_paused_until:
         return None
-    return os.environ.get("DEEPSEEK_API_KEY") or None
+    return deepseek_client.api_key() or None
 
 
 def _translate_batch_via_deepseek(
