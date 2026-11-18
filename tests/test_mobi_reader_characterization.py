@@ -42,6 +42,8 @@ class TestMobiReaderCharacterization(unittest.TestCase):
 
     def test_cache_hit_bypasses_parsing(self):
         """测试缓存命中逻辑：当 cache_get 返回非 None 时直接复用，不重复解析磁盘"""
+        if not self.SAMPLE_AZW3.exists():
+            self.skipTest(f"AZW3 样本文件不存在: {self.SAMPLE_AZW3}")
         fake_cache = {"mode": "split", "chapters": [{"index": 0, "title": "缓存章节"}], "toc": []}
         res = reader._build_mobi_azw3_structure(
             book_id=123,

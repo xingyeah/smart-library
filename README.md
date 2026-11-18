@@ -150,10 +150,12 @@ Apple 本机翻译需要 macOS 26，并在"系统设置 › 通用 › 语言与
 ## 开发与测试
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -p "test_*.py"
+./scripts/verify.sh
 ```
 
-约 290 个测试，80 秒左右。其中有三类门禁值得知道：
+合并或发版前跑这一条：Python 测试、前端检查（语法和 `checkJs`）、iOS 非 UI 源码类型检查，任何一步失败就停。只跑 Python 部分：`.venv/bin/python -m unittest discover -s tests`。
+
+约 310 个测试，80 秒左右。依赖真实书样本的用例在样本缺失时自动跳过。其中有三类门禁值得知道：
 
 - **代码规范门禁**（`tests/test_code_standards_gate.py`）：函数不超过 50 行、嵌套不超过 3 层、参数不超过 3 个、文件不超过 500 行。
 - **搜索质量门禁**（`tests/test_search_quality.py`）：用 `tests/search_eval/queries.json` 里标注好的查询评估书架搜索，nDCG 不得低于基线 0.02 以上，Hit@3 不得低于基线 0.05 以上，Bad@5 不得增加。
