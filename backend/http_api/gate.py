@@ -7,12 +7,18 @@ from http_api import state
 from http_api.responses import send_json
 
 
+# Answers without a token so the iOS app can find which address is this server before sending the token anywhere.
+PING_PATH = "/api/ping"
+
+
 def check_lan_gate(handler: Any) -> bool:
     """
     Validate LAN access permissions and DNS-rebinding protection.
     Returns True if the request is permitted to proceed;
     Otherwise sends 302 redirect (token exchange) or 403 Forbidden and returns False.
     """
+    if handler.command == "GET" and urllib.parse.urlparse(handler.path).path == PING_PATH:
+        return True
     client_ip = handler.client_address[0]
     # Check loopback whitelist
     loopback_set = getattr(state, "_LOOPBACK", {"127.0.0.1", "::1", "localhost"})

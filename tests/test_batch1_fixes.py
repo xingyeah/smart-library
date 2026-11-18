@@ -29,6 +29,7 @@ class _DummyWfile:
 
 class _DummyHandler:
     def __init__(self, path: str = "/", headers=None, body: bytes = b"", client_ip: str = "192.168.1.50"):
+        self.command = "GET"
         self.path = path
         self.headers = headers or {}
         self.rfile = io.BytesIO(body)

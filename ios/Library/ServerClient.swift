@@ -61,7 +61,10 @@ final class ServerClient {
     private static let probeTimeout: TimeInterval = 4
     /// Each later address starts this much after the one before, so a LAN address that answers wins over Tailscale.
     private static let probeStagger: UInt64 = 300_000_000
-    private static let probePath = "/api/connection"
+    /// Answers without a token, so the token is never sent to an address that is not (yet) known to be this server.
+    private static let pingPath = "/api/ping"
+    private static let pingAppName = "smart-library"
+    private static let connectionPath = "/api/connection"
     private nonisolated static let passedHeaders = ["Range", "Content-Type", "Accept", "If-None-Match"]
     private nonisolated static let returnedHeaders = ["Content-Type", "Content-Range", "Accept-Ranges", "Content-Disposition", "ETag", "Cache-Control"]
 
@@ -104,17 +107,17 @@ final class ServerClient {
     }
 
     private func runProbe() async -> Bool {
-        let request = ProxyRequest(method: "GET", pathAndQuery: Self.probePath)
-        let (token, session) = (config.token, session)
+        let request = ProxyRequest(method: "GET", pathAndQuery: Self.pingPath)
+        let session = session
         let winner = await withTaskGroup(of: (URL, ProxyResponse)?.self) { group -> (URL, ProxyResponse)? in
             for (index, base) in config.addresses.enumerated() {
                 group.addTask {
                     if index > 0 { try? await Task.sleep(nanoseconds: UInt64(index) * Self.probeStagger) }
                     guard !Task.isCancelled else { return nil }
-                    let response = try? await Self.send(request, to: base, token: token, session: session,
+                    let response = try? await Self.send(request, to: base, token: "", session: session,
                                                         timeout: Self.probeTimeout)
-                    // 403: the gate refuses this address without a token (loopback needs none, the LAN does)
-                    guard let response, response.status != 403 else { return nil }
+                    // Anything else answering on this address (a router page, another device) is not the library
+                    guard let response, response.status == 200, Self.isLibraryPing(response.body) else { return nil }
                     return (base, response)
                 }
             }
@@ -131,10 +134,15 @@ final class ServerClient {
         return true
     }
 
+    private nonisolated static func isLibraryPing(_ body: Data) -> Bool {
+        let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any]
+        return json?["app"] as? String == pingAppName
+    }
+
     /// The addresses the server reports at `/api/connection`; nil when it cannot be reached or does not report any
     /// (an older server answers 404).
     func fetchReportedAddresses() async -> [URL]? {
-        guard let response = try? await get(Self.probePath), response.status == 200,
+        guard let response = try? await get(Self.connectionPath), response.status == 200,
               let json = (try? JSONSerialization.jsonObject(with: response.body)) as? [String: Any],
               let reported = json["addresses"] as? [String] else { return nil }
         return reported.compactMap(URL.init(string:))

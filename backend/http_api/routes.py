@@ -8,6 +8,7 @@ def build_default_router() -> Router:
 
     # GET routes
     router.add("GET", r"/api/stats", books.handle_get_stats)
+    router.add("GET", r"/api/ping", connection.handle_get_ping)
     router.add("GET", r"/api/connection", connection.handle_get_connection)
     router.add("GET", r"/api/ai/usage", books.handle_get_ai_usage)
     router.add("GET", r"/api/books", books.handle_get_books)

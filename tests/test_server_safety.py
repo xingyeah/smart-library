@@ -98,6 +98,9 @@ class HttpTest(TempDbCase):
             self.assertIn("HttpOnly", r.getheader("Set-Cookie"))
             self.assertIn("SameSite=Lax", r.getheader("Set-Cookie"))  # links from other apps still carry it
             self.assertEqual(self.request("GET", "/?token=nope")[0].status, 403)
+            r, body = self.request("GET", "/api/ping")  # the app finds the server here before it sends the token
+            self.assertEqual((r.status, json.loads(body)["app"]), (200, "smart-library"))
+            self.assertEqual(self.request("GET", "/api/connection")[0].status, 403)
         with mock.patch.object(state, "_LOOPBACK", ()), mock.patch.object(state, "LAN_TOKEN", None):
             self.assertEqual(self.request("GET", "/?token=None")[0].status, 403)  # no token configured: deny
 
