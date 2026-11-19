@@ -1,0 +1,3857 @@
+{
+ "_doc": "V1 (41aa67b code + pre-backfill DB, vectors as of 2026-11-19 22:12) metrics, metrics only. 'holdout' = the same code on holdout_queries.json.",
+ "shelf": {
+  "n": 175,
+  "ndcg": 0.6222,
+  "p5": 0.6663,
+  "hit3": 0.7657,
+  "bad5": 0,
+  "p50_ms": 244,
+  "gate": {
+   "n": 74,
+   "ndcg": 0.6933,
+   "p5": 0.7351,
+   "hit3": 0.7838,
+   "bad5": 0,
+   "p50_ms": 242
+  },
+  "queries": [
+   {
+    "id": "known-thinking-fast-slow",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.359,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 190
+   },
+   {
+    "id": "known-zhangjuzheng",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.6313,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 146
+   },
+   {
+    "id": "known-nanming",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.8383,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 146
+   },
+   {
+    "id": "known-pinyin-santi",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.6776,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 252
+   },
+   {
+    "id": "known-english-title",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.796,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 717
+   },
+   {
+    "id": "author-liucixin",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 179
+   },
+   {
+    "id": "author-dalio",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.9779,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 147
+   },
+   {
+    "id": "author-harari",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.795,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 266
+   },
+   {
+    "id": "nl-ai-marketing",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8122,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 295
+   },
+   {
+    "id": "nl-python-beginner",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6223,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 301
+   },
+   {
+    "id": "nl-ming-figures",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8107,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 255
+   },
+   {
+    "id": "nl-sleep-dream",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7435,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 244
+   },
+   {
+    "id": "nl-value-investing",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.5756,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 276
+   },
+   {
+    "id": "nl-ml-beginner",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6925,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 181
+   },
+   {
+    "id": "nl-behavioral-econ",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.4681,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 258
+   },
+   {
+    "id": "nl-cosmos",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 123
+   },
+   {
+    "id": "nl-negotiation",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 260
+   },
+   {
+    "id": "nl-product-manager",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8533,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 208
+   },
+   {
+    "id": "nl-parenting",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8338,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 261
+   },
+   {
+    "id": "nl-wwii",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.9337,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 295
+   },
+   {
+    "id": "nl-quantum-intro",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7313,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 145
+   },
+   {
+    "id": "nl-taoism",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7352,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 184
+   },
+   {
+    "id": "nl-stoic",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7092,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 252
+   },
+   {
+    "id": "nl-llm",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 268
+   },
+   {
+    "id": "nl-financial-crisis",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.4582,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 318
+   },
+   {
+    "id": "nl-nutrition",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7455,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 139
+   },
+   {
+    "id": "nl-mystery",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8294,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 181
+   },
+   {
+    "id": "nl-rome",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7885,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 226
+   },
+   {
+    "id": "nl-anxiety",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7074,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 144
+   },
+   {
+    "id": "nl-digital-marketing",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6796,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 311
+   },
+   {
+    "id": "nl-english-negotiation",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 529
+   },
+   {
+    "id": "nl-bitcoin-tech",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6043,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 233
+   },
+   {
+    "id": "nl-blockchain-principle",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6013,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 226
+   },
+   {
+    "id": "nl-leadership",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.9368,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 282
+   },
+   {
+    "id": "gen-00-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.6782,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 192
+   },
+   {
+    "id": "gen-00-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 144
+   },
+   {
+    "id": "gen-00-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5036,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 227
+   },
+   {
+    "id": "gen-00-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8868,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 355
+   },
+   {
+    "id": "gen-00-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4477,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 230
+   },
+   {
+    "id": "gen-00-05",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.785,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 163
+   },
+   {
+    "id": "gen-00-06",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.8732,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 222
+   },
+   {
+    "id": "gen-00-07",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.3562,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 659
+   },
+   {
+    "id": "gen-00-08",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.5907,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 266
+   },
+   {
+    "id": "gen-00-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4296,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 227
+   },
+   {
+    "id": "gen-01-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 192
+   },
+   {
+    "id": "gen-01-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 164
+   },
+   {
+    "id": "gen-01-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.5398,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 250
+   },
+   {
+    "id": "gen-01-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.9337,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 131
+   },
+   {
+    "id": "gen-01-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.4153,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 678
+   },
+   {
+    "id": "gen-01-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.6129,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 268
+   },
+   {
+    "id": "gen-01-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.1305,
+    "p5": 0.2,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 322
+   },
+   {
+    "id": "gen-01-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6204,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 417
+   },
+   {
+    "id": "gen-01-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3656,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 419
+   },
+   {
+    "id": "gen-01-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8882,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 340
+   },
+   {
+    "id": "gen-02-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 359
+   },
+   {
+    "id": "gen-02-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.7878,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 170
+   },
+   {
+    "id": "gen-02-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 177
+   },
+   {
+    "id": "gen-02-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.4454,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 190
+   },
+   {
+    "id": "gen-02-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 596
+   },
+   {
+    "id": "gen-02-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.3699,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 235
+   },
+   {
+    "id": "gen-02-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6242,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 245
+   },
+   {
+    "id": "gen-02-07",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.5371,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 294
+   },
+   {
+    "id": "gen-02-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6441,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 195
+   },
+   {
+    "id": "gen-02-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3076,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 349
+   },
+   {
+    "id": "gen-03-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.8593,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 145
+   },
+   {
+    "id": "gen-03-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 214
+   },
+   {
+    "id": "gen-03-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.8168,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 215
+   },
+   {
+    "id": "gen-03-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.7446,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 157
+   },
+   {
+    "id": "gen-03-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 708
+   },
+   {
+    "id": "gen-03-05",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.3613,
+    "p5": 0.2,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 269
+   },
+   {
+    "id": "gen-03-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.2545,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 225
+   },
+   {
+    "id": "gen-03-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4647,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 220
+   },
+   {
+    "id": "gen-03-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 316
+   },
+   {
+    "id": "gen-03-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.037,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 210
+   },
+   {
+    "id": "gen-04-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.879,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 264
+   },
+   {
+    "id": "gen-04-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 107
+   },
+   {
+    "id": "gen-04-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5516,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 158
+   },
+   {
+    "id": "gen-04-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6385,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 237
+   },
+   {
+    "id": "gen-04-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8552,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 138
+   },
+   {
+    "id": "gen-04-05",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5304,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 286
+   },
+   {
+    "id": "gen-04-06",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.3204,
+    "p5": 0.2,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 123
+   },
+   {
+    "id": "gen-04-07",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.4341,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 119
+   },
+   {
+    "id": "gen-04-08",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.1614,
+    "p5": 0.2,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 566
+   },
+   {
+    "id": "gen-04-09",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.6711,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 212
+   },
+   {
+    "id": "gen-05-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 137
+   },
+   {
+    "id": "gen-05-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 163
+   },
+   {
+    "id": "gen-05-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.215,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 156
+   },
+   {
+    "id": "gen-05-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4479,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 223
+   },
+   {
+    "id": "gen-05-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.7086,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 238
+   },
+   {
+    "id": "gen-05-05",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.652,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 115
+   },
+   {
+    "id": "gen-05-06",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.7133,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 106
+   },
+   {
+    "id": "gen-05-07",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.6028,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 424
+   },
+   {
+    "id": "gen-05-08",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.3066,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 189
+   },
+   {
+    "id": "gen-05-09",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.4057,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 213
+   },
+   {
+    "id": "gen-06-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.5953,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 199
+   },
+   {
+    "id": "gen-06-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.972,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 95
+   },
+   {
+    "id": "gen-06-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.6579,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 210
+   },
+   {
+    "id": "gen-06-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.9052,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 194
+   },
+   {
+    "id": "gen-06-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.4548,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 583
+   },
+   {
+    "id": "gen-06-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.3497,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 280
+   },
+   {
+    "id": "gen-06-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5367,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 330
+   },
+   {
+    "id": "gen-06-07",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.732,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 225
+   },
+   {
+    "id": "gen-06-08",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.5153,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 285
+   },
+   {
+    "id": "gen-06-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3781,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 286
+   },
+   {
+    "id": "gen-07-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.8764,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 238
+   },
+   {
+    "id": "gen-07-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.4461,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 271
+   },
+   {
+    "id": "gen-07-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.0915,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 293
+   },
+   {
+    "id": "gen-07-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.2517,
+    "p5": 0.2,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 125
+   },
+   {
+    "id": "gen-07-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.7304,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 625
+   },
+   {
+    "id": "gen-07-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.5412,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 230
+   },
+   {
+    "id": "gen-07-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.7413,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 144
+   },
+   {
+    "id": "gen-07-07",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.6363,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 321
+   },
+   {
+    "id": "gen-07-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5938,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 263
+   },
+   {
+    "id": "gen-07-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4568,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 190
+   },
+   {
+    "id": "gen-08-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.9335,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 171
+   },
+   {
+    "id": "gen-08-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.741,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 176
+   },
+   {
+    "id": "gen-08-02",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.175,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 143
+   },
+   {
+    "id": "gen-08-03",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.5926,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 225
+   },
+   {
+    "id": "gen-08-04",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.3372,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 108
+   },
+   {
+    "id": "gen-08-05",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.0437,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 638
+   },
+   {
+    "id": "gen-08-06",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.3783,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 214
+   },
+   {
+    "id": "gen-08-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5863,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 228
+   },
+   {
+    "id": "gen-08-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6518,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 145
+   },
+   {
+    "id": "gen-08-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4668,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 204
+   },
+   {
+    "id": "gen-09-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 142
+   },
+   {
+    "id": "gen-09-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 221
+   },
+   {
+    "id": "gen-09-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.8101,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 260
+   },
+   {
+    "id": "gen-09-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 237
+   },
+   {
+    "id": "gen-09-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.3985,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 550
+   },
+   {
+    "id": "gen-09-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 216
+   },
+   {
+    "id": "gen-09-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4193,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 306
+   },
+   {
+    "id": "gen-09-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8618,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 280
+   },
+   {
+    "id": "gen-09-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8412,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 164
+   },
+   {
+    "id": "gen-09-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.7046,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 260
+   },
+   {
+    "id": "gen-10-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.8473,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 293
+   },
+   {
+    "id": "gen-10-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 200
+   },
+   {
+    "id": "gen-10-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.2756,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 307
+   },
+   {
+    "id": "gen-10-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.1005,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 339
+   },
+   {
+    "id": "gen-10-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.752,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 873
+   },
+   {
+    "id": "gen-10-05",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.7612,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 293
+   },
+   {
+    "id": "gen-10-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5384,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 432
+   },
+   {
+    "id": "gen-10-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.1899,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 236
+   },
+   {
+    "id": "gen-10-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6314,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 372
+   },
+   {
+    "id": "gen-10-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4932,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 339
+   },
+   {
+    "id": "gen-11-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.8262,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 259
+   },
+   {
+    "id": "gen-11-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.7734,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 193
+   },
+   {
+    "id": "gen-11-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.4708,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 189
+   },
+   {
+    "id": "gen-11-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.529,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 242
+   },
+   {
+    "id": "gen-11-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.6914,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 587
+   },
+   {
+    "id": "gen-11-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.325,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 193
+   },
+   {
+    "id": "gen-11-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6619,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 345
+   },
+   {
+    "id": "gen-11-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3829,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 298
+   },
+   {
+    "id": "gen-11-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 278
+   },
+   {
+    "id": "gen-11-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4155,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 293
+   },
+   {
+    "id": "gen-12-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.8589,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 342
+   },
+   {
+    "id": "gen-12-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.9255,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 219
+   },
+   {
+    "id": "gen-12-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.2812,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 327
+   },
+   {
+    "id": "gen-12-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4141,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 413
+   },
+   {
+    "id": "gen-12-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8614,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 278
+   },
+   {
+    "id": "gen-12-05",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5525,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 410
+   },
+   {
+    "id": "gen-12-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6451,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 331
+   },
+   {
+    "id": "gen-12-07",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.8031,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 246
+   },
+   {
+    "id": "gen-12-08",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.6323,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 242
+   },
+   {
+    "id": "gen-12-09",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.4247,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 695
+   },
+   {
+    "id": "gen-12-10",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.425,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 152
+   },
+   {
+    "id": "gen-13-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 413
+   },
+   {
+    "id": "gen-13-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.9511,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 344
+   },
+   {
+    "id": "gen-13-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.6442,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 377
+   },
+   {
+    "id": "gen-13-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.5256,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 321
+   },
+   {
+    "id": "gen-13-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.6578,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 785
+   },
+   {
+    "id": "gen-13-05",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.2891,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 266
+   },
+   {
+    "id": "gen-13-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5323,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 371
+   },
+   {
+    "id": "gen-13-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8463,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 367
+   },
+   {
+    "id": "gen-13-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6566,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 282
+   },
+   {
+    "id": "gen-13-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5351,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 387
+   }
+  ]
+ },
+ "describe": {
+  "n": 175,
+  "ndcg": 0.6302,
+  "p5": 0.6754,
+  "hit3": 0.8286,
+  "bad5": 0,
+  "p50_ms": 1328,
+  "gate": {
+   "n": 74,
+   "ndcg": 0.7009,
+   "p5": 0.7216,
+   "hit3": 0.8378,
+   "bad5": 0,
+   "p50_ms": 1725
+  },
+  "queries": [
+   {
+    "id": "known-thinking-fast-slow",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.359,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 75
+   },
+   {
+    "id": "known-zhangjuzheng",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.6313,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 104
+   },
+   {
+    "id": "known-nanming",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.8383,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 175
+   },
+   {
+    "id": "known-pinyin-santi",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.2492,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 119
+   },
+   {
+    "id": "known-english-title",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.796,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2846
+   },
+   {
+    "id": "author-liucixin",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.7447,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2389
+   },
+   {
+    "id": "author-dalio",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.8952,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 90
+   },
+   {
+    "id": "author-harari",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.795,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2411
+   },
+   {
+    "id": "nl-ai-marketing",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8182,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2594
+   },
+   {
+    "id": "nl-python-beginner",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6436,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 2446
+   },
+   {
+    "id": "nl-ming-figures",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.735,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 204
+   },
+   {
+    "id": "nl-sleep-dream",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7223,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2619
+   },
+   {
+    "id": "nl-value-investing",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.5244,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2415
+   },
+   {
+    "id": "nl-ml-beginner",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6925,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 2556
+   },
+   {
+    "id": "nl-behavioral-econ",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.4609,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2439
+   },
+   {
+    "id": "nl-cosmos",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2419
+   },
+   {
+    "id": "nl-negotiation",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2841
+   },
+   {
+    "id": "nl-product-manager",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.865,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2609
+   },
+   {
+    "id": "nl-parenting",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8294,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2676
+   },
+   {
+    "id": "nl-wwii",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2999
+   },
+   {
+    "id": "nl-quantum-intro",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8166,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 3208
+   },
+   {
+    "id": "nl-taoism",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.691,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2642
+   },
+   {
+    "id": "nl-stoic",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7092,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 189
+   },
+   {
+    "id": "nl-llm",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2747
+   },
+   {
+    "id": "nl-financial-crisis",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.396,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 3100
+   },
+   {
+    "id": "nl-nutrition",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7808,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2835
+   },
+   {
+    "id": "nl-mystery",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8307,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 3073
+   },
+   {
+    "id": "nl-rome",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.8701,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2718
+   },
+   {
+    "id": "nl-anxiety",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.7085,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2846
+   },
+   {
+    "id": "nl-digital-marketing",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6796,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2306
+   },
+   {
+    "id": "nl-english-negotiation",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2101
+   },
+   {
+    "id": "nl-bitcoin-tech",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6281,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1884
+   },
+   {
+    "id": "nl-blockchain-principle",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.6214,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 2147
+   },
+   {
+    "id": "nl-leadership",
+    "type": "nl",
+    "gate": true,
+    "ndcg": 0.9266,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1990
+   },
+   {
+    "id": "gen-00-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.7663,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1725
+   },
+   {
+    "id": "gen-00-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.9477,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 75
+   },
+   {
+    "id": "gen-00-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5036,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1821
+   },
+   {
+    "id": "gen-00-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8868,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2082
+   },
+   {
+    "id": "gen-00-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4477,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1940
+   },
+   {
+    "id": "gen-00-05",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.7779,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2102
+   },
+   {
+    "id": "gen-00-06",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.7972,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2176
+   },
+   {
+    "id": "gen-00-07",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.3562,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 2276
+   },
+   {
+    "id": "gen-00-08",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.4104,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2271
+   },
+   {
+    "id": "gen-00-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4644,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2375
+   },
+   {
+    "id": "gen-01-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1941
+   },
+   {
+    "id": "gen-01-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.926,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1805
+   },
+   {
+    "id": "gen-01-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.5703,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1794
+   },
+   {
+    "id": "gen-01-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.8572,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1558
+   },
+   {
+    "id": "gen-01-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.5071,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 3217
+   },
+   {
+    "id": "gen-01-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.5765,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1328
+   },
+   {
+    "id": "gen-01-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.1305,
+    "p5": 0.2,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1980
+   },
+   {
+    "id": "gen-01-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6204,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1677
+   },
+   {
+    "id": "gen-01-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5213,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1434
+   },
+   {
+    "id": "gen-01-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8913,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1329
+   },
+   {
+    "id": "gen-02-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1296
+   },
+   {
+    "id": "gen-02-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.8512,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1202
+   },
+   {
+    "id": "gen-02-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1313
+   },
+   {
+    "id": "gen-02-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.4252,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1242
+   },
+   {
+    "id": "gen-02-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2597
+   },
+   {
+    "id": "gen-02-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.3944,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1357
+   },
+   {
+    "id": "gen-02-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6499,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1360
+   },
+   {
+    "id": "gen-02-07",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.587,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1275
+   },
+   {
+    "id": "gen-02-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6551,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1311
+   },
+   {
+    "id": "gen-02-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3096,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1414
+   },
+   {
+    "id": "gen-03-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.8593,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1203
+   },
+   {
+    "id": "gen-03-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1302
+   },
+   {
+    "id": "gen-03-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.8638,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1340
+   },
+   {
+    "id": "gen-03-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.8275,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1274
+   },
+   {
+    "id": "gen-03-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.2192,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 2253
+   },
+   {
+    "id": "gen-03-05",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.4069,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1114
+   },
+   {
+    "id": "gen-03-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.2252,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1113
+   },
+   {
+    "id": "gen-03-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3846,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1123
+   },
+   {
+    "id": "gen-03-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1279
+   },
+   {
+    "id": "gen-03-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1119
+   },
+   {
+    "id": "gen-04-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.879,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1343
+   },
+   {
+    "id": "gen-04-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 69
+   },
+   {
+    "id": "gen-04-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5727,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1269
+   },
+   {
+    "id": "gen-04-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6422,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1143
+   },
+   {
+    "id": "gen-04-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6831,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1092
+   },
+   {
+    "id": "gen-04-05",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5304,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1174
+   },
+   {
+    "id": "gen-04-06",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.3606,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1052
+   },
+   {
+    "id": "gen-04-07",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.445,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1042
+   },
+   {
+    "id": "gen-04-08",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.3676,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2170
+   },
+   {
+    "id": "gen-04-09",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.6711,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1103
+   },
+   {
+    "id": "gen-05-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1165
+   },
+   {
+    "id": "gen-05-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1074
+   },
+   {
+    "id": "gen-05-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.215,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1072
+   },
+   {
+    "id": "gen-05-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.503,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1085
+   },
+   {
+    "id": "gen-05-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8058,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1176
+   },
+   {
+    "id": "gen-05-05",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.6779,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1036
+   },
+   {
+    "id": "gen-05-06",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.5072,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1044
+   },
+   {
+    "id": "gen-05-07",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.7128,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2103
+   },
+   {
+    "id": "gen-05-08",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.3066,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1058
+   },
+   {
+    "id": "gen-05-09",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.4036,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1101
+   },
+   {
+    "id": "gen-06-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 0.5953,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1235
+   },
+   {
+    "id": "gen-06-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.972,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 72
+   },
+   {
+    "id": "gen-06-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.7381,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1472
+   },
+   {
+    "id": "gen-06-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.7949,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1148
+   },
+   {
+    "id": "gen-06-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.5579,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2188
+   },
+   {
+    "id": "gen-06-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.3519,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1187
+   },
+   {
+    "id": "gen-06-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5367,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1192
+   },
+   {
+    "id": "gen-06-07",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.7346,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1093
+   },
+   {
+    "id": "gen-06-08",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.5106,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1159
+   },
+   {
+    "id": "gen-06-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4055,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1172
+   },
+   {
+    "id": "gen-07-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.8484,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1126
+   },
+   {
+    "id": "gen-07-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.6985,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1111
+   },
+   {
+    "id": "gen-07-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.2568,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1112
+   },
+   {
+    "id": "gen-07-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.5175,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1024
+   },
+   {
+    "id": "gen-07-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.6932,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2112
+   },
+   {
+    "id": "gen-07-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.6332,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1101
+   },
+   {
+    "id": "gen-07-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.7476,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1057
+   },
+   {
+    "id": "gen-07-07",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.6405,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1168
+   },
+   {
+    "id": "gen-07-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6718,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1125
+   },
+   {
+    "id": "gen-07-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5516,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1062
+   },
+   {
+    "id": "gen-08-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.9832,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1076
+   },
+   {
+    "id": "gen-08-01",
+    "type": "author",
+    "gate": true,
+    "ndcg": 0.779,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1066
+   },
+   {
+    "id": "gen-08-02",
+    "type": "topic",
+    "gate": true,
+    "ndcg": 0.4796,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1399
+   },
+   {
+    "id": "gen-08-03",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.6267,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1112
+   },
+   {
+    "id": "gen-08-04",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.3992,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1016
+   },
+   {
+    "id": "gen-08-05",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.248,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 2579
+   },
+   {
+    "id": "gen-08-06",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.456,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1067
+   },
+   {
+    "id": "gen-08-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5531,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1074
+   },
+   {
+    "id": "gen-08-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6194,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1048
+   },
+   {
+    "id": "gen-08-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3766,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1079
+   },
+   {
+    "id": "gen-09-00",
+    "type": "known_item",
+    "gate": true,
+    "ndcg": 1.0,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1044
+   },
+   {
+    "id": "gen-09-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1079
+   },
+   {
+    "id": "gen-09-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.7979,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1093
+   },
+   {
+    "id": "gen-09-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.8611,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1093
+   },
+   {
+    "id": "gen-09-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.408,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1201
+   },
+   {
+    "id": "gen-09-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1098
+   },
+   {
+    "id": "gen-09-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3433,
+    "p5": 0.4,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1155
+   },
+   {
+    "id": "gen-09-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8618,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1136
+   },
+   {
+    "id": "gen-09-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8817,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1047
+   },
+   {
+    "id": "gen-09-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.7158,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1087
+   },
+   {
+    "id": "gen-10-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.879,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1107
+   },
+   {
+    "id": "gen-10-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1106
+   },
+   {
+    "id": "gen-10-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.2976,
+    "p5": 0.8,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1152
+   },
+   {
+    "id": "gen-10-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.1064,
+    "p5": 0.2,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1162
+   },
+   {
+    "id": "gen-10-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.7493,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2222
+   },
+   {
+    "id": "gen-10-05",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.766,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1089
+   },
+   {
+    "id": "gen-10-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6392,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1282
+   },
+   {
+    "id": "gen-10-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.1899,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1121
+   },
+   {
+    "id": "gen-10-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6385,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1186
+   },
+   {
+    "id": "gen-10-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5094,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1149
+   },
+   {
+    "id": "gen-11-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.8262,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1087
+   },
+   {
+    "id": "gen-11-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.5361,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1254
+   },
+   {
+    "id": "gen-11-02",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.4768,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1423
+   },
+   {
+    "id": "gen-11-03",
+    "type": "negation",
+    "gate": true,
+    "ndcg": 0.5594,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1168
+   },
+   {
+    "id": "gen-11-04",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.6955,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2489
+   },
+   {
+    "id": "gen-11-05",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.3957,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1313
+   },
+   {
+    "id": "gen-11-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6619,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1412
+   },
+   {
+    "id": "gen-11-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.3873,
+    "p5": 0.6,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1335
+   },
+   {
+    "id": "gen-11-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.0,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1400
+   },
+   {
+    "id": "gen-11-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4261,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1357
+   },
+   {
+    "id": "gen-12-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 0.8616,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1890
+   },
+   {
+    "id": "gen-12-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.8373,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1368
+   },
+   {
+    "id": "gen-12-02",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.248,
+    "p5": 0.6,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1709
+   },
+   {
+    "id": "gen-12-03",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4141,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1769
+   },
+   {
+    "id": "gen-12-04",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8655,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1631
+   },
+   {
+    "id": "gen-12-05",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5084,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1709
+   },
+   {
+    "id": "gen-12-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6807,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1754
+   },
+   {
+    "id": "gen-12-07",
+    "type": "style",
+    "gate": false,
+    "ndcg": 0.8668,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1431
+   },
+   {
+    "id": "gen-12-08",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.6864,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1515
+   },
+   {
+    "id": "gen-12-09",
+    "type": "english",
+    "gate": false,
+    "ndcg": 0.4475,
+    "p5": 1.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 3273
+   },
+   {
+    "id": "gen-12-10",
+    "type": "traditional",
+    "gate": false,
+    "ndcg": 0.3536,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1496
+   },
+   {
+    "id": "gen-13-00",
+    "type": "known_item",
+    "gate": false,
+    "ndcg": 1.0,
+    "p5": 0.2,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1580
+   },
+   {
+    "id": "gen-13-01",
+    "type": "author",
+    "gate": false,
+    "ndcg": 0.8482,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1578
+   },
+   {
+    "id": "gen-13-02",
+    "type": "style",
+    "gate": true,
+    "ndcg": 0.6527,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1676
+   },
+   {
+    "id": "gen-13-03",
+    "type": "negation",
+    "gate": false,
+    "ndcg": 0.5256,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1477
+   },
+   {
+    "id": "gen-13-04",
+    "type": "english",
+    "gate": true,
+    "ndcg": 0.89,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 2907
+   },
+   {
+    "id": "gen-13-05",
+    "type": "traditional",
+    "gate": true,
+    "ndcg": 0.3155,
+    "p5": 0.0,
+    "hit3": false,
+    "bad5": 0,
+    "ms": 1457
+   },
+   {
+    "id": "gen-13-06",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.5729,
+    "p5": 0.4,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1508
+   },
+   {
+    "id": "gen-13-07",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.8463,
+    "p5": 1.0,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1499
+   },
+   {
+    "id": "gen-13-08",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.6557,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1506
+   },
+   {
+    "id": "gen-13-09",
+    "type": "topic",
+    "gate": false,
+    "ndcg": 0.4595,
+    "p5": 0.8,
+    "hit3": true,
+    "bad5": 0,
+    "ms": 1690
+   }
+  ]
+ },
+ "holdout": {
+  "shelf": {
+   "n": 14,
+   "ndcg": 0.6636,
+   "p5": 0.7,
+   "hit3": 0.7143,
+   "bad5": 0,
+   "p50_ms": 111,
+   "gate": {
+    "n": 14,
+    "ndcg": 0.6636,
+    "p5": 0.7,
+    "hit3": 0.7143,
+    "bad5": 0,
+    "p50_ms": 111
+   },
+   "queries": [
+    {
+     "id": "hold-scifi-epic",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.3072,
+     "p5": 1.0,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 148
+    },
+    {
+     "id": "hold-psychohistory",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.0784,
+     "p5": 0.0,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 109
+    },
+    {
+     "id": "hold-quantum-computing",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 113
+    },
+    {
+     "id": "hold-en-plural-startups",
+     "type": "english",
+     "gate": true,
+     "ndcg": 0.469,
+     "p5": 0.6,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 102
+    },
+    {
+     "id": "hold-en-singular-startup",
+     "type": "english",
+     "gate": true,
+     "ndcg": 0.8701,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 101
+    },
+    {
+     "id": "hold-en-machine-learning",
+     "type": "english",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 124
+    },
+    {
+     "id": "hold-en-substring-psych",
+     "type": "english",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 109
+    },
+    {
+     "id": "hold-single-zen",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.9149,
+     "p5": 0.8,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 80
+    },
+    {
+     "id": "hold-single-tea",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 81
+    },
+    {
+     "id": "hold-trad-query-simp-book",
+     "type": "traditional",
+     "gate": true,
+     "ndcg": 0.0,
+     "p5": 0.0,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 110
+    },
+    {
+     "id": "hold-simp-query-trad-book",
+     "type": "traditional",
+     "gate": true,
+     "ndcg": 0.5193,
+     "p5": 0.8,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 116
+    },
+    {
+     "id": "hold-trad-quoted-title",
+     "type": "known_item",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 0.2,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 111
+    },
+    {
+     "id": "hold-trad-ai-era",
+     "type": "traditional",
+     "gate": true,
+     "ndcg": 0.4156,
+     "p5": 0.6,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 203
+    },
+    {
+     "id": "hold-generic-half",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.7163,
+     "p5": 0.8,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 208
+    }
+   ]
+  },
+  "describe": {
+   "n": 14,
+   "ndcg": 0.6682,
+   "p5": 0.7,
+   "hit3": 0.7143,
+   "bad5": 0,
+   "p50_ms": 94,
+   "gate": {
+    "n": 14,
+    "ndcg": 0.6682,
+    "p5": 0.7,
+    "hit3": 0.7143,
+    "bad5": 0,
+    "p50_ms": 94
+   },
+   "queries": [
+    {
+     "id": "hold-scifi-epic",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.3072,
+     "p5": 1.0,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 93
+    },
+    {
+     "id": "hold-psychohistory",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.0784,
+     "p5": 0.0,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 91
+    },
+    {
+     "id": "hold-quantum-computing",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 94
+    },
+    {
+     "id": "hold-en-plural-startups",
+     "type": "english",
+     "gate": true,
+     "ndcg": 0.469,
+     "p5": 0.6,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 92
+    },
+    {
+     "id": "hold-en-singular-startup",
+     "type": "english",
+     "gate": true,
+     "ndcg": 0.8701,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 94
+    },
+    {
+     "id": "hold-en-machine-learning",
+     "type": "english",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 116
+    },
+    {
+     "id": "hold-en-substring-psych",
+     "type": "english",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 1039
+    },
+    {
+     "id": "hold-single-zen",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.9149,
+     "p5": 0.8,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 70
+    },
+    {
+     "id": "hold-single-tea",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 1.0,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 70
+    },
+    {
+     "id": "hold-trad-query-simp-book",
+     "type": "traditional",
+     "gate": true,
+     "ndcg": 0.0,
+     "p5": 0.0,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 92
+    },
+    {
+     "id": "hold-simp-query-trad-book",
+     "type": "traditional",
+     "gate": true,
+     "ndcg": 0.5193,
+     "p5": 0.8,
+     "hit3": false,
+     "bad5": 0,
+     "ms": 94
+    },
+    {
+     "id": "hold-trad-quoted-title",
+     "type": "known_item",
+     "gate": true,
+     "ndcg": 1.0,
+     "p5": 0.2,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 93
+    },
+    {
+     "id": "hold-trad-ai-era",
+     "type": "traditional",
+     "gate": true,
+     "ndcg": 0.4156,
+     "p5": 0.6,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 1111
+    },
+    {
+     "id": "hold-generic-half",
+     "type": "topic",
+     "gate": true,
+     "ndcg": 0.7799,
+     "p5": 0.8,
+     "hit3": true,
+     "bad5": 0,
+     "ms": 1119
+    }
+   ]
+  }
+ }
+}

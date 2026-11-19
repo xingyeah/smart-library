@@ -62,9 +62,35 @@ def _read_cf_string(cf_string: int) -> Optional[str]:
     return buffer.value.decode("utf-8")
 
 
+# GB2312 characters the ICU table rewrites that are traditional-only in current use; the other 11 it rewrites are
+# standard simplified (俱乐部, 著作, 乾坤, 大阪, 哪吒, 摔跤) and must stay.
+TRADITIONAL_IN_GB2312 = frozenset("後於麽夥徵菸摺")
+
+
+def _is_simplified_form(char: str) -> bool:
+    if char in TRADITIONAL_IN_GB2312:
+        return False
+    try:
+        char.encode("gb2312")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 @functools.lru_cache(maxsize=4096)
 def to_simplified(text: str) -> str:
-    """`text` with traditional characters made simplified; unchanged where the system transform is unavailable."""
+    """`text` with traditional characters made simplified; unchanged where the system transform is unavailable.
+
+    Only characters outside GB2312 (plus TRADITIONAL_IN_GB2312) are converted: the ICU table also rewrites some
+    standard simplified characters (俱乐部 → 具乐部).
+    """
+    if all(_is_simplified_form(char) for char in text):
+        return text
+    return "".join(char if _is_simplified_form(char) else _transform_icu(char) for char in text)
+
+
+@functools.lru_cache(maxsize=4096)
+def _transform_icu(text: str) -> str:
     # A NUL would end the C string read back, dropping the rest of the query
     if not text or _CF is None or not _TRANSFORM or "\x00" in text:
         return text

@@ -1,10 +1,12 @@
 """Search v2 phase 1: semantic query dedupe, traditional queries, and whole-word vs half-word scoring."""
 
+import json
 import os
 import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+EVAL_DIR = os.path.join(os.path.dirname(__file__), "search_eval")
 
 from build_bge_index import strip_toc_ads  # noqa: E402
 from search import term_points  # noqa: E402
@@ -52,7 +54,13 @@ class TraditionalVariantTests(unittest.TestCase):
         self.assertEqual(intent["negative_terms"], ["小说", "小說"])
 
     def test_embedded_nul_does_not_cut_the_text(self):
-        self.assertEqual(to_simplified("台灣\x00測試"), "台灣\x00測試")
+        self.assertEqual(to_simplified("台灣\x00測試"), "台湾\x00测试")
+
+    def test_standard_simplified_characters_are_kept(self):
+        self.assertEqual(to_simplified("那本讲秘密俱乐部的书，著作，大阪"), "那本讲秘密俱乐部的书，著作，大阪")
+
+    def test_traditional_text_is_simplified(self):
+        self.assertEqual(to_simplified("關於商業策略與創新的書籍"), "关于商业策略与创新的书籍")
 
 
 class HalfWordInvariantTests(unittest.TestCase):
@@ -89,6 +97,18 @@ class TocAdTests(unittest.TestCase):
     def test_promo_entries_go_and_wechat_chapters_stay(self):
         toc = "1.每日发布新书可下载。公众号首页回复书名 | 第三节 案例9：微信——社交席卷一切 | 4.也可以加微信【123】免费领取"
         self.assertEqual(strip_toc_ads(toc), "第三节 案例9：微信——社交席卷一切")
+
+
+class HoldoutSetTests(unittest.TestCase):
+    def test_holdout_cases_stay_out_of_the_tuned_sets(self):
+        def ids(name):
+            with open(os.path.join(EVAL_DIR, name), encoding="utf-8") as f:
+                return [q["id"] for q in json.load(f)["queries"]]
+
+        holdout = ids("holdout_queries.json")
+        self.assertGreaterEqual(len(holdout), 12)
+        self.assertEqual(len(holdout), len(set(holdout)))
+        self.assertFalse(set(holdout) & set(ids("queries.json") + ids("generated_queries.json")))
 
 
 if __name__ == "__main__":

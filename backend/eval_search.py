@@ -12,6 +12,7 @@ Usage:
   .venv/bin/python backend/eval_search.py --mode shelf --only nl-ai-marketing -v
   .venv/bin/python backend/eval_search.py --save tests/search_eval/baseline.json
   .venv/bin/python backend/eval_search.py --compare tests/search_eval/baseline.json
+  .venv/bin/python backend/eval_search.py --holdout             # Phase 0 regression cases, kept out of tuning
 """
 
 import argparse
@@ -31,6 +32,8 @@ import search_engine as se  # noqa: E402
 QUERIES_PATH = Path(__file__).resolve().parent.parent / "tests" / "search_eval" / "queries.json"
 # DeepSeek-written queries labeled per book id (backend/eval_build.py); only human-verified ones count in the gate
 GENERATED_PATH = QUERIES_PATH.parent / "generated_queries.json"
+# Hard regression cases (search v2 Phase 0): never in the gate or in weight tuning, only in final checks
+HOLDOUT_PATH = QUERIES_PATH.parent / "holdout_queries.json"
 MODES = ("shelf", "describe")
 K = 10
 
@@ -38,7 +41,7 @@ K = 10
 def load_queries(path: Path = QUERIES_PATH, generated_path: Path = GENERATED_PATH) -> List[Dict[str, Any]]:
     with open(path, "r", encoding="utf-8") as f:
         queries = json.load(f)["queries"]
-    if generated_path.exists():
+    if generated_path and generated_path.exists():
         with open(generated_path, "r", encoding="utf-8") as f:
             queries += [q for q in json.load(f)["queries"] if q.get("judged")]
     for q in queries:
@@ -147,6 +150,15 @@ def run(modes=MODES, only: str = "", ai: bool = False) -> Dict[str, Any]:
     queries = load_queries()
     if only:
         queries = [q for q in queries if q["id"] == only or only in q["query"]]
+    return evaluate_queries(modes, queries)
+
+
+def run_holdout(modes=MODES) -> Dict[str, Any]:
+    """The Phase 0 holdout cases alone; their GATE line is the holdout result."""
+    return evaluate_queries(modes, load_queries(HOLDOUT_PATH, generated_path=None))
+
+
+def evaluate_queries(modes, queries: List[Dict[str, Any]]) -> Dict[str, Any]:
     se.warmup_search_engine()
     corpus = load_corpus_texts()
     return {m: evaluate(m, queries, corpus) for m in modes}
@@ -181,10 +193,11 @@ def main() -> None:
     ap.add_argument("--compare", help="baseline JSON to diff against")
     ap.add_argument("-v", "--verbose", action="store_true", help="print graded top 10 per query")
     ap.add_argument("--ai", action="store_true", help="apply DeepSeek rerank (costs ~CNY 0.005 per query, cached)")
+    ap.add_argument("--holdout", action="store_true", help="evaluate only the holdout cases in holdout_queries.json")
     args = ap.parse_args()
 
     modes = MODES if args.mode == "both" else (args.mode,)
-    report = run(modes, args.only, args.ai)
+    report = run_holdout(modes) if args.holdout else run(modes, args.only, args.ai)
     baseline = json.loads(Path(args.compare).read_text(encoding="utf-8")) if args.compare else {}
     print_report(report, baseline, args.verbose)
     if args.save:

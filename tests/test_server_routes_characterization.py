@@ -86,6 +86,11 @@ class TestServerRoutesCharacterization(unittest.TestCase):
         no_net = mock.patch.object(book_enrichment_service, "_start_cover_fetch")
         no_net.start()
         self.addCleanup(no_net.stop)
+        # A summary edit schedules a catalog rewrite of the real library; the timer thread dies with the test process
+        # mid-write and leaves .电子书分类索引与简介目录.xlsx.<pid>.tmp behind in the repo
+        no_catalog = mock.patch("catalog_sync.enqueue_catalog_sync")
+        no_catalog.start()
+        self.addCleanup(no_catalog.stop)
 
         # 预置 1 本测试书籍
         c = conn()

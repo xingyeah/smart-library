@@ -1,0 +1,202 @@
+{
+ "_doc": "Search v2 Phase 0 holdout regression cases (draft labels; review by hand before relying on them). Never used for the gate or weight tuning; run with eval_search.py --holdout.",
+ "queries": [
+  {
+   "id": "hold-scifi-epic",
+   "type": "topic",
+   "query": "科幻史诗",
+   "grade2": [
+    "银河帝国",
+    "基地(三部曲|与地球|前奏|边缘)?",
+    "沙丘",
+    "海伯利安",
+    "三体"
+   ],
+   "grade1": [
+    "科幻",
+    "阿西莫夫",
+    "asimov",
+    "刘慈欣"
+   ]
+  },
+  {
+   "id": "hold-psychohistory",
+   "type": "topic",
+   "query": "心理史学",
+   "grade2": [
+    "银河帝国",
+    "基地(三部曲|与地球|前奏|边缘)",
+    "foundation"
+   ],
+   "grade1": [
+    "阿西莫夫",
+    "asimov"
+   ]
+  },
+  {
+   "id": "hold-quantum-computing",
+   "type": "topic",
+   "query": "量子计算",
+   "grade2": [
+    "量子计算",
+    "quantum comput"
+   ],
+   "grade1": [
+    "量子比特",
+    "量子信息",
+    "量子力学"
+   ]
+  },
+  {
+   "id": "hold-en-plural-startups",
+   "type": "english",
+   "query": "startups",
+   "grade2": [
+    "startup",
+    "创业"
+   ],
+   "grade1": [
+    "初创",
+    "创始人",
+    "founder"
+   ]
+  },
+  {
+   "id": "hold-en-singular-startup",
+   "type": "english",
+   "query": "startup",
+   "grade2": [
+    "startup",
+    "创业"
+   ],
+   "grade1": [
+    "初创",
+    "创始人",
+    "founder"
+   ]
+  },
+  {
+   "id": "hold-en-machine-learning",
+   "type": "english",
+   "query": "machine learning",
+   "grade2": [
+    "machine learning",
+    "机器学习"
+   ],
+   "grade1": [
+    "深度学习",
+    "deep learning",
+    "神经网络",
+    "人工智能"
+   ]
+  },
+  {
+   "id": "hold-en-substring-psych",
+   "type": "english",
+   "query": "psychology",
+   "grade2": [
+    "psycholog",
+    "心理学"
+   ],
+   "grade1": [
+    "心理"
+   ]
+  },
+  {
+   "id": "hold-single-zen",
+   "type": "topic",
+   "query": "禅",
+   "grade2": [
+    "禅",
+    "\\bzen\\b"
+   ],
+   "grade1": [
+    "佛",
+    "冥想",
+    "正念"
+   ],
+   "bad": [
+    "CSS"
+   ]
+  },
+  {
+   "id": "hold-single-tea",
+   "type": "topic",
+   "query": "茶",
+   "grade2": [
+    "茶"
+   ],
+   "grade1": [
+    "茶道",
+    "饮"
+   ]
+  },
+  {
+   "id": "hold-trad-query-simp-book",
+   "type": "traditional",
+   "query": "人類簡史",
+   "grade2": [
+    "人类简史",
+    "sapiens"
+   ],
+   "grade1": [
+    "赫拉利",
+    "harari",
+    "未来简史",
+    "今日简史"
+   ]
+  },
+  {
+   "id": "hold-simp-query-trad-book",
+   "type": "traditional",
+   "query": "刻意进化",
+   "grade2": [
+    "刻意進化"
+   ],
+   "grade1": [
+    "进化",
+    "進化"
+   ]
+  },
+  {
+   "id": "hold-trad-quoted-title",
+   "type": "known_item",
+   "query": "《刻意進化》",
+   "grade2": [
+    "刻意進化"
+   ],
+   "grade1": []
+  },
+  {
+   "id": "hold-trad-ai-era",
+   "type": "traditional",
+   "query": "AI時代的學習",
+   "grade2": [
+    "AI時代，大腦如何精準學習",
+    "how we learn"
+   ],
+   "grade1": [
+    "学习",
+    "學習",
+    "大脑",
+    "大腦"
+   ]
+  },
+  {
+   "id": "hold-generic-half",
+   "type": "topic",
+   "query": "投资方法",
+   "grade2": [
+    "投资",
+    "investing",
+    "investment"
+   ],
+   "grade1": [
+    "理财",
+    "股票",
+    "价值投资",
+    "基金"
+   ]
+  }
+ ]
+}
