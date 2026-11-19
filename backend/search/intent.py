@@ -429,49 +429,21 @@ def infer_query_categories(
     return [c for c, _ in cat_scores[:3]]
 
 
+# More appended concepts dilute a short query's embedding
+MAX_SEMANTIC_EXTRAS = 3
+
+
 def build_semantic_query(sentence: str, concepts: List[str]) -> str:
     """The sentence plus the concepts it lacks; a repeat ('科幻史诗 科幻史诗') shifts the embedding off target."""
     parts = [sentence]
     seen = sentence.lower()
     for concept in concepts:
+        if len(parts) > MAX_SEMANTIC_EXTRAS:
+            break
         if concept and concept.lower() not in seen:
             parts.append(concept)
             seen += " " + concept.lower()
     return " ".join(parts)
-
-
-def build_fts_query(
-    primary_terms: List[str], synonym_terms: Optional[List[str]] = None
-) -> str:
-    """
-    Build SQLite FTS5 query strictly from topical terms (never from modifiers like '经典' or '书籍').
-    Uses OR across topical terms & synonyms so BM25 naturally scores multi-term hits higher
-    without zeroing out books that use synonymous terminology.
-    """
-    clean_primary: List[str] = []
-    seen: Set[str] = set()
-    for t in primary_terms:
-        tc = re.sub(r'[^\w\u4e00-\u9fff]+', "", t).lower()
-        if tc and tc not in seen:
-            seen.add(tc)
-            clean_primary.append(f'"{tc}"')
-
-    clean_syns: List[str] = []
-    if synonym_terms:
-        for st in synonym_terms[:6]:
-            stc = re.sub(r'[^\w\u4e00-\u9fff]+', "", st).lower()
-            if len(stc) >= 2 and stc not in seen:
-                seen.add(stc)
-                clean_syns.append(f'"{stc}"')
-
-    all_q = clean_primary + clean_syns
-    if not all_q:
-        return ""
-    if len(clean_primary) >= 2:
-        and_part = f"({' AND '.join(clean_primary[:3])})"
-        or_part = f"({' OR '.join(all_q[:8])})"
-        return f"{and_part} OR {or_part}"
-    return " OR ".join(all_q[:8])
 
 
 _QUERY_TRANSLATION_CACHE: Dict[str, str] = {}

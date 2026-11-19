@@ -5,11 +5,9 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from search.corpus_stats import get_corpus_idf_mult
 from search.lexicon import (
     ADVANCED_LEVEL_MARKERS,
-    AMBIGUOUS_SHORT_DOMAIN_KEYS,
     ANTHOLOGY_MODIFIERS,
     BROAD_PARENT_NOUNS,
     CLASSIC_INTENT_MODIFIERS,
-    CONVERSATIONAL_STOPWORDS,
     DOMAIN_SYNONYM_MAP,
     HARDCORE_STYLE_MODIFIERS,
     INTRO_LEVEL_MARKERS,
@@ -21,40 +19,16 @@ from search.lexicon import (
     TECH_DEPTH_MARKERS,
     TECH_DEPTH_MODIFIERS,
     TEXTBOOK_POSITIVE_MARKERS,
-    TIER2_CONTEXT_MODIFIERS,
     _ENGLISH_WORD,
     _NON_TECH_KINDS,
     _SHORT_ASCII_TERM,
     _has_term,
 )
+from search.hanzi import to_simplified
 from search.shelf import _format_book_row
+from search.term_points import FIELD_PTS, half_word_hit, secondary_field_bonus
 
-# A 2-char half of a compound ('科幻' of '科幻史诗') scores below every whole-word hit (lowest: table of contents,
-# 22), so books that only share half the word never outrank the books that contain all of it.
-HALF_WORD_TITLE_PTS = 16.0
-HALF_WORD_TEXT_PTS = 9.0
-# Both halves present ('科幻' and '史诗') is stronger evidence than one, still below a whole-word title hit.
-BOTH_HALVES_TITLE_PTS = 30.0
-BOTH_HALVES_TEXT_PTS = 23.0
-# A whole word also found in lower-ranked fields adds a quarter of their points, capped at 30% of the best field.
-SECONDARY_FIELD_SHARE = 0.25
-SECONDARY_FIELD_CAP = 0.30
-# Whole-word fields that can stack under the field that scored the term, highest first.
-STACKABLE_FIELD_PTS = (("meta", 44.0), ("summary", 36.0), ("ai_keywords", 30.0), ("toc", 22.0))
 ANTHOLOGY_PENALTY = -12.0
-
-
-def secondary_field_bonus(main_field: str, main_pts: float, field_hits: Dict[str, bool]) -> float:
-    """Extra points for a whole word that also appears in fields ranked below the one that scored it."""
-    names = [name for name, _ in STACKABLE_FIELD_PTS]
-    start = names.index(main_field) + 1 if main_field in names else 0
-    others = sum(pts for name, pts in STACKABLE_FIELD_PTS[start:] if field_hits.get(name))
-    return min(SECONDARY_FIELD_CAP * main_pts, SECONDARY_FIELD_SHARE * others)
-
-
-def has_both_halves(term: str, text: str) -> bool:
-    return len(term) in (3, 4) and term[:2] in text and term[-2:] in text
-
 
 
 def pre_score_candidates(
@@ -103,6 +77,9 @@ def pre_score_candidates(
         title_sub = f"{title_low} {sub_low}"
         author_low = (b.get("author") or "").lower()
         meta = ai_meta.get(bid) or {}
+        title_sub = f"{title_sub} {(meta.get('clean_title') or '').lower()}"
+        subfield_low = (meta.get("subfield") or "").lower()
+        b["_ai_meta"] = meta
         if meta.get("clean_title"):
             b["clean_title"] = meta["clean_title"]
             b["ai_level"], b["ai_kind"] = meta["level"], meta["kind"]
@@ -164,7 +141,8 @@ def pre_score_candidates(
         # Exact book title / author / ISBN pin boost
         exact_title = (intent.get("explicit_title") or "").strip().lower()
         clean_et = re.sub(r"[^\w\u4e00-\u9fff]+", "", exact_title)
-        clean_title = re.sub(r"[^\w\u4e00-\u9fff]+", "", title_low)
+        # The query is read in simplified form, so a traditional title ('刻意進化') is compared simplified too
+        clean_title = re.sub(r"[^\w\u4e00-\u9fff]+", "", to_simplified(title_low))
         clean_q = re.sub(r"[^\w\u4e00-\u9fff]+", "", q_exact_low)
 
         target_title = clean_et or clean_q
@@ -185,7 +163,7 @@ def pre_score_candidates(
                 primary_hit_count += 1
                 matched_concept_groups += 1
                 matched_anchors.append(f"书名包含:{intent.get('explicit_title') or raw_query.strip()}")
-            elif target_title in sub_low:
+            elif target_title in to_simplified(sub_low):
                 lexical_score += 110.0
                 primary_hit_count += 1
                 matched_anchors.append(f"副标题命中:{intent.get('explicit_title') or raw_query.strip()}")
@@ -203,7 +181,7 @@ def pre_score_candidates(
                 gain_start = lexical_score
                 w_pt = float(term_weights.get(pt, 1.25 if len(pt_low) >= 3 else 1.0))
                 field_hits = {
-                    "meta": _has_term(pt_low, cat_str.lower()) or _has_term(pt_low, tags_low),
+                    "meta": any(_has_term(pt_low, text) for text in (cat_str.lower(), tags_low, subfield_low)),
                     "summary": _has_term(pt_low, summary_low),
                     "ai_keywords": pt_low in ai_kw_set,
                     "toc": _has_term(pt_low, toc_low),
@@ -235,63 +213,44 @@ def pre_score_candidates(
                     if pt not in matched_anchors:
                         matched_anchors.append(pt)
                 elif field_hits["meta"]:
-                    lexical_score += 44.0 * w_pt
-                    main_field, main_pts = "meta", 44.0
+                    main_field, main_pts = "meta", FIELD_PTS["meta"]
+                    lexical_score += main_pts * w_pt
                     primary_hit_count += 1
                     strong_tier1_hit = True
                     group_hit = True
                     if pt not in matched_anchors:
                         matched_anchors.append(pt)
                 elif field_hits["summary"]:
-                    lexical_score += 36.0 * w_pt
-                    main_field, main_pts = "summary", 36.0
+                    main_field, main_pts = "summary", FIELD_PTS["summary"]
+                    lexical_score += main_pts * w_pt
                     primary_hit_count += 1
                     group_hit = True
                     if pt not in matched_anchors:
                         matched_anchors.append(pt)
                 elif field_hits["ai_keywords"]:
-                    lexical_score += 30.0 * w_pt
-                    main_field, main_pts = "ai_keywords", 30.0
+                    main_field, main_pts = "ai_keywords", FIELD_PTS["ai_keywords"]
+                    lexical_score += main_pts * w_pt
                     primary_hit_count += 1  # topical, but not a covered concept group (no coverage bonus)
                     if pt not in matched_anchors:
                         matched_anchors.append(pt)
                 elif field_hits["toc"]:
-                    lexical_score += 22.0 * w_pt
-                    main_field, main_pts = "toc", 22.0
+                    main_field, main_pts = "toc", FIELD_PTS["toc"]
+                    lexical_score += main_pts * w_pt
                     primary_hit_count += 1
                     group_hit = True
                     if pt not in matched_anchors:
                         matched_anchors.append(pt)
                 else:
-                    # Check 2-char specific stem of a 3..4 char compound (e.g. '睡眠' in '睡眠质量', '谈判' in '谈判技巧', '衰老' in '抗衰老')
-                    stem_hit = False
-                    # Domain terms have synonyms; a 2-char stem of '比特币' ('比特', bit) is a different word
-                    if len(pt_low) in (3, 4) and pt_low not in DOMAIN_SYNONYM_MAP:
-                        both_halves = has_both_halves(pt_low, f"{title_sub} {summary_low} {tags_low}")
-                        for stem in (pt_low[:2], pt_low[-2:]):
-                            if (
-                                len(stem) == 2
-                                and stem not in AMBIGUOUS_SHORT_DOMAIN_KEYS
-                                and stem not in CONVERSATIONAL_STOPWORDS
-                                and stem not in TIER2_CONTEXT_MODIFIERS
-                            ):
-                                if stem in title_sub:
-                                    lexical_score += (BOTH_HALVES_TITLE_PTS if both_halves else HALF_WORD_TITLE_PTS) * w_pt
-                                    primary_hit_count += 1
-                                    strong_tier1_hit = True
-                                    group_hit = True
-                                    stem_hit = True
-                                    if stem not in matched_anchors:
-                                        matched_anchors.append(stem)
-                                    break
-                                elif stem in summary_low or stem in tags_low:
-                                    lexical_score += (BOTH_HALVES_TEXT_PTS if both_halves else HALF_WORD_TEXT_PTS) * w_pt
-                                    primary_hit_count += 1
-                                    group_hit = True
-                                    stem_hit = True
-                                    if stem not in matched_anchors:
-                                        matched_anchors.append(stem)
-                                    break
+                    # 2-char half of a 3..4 char compound (e.g. '睡眠' in '睡眠质量', '谈判' in '谈判技巧', '衰老' in '抗衰老')
+                    half_pts, half, in_title = half_word_hit(pt_low, title_sub, f"{summary_low} {tags_low}")
+                    stem_hit = half_pts > 0
+                    if stem_hit:
+                        lexical_score += half_pts * w_pt
+                        primary_hit_count += 1
+                        strong_tier1_hit = strong_tier1_hit or in_title
+                        group_hit = True
+                        if half not in matched_anchors:
+                            matched_anchors.append(half)
                     if not stem_hit:
                         # Check if any direct synonym of this primary concept hits the document
                         pt_syns = DOMAIN_SYNONYM_MAP.get(pt_low) or []

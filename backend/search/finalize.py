@@ -46,14 +46,15 @@ RERANK_TOP_N = 8
 RERANK_MAX_TOKENS = 128
 
 
-def rerank_document(item: Dict[str, Any], meta: Dict[str, Any]) -> str:
+def rerank_document(item: Dict[str, Any]) -> str:
     """The text the cross-encoder reads for one book: title, author, field, AI keywords and points, blurb."""
-    field = " / ".join(x for x in (item.get("category", ""), meta.get("subfield", "")) if x)
-    keywords = "、".join(meta.get("keywords", [])[:5])
+    meta = item.get("_ai_meta") or {}
+    field = " / ".join(x for x in (item.get("category"), meta.get("subfield")) if x)
+    keywords = "、".join([k for k in (meta.get("keywords") or []) if isinstance(k, str)][:5])
     points = "；".join(p for p in (item.get("core_points") or [])[:2] if isinstance(p, str))
     parts = [
-        f"《{item['title']}》 {item.get('subtitle', '')[:45]}",
-        f"作者：{item.get('author', '')[:25]}",
+        f"《{item.get('title') or ''}》 {(item.get('subtitle') or '')[:45]}",
+        f"作者：{(item.get('author') or '')[:25]}",
         f"领域：{field}",
     ]
     if keywords:
@@ -70,7 +71,6 @@ def rerank_and_fuse_candidates(
     prelim_pool: List[Dict[str, Any]],
     enable_cross_encoder: bool,
     max_results: int,
-    ai_meta: Optional[Dict[int, Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Stage 4B: Fast Cross-Encoder Reranking on the top RERANK_TOP_N candidates.
@@ -89,7 +89,7 @@ def rerank_and_fuse_candidates(
         top_for_rerank = prelim_pool[:RERANK_TOP_N]
         rerank_docs: List[Tuple[int, str]] = []
         for item in top_for_rerank:
-            rerank_docs.append((int(item["id"]), rerank_document(item, (ai_meta or {}).get(int(item["id"]), {}))))
+            rerank_docs.append((int(item["id"]), rerank_document(item)))
         ce_query = " ".join(primary_terms) if (wants_classic and len(primary_terms) == 1) else raw_query
         rerank_scores = bge.rerank_pairs(ce_query, rerank_docs, max_length=RERANK_MAX_TOKENS, batch_size=RERANK_TOP_N)
 
@@ -164,6 +164,7 @@ def rerank_and_fuse_candidates(
             "_matched_syns",
             "_matched_groups",
             "_style_reason",
+            "_ai_meta",
         ):
             b.pop(k, None)
 

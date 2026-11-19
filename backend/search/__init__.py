@@ -18,9 +18,9 @@ from search.filters import (
 from search.finalize import finalize_ranked_pool
 from search.intent import (
     analyze_query_intent,
-    build_fts_query,
     infer_query_categories,
 )
+from search.recall import build_fts_query
 from search.interest import interest_candidates, recommend_by_interests
 from search.recommend import (
     recommend_by_description,

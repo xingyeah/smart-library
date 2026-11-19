@@ -83,6 +83,19 @@
 - **繁体切片补标注**：首轮评测中 V2 的繁体查询前 10 有 68% 是未标注书（V1 为 5%），`traditional` 切片 −0.12 是缺标注造成的假象。用 `eval_build.py` 的 `label_one` 对 14 条繁体查询补标注 248 本后重评：书架 `traditional` +0.281（99.4% CI +0.116..+0.447），描述 +0.317。
 - **评测结果（V1 → V2，175 条，配对自助法）**：书架 nDCG@10 +0.027（95% CI +0.010..+0.045），gate 74 条 +0.020（CI 含 0）；描述 +0.034（+0.016..+0.054），gate +0.017（CI 含 0）；8 类均无显著负向，`Bad@5 = 0`。`科幻史诗` 下 2382/2366/2183 排第 1/4/3（原 56/40/15）。
 - **描述模式重排默认值**：`Top-12, max_length=160` 实测 `p50 = 1940ms`，超出 `≤ 1500ms` 门禁。A/B（同为 V2 代码、串行跑）：关闭 Cross-Encoder 降至 `206ms`，但对 V1 的 `english` 显著负向（−0.077）、整体 +0.010 不显著，不选；`Top-8, max_length=128` 降至 `992ms`，对 V1 整体 +0.028（95% CI +0.012..+0.046），8 类均无显著负向。默认改为 `RERANK_TOP_N = 8`、`RERANK_MAX_TOKENS = 128`。
+- **重排默认开启的门禁依据**：按 4.5.2 的开/关对比口径，`Top-8, max_length=128` 相对关闭 Cross-Encoder 的 gate 74 条 nDCG@10 +0.018（95% CI +0.006..+0.032），下限 `> 0`，且 `p50 = 992ms ≤ 1500ms`，满足保留默认开启的条件。
+- **按 `search-v2-phase1-review.md` 的修补**（2026-11-19）：
+  - gate 隔离：撤回写入 5 条 `verified` 繁体查询的 98 条 DeepSeek 标注，gate 只保留人工标注；非 gate 查询的补标保留。
+  - 繁体：变体前插到 `synonym_terms` 最前（调用方只读前 6 个）；大小写不敏感定位；书名精确匹配同时查简繁两种写法（`explicit_title_variant`），书名置顶比较在简体形式下进行；排除词补繁体写法。`hanzi.py` 捕获库加载异常，`CFStringCreateMutableCopy` 纳入 `try`，`CFRelease.restype = None`，含 NUL 的文本原样返回。
+  - Tier B 半词：只对纯中文 3–4 字词生效；双半词要求两半都通过泛词过滤；标题命中任一半优先于简介命中（拆为 `search/term_points.py`）。
+  - `build_semantic_query` 最多追加 3 个扩展词。`rerank_document` 对空字段与非字符串关键词做防御；AI 元数据随候选项传递（`_ai_meta`），`rerank_and_fuse_candidates` 去掉新增的第 6 个参数。
+  - AI 字段：`subfield` 并入 meta 档、`clean_title` 并入标题文本。`core_points` / `target_audience` 按 28 分计分会拉低质量（消融：去掉后书架 gate +0.007，95% CI +0.0007..+0.0135；全量 +0.009），**不纳入打分**。
+  - 合集释放的下游影响：取消标记的 448 本解除兴趣推荐屏蔽（多为哲学宗教 94、个人成长 78、数学 64、历史 55、社科 45）；外部评分抓取队列不受影响（两批书均已有 `book_external_meta`，队列为 0）。
+  - 未采纳：`_analyze_query_intent` 改名属于原有 330 行豁免函数的平移，拆分不在 Phase 1 范围；繁→简手写兜底表不做（服务只在 macOS 运行，CoreFoundation 恒在，且库加载失败时已降级为原文）；`is_anthology_book` 返回 0/1 以对齐 SQLite 列。
+  - 修补后同数据对比（HEAD → 修补，175 条）：书架 nDCG@10 +0.006（CI 含 0），gate −0.007（CI 含 0）；描述 +0.006（CI 含 0），gate −0.004（CI 含 0）；8 类均无显著负向，`Bad@5 = 0`。
+  - 环境说明：`data/bge_m3_vectors.npy` 于 22:12 被重建（晚于 `306bb8b`），HEAD 代码在当前数据与纯人工 gate 标注下书架 gate 为 0.6831，已低于 `test_search_quality` 阈值 0.6835。
+  - `toc_text` 广告过滤：向量热更新改动已提交（`09e04bd`），在 `build_book_passage` 中按条目剔除盗版推广行（`TOC_AD_LINE`，保留「微信打败米聊」这类正文章节）。全库命中 4 本（2382、2769、9810、19186，整份目录均为广告），增量重编码 4 本，`科幻史诗` 下 2382/2366/2183 仍排第 1/4/3。
+  - 仍待：Phase 0 的 12–15 条人工留出用例。
 
 ---
 
@@ -94,9 +107,9 @@
 | **Q2** | 词法召回层（Sparse） | **字段级位置 Bigram + 词元 FTS5（单表 BM25F，含繁简折叠与 `porter`）** | 零新依赖，解决整段中文作为单一词元、子串无法命中的问题，索引 `book_ai_meta` 与 `target_audience`，按前置验证结果取代慢 `LIKE` |
 | **Q3** | 向量表示层（Dense） | **双视角多向量索引**（元数据短向量 View A + 内容长向量 View B，视图对齐后自适应 MaxSim）+ 修复 `semantic_query` 重复拼词与广告目录过滤 | 兼顾短概念不被长简介稀释与长句剧情匹配，查询仅增 `~2.5ms`，短向量全库构建仅需数分钟 |
 | **Q4** | 粗排融合与打分范式 | **查询内归一化混合融合 + 严格分层词法证据**，并在 175 条基准集上做 5-Fold 交叉验证校准 | 消除跨查询分数尺度漂移与魔数耦合，保证可解释性与稳定泛化 |
-| **Q5** | 合集惩罚与数据卫生 | **以 `book_ai_meta.kind == '套装合集'` 为主口径修正 `is_anthology` 并回修 DB**；轻度降权（`-8 ~ -12`） | 解除对 **974 本 `kind` 非「套装合集」（另有 3 本 `kind` 为空，合计 977 本，占原标记 62%）** 的单部名著/单系列全集误伤与 `-24` 重罚，释放回推荐与评分队列 |
+| **Q5** | 合集惩罚与数据卫生 | **以 `book_ai_meta.kind == '套装合集'` 或去掉「丛书」后的书名正则命中修正 `is_anthology` 并回修 DB**（实施时按抽样改为两者取或，见 Phase 1 实施记录）；轻度降权（`-8 ~ -12`） | 解除对 **974 本 `kind` 非「套装合集」（另有 3 本 `kind` 为空，合计 977 本，占原标记 62%）** 的单部名著/单系列全集误伤与 `-24` 重罚，释放回推荐与评分队列 |
 | **Q6** | 复合词拆干策略 | **严格分层 + 双半词协同**：完整词多字段饱和叠加居高优；2 字拆干仅作低权兜底，双半词协同明显高于单边半词 | 保证「单边沾半词」在数学上永不反超「完整词命中」 |
-| **Q7** | 精排层协同 | **DeepSeek 精排与本地 Cross-Encoder 同步补齐 AI 字段 + DeepSeek 扩窗 20→30**；本地 `bge-reranker-v2-m3` 于 Phase 1 补齐字段并放宽至 `160` token（保留旧融合公式）后按实测门禁决定默认去留，有界融合随 Phase 2 落地 | 避免拿残缺旧集成（104 token/缺字段）做 A/B 产生假阴性，也不提前新增融合参数 |
+| **Q7** | 精排层协同 | **DeepSeek 精排与本地 Cross-Encoder 同步补齐 AI 字段 + DeepSeek 扩窗 20→30**；本地 `bge-reranker-v2-m3` 于 Phase 1 补齐字段，实测后定为 `Top-8, max_length=128`（保留旧融合公式）并按门禁保留默认开启，有界融合随 Phase 2 落地 | 避免拿残缺旧集成（104 token/缺字段）做 A/B 产生假阴性，也不提前新增融合参数 |
 | **Q8** | 验收门禁与执行方式 | **先落盘设计文档审定**；实施时按 Phase 0–4 分阶段推进并执行严格备份与量化门禁 | 降低大规模索引重建与排序重写风险，每阶段独立可验证、可回滚 |
 
 ---
@@ -159,7 +172,7 @@ Query
 
 #### 1. 统一分词器 `tokenize_for_bm25f(text: str) -> str`
 纯 Python 标准库实现，索引构建与查询改写共用同一分词规则，零第三方依赖：
-- **繁→简检索键折叠（Phase 2 索引两侧；Phase 1 只做查询侧扩展）**：转换使用系统 ICU `Traditional-Simplified`（经现有原生库 `libmacbookai.m` 调用 `NSString applyingTransform`，零新依赖、覆盖完整），手写映射表仅在原生库不可用时兜底。**仅作检索键，绝不修改数据库与前端展示书名**。Phase 1 因词法仍在原文上匹配，改为查询侧扩展：保留繁体原词，并把简体形式作为同义词加入，简体书靠简体词命中，繁体书靠原词命中。评测中 `traditional` 类 14 条均为生成查询，仅 5 条人工确认，均分 `0.5275` 结论需带此说明。
+- **繁→简检索键折叠（Phase 2 索引两侧；Phase 1 只做查询侧扩展）**：转换使用系统 ICU `Traditional-Simplified`（经现有原生库 `libmacbookai.m` 调用 `NSString applyingTransform`，零新依赖、覆盖完整），手写映射表仅在原生库不可用时兜底。**仅作检索键，绝不修改数据库与前端展示书名**。Phase 1 因词法仍在原文上匹配，改为查询侧扩展：实施时改为先转简体做意图分析（停用词与词典都是简体），再把繁体原词置于同义词最前，并为书名精确匹配与排除词保留繁体写法；简体书靠简体词命中，繁体书靠原词命中。评测中 `traditional` 类 14 条均为生成查询，仅 5 条人工确认，均分 `0.5275` 结论需带此说明。
 - **分段与最小化防跨句哨兵**：按标点、空白和字段边界切分。**仅在相邻“中文结尾段”与“中文开头段”之间插入哨兵词元 `z0z`**（防止关键词列表、章节或字段边界拼出虚假跨段 2-gram）；英文/数字/无汉字相邻边界不插 `z0z`，避免长目录、多标签文档的 BM25 文档长度 `dl` 虚增 20–40% 而扭曲长度归一化。
 - **中文连续串（长度 $L \ge 2$）**：输出相邻重叠 2-gram（`s[i:i+2]`），例如 `科幻史诗` → `科幻 幻史 史诗`（相邻位置 $p, p+1, p+2$）。长度为 1 的孤立汉字保留原字。
 - **英文与数字串**：转小写保留完整词元；特殊技术标识符（如 `c++` → `cpp`、`c#` → `csharp`、`f#` → `fsharp`、`node.js` → `nodejs`）在索引与查询两侧同构映射。单复数与词形交给 FTS5 内置的 `porter` 词干化（见下方 Schema），不自写归一化规则：`cryptocurrencies` / `cryptocurrency`、`startups` / `startup`、`learning` / `learn` 在索引与查询两侧自动一致。注意 `porter` 比 `search/lexicon.py` 的 `_has_term` 宽（`running` → `run`），全文召回与 Tier 打分对「命中」的定义因此略有不同，须用单元测试固定。
@@ -266,8 +279,8 @@ CREATE VIRTUAL TABLE IF NOT EXISTS books_search_fts USING fts5(
   - **`144` 本为漏标**（`is_anthology=0` 但 `book_ai_meta.kind == '套装合集'`）。
 
 #### 2. V2 口径规则
-1. 修订 `ANTHOLOGY_REGEX`：移除泛词 `丛书`，仅用于**无 `book_ai_meta.kind`** 的极少数未提炼新书（当前仅 ~82 本）回退兜底。
-2. 权威判定规则：存在 `book_ai_meta.kind` 时，严格以 **`kind == '套装合集'`** 作为 `is_anthology = 1` 主口径；单作者系列全集与名著丛书单行本均视作 `is_anthology = 0`。
+1. 修订 `ANTHOLOGY_REGEX`：移除泛词 `丛书`。
+2. 判定规则（实施时按抽样修正）：**`kind == '套装合集'` 或 书名/副标题命中去掉「丛书」后的正则**，即 `is_anthology = 1`。`kind` 描述内容体裁而非包装形式，单独作主口径会漏掉约 4 成真套装（见 Phase 1 实施记录）；名著丛书单行本视作 `is_anthology = 0`。
 3. 数据库迁移回修：运行一次性回修脚本修正全库 `books.is_anthology`（预计修正约 1,121 本）并重算对应书籍的 `classic_score`（撤回被误打的 `× 0.68` 惩罚，同步更新 FTS 与兴趣推荐/评分抓取候选池）。
 4. 搜索惩罚调轻：Stage-1 中仅当 `is_anthology == 1` 且 `not wants_anthology` 时施加轻量惩罚 `P_anth ∈ [-12, -8]`（取代原 `-24.0`，具体取值由 CV 校准）。
 
@@ -357,7 +370,7 @@ $$S_1(i) = 100 \cdot \bigl(w_{\text{lex}} L_i + w_{\text{dense}} \tilde{d}_i\big
    - `_cache_key()` 增加精排模板版本前缀（如 `v2|...`），自动使旧格式缓存失效；
    - 精排窗口从 **Top-20 扩至 Top-30**：后端 `recommend.py` 已允许 `ids[:30]`，前端开启 `AI 精排` 时获取前 30 本高潜力候选提交 `/api/search/ai_rerank`（页面展示仍遵循 `page_size=24`），提高对高潜力长尾书（特别是外文翻译名或概念间接匹配书）的召回天花板。
 2. **本地 `bge-reranker-v2-m3` 字段补齐与实测去留门禁**（`backend/search/finalize.py`、`backend/search/recommend.py`）：
-   - 传给 Cross-Encoder 的文档文本补齐 `subfield`、`keywords[:5]` 与 `core_points[:2]`，并将 `max_length` 从 `104` 放宽至 `160`（实测 `Top-12, max_length=160` 单批耗时 `~1,235ms`，叠加 Stage-1 端到端约 `~1,425ms`）；**Phase 1 保留现有 `(rr_prob - 0.15) * 75.0` 融合公式不变**，待 Phase 2 归一化落地时再同步切换为有界加权融合；
+   - 传给 Cross-Encoder 的文档文本补齐 `subfield`、`keywords[:5]` 与 `core_points[:2]`，重排窗口与长度实测后定为 `Top-8, max_length=128`（`Top-12, max_length=160` 端到端 `p50 = 1940ms` 超出门禁，见 Phase 1 实施记录）；**Phase 1 保留现有 `(rr_prob - 0.15) * 75.0` 融合公式不变**，待 Phase 2 归一化落地时再同步切换为有界加权融合；
    - **数据驱动定案**：Phase 1 先补字段并把 `max_length` 放到 `160`、保留 `(rr_prob - 0.15) * 75.0` 在 175 条基准集上做 `describe` 开/关公平对比——**采用方案 A：对齐现状基线（`1364ms`），仅当 gate `nDCG@10` 配对增量的 95% 置信区间下限 `> 0` 且端到端 `p50 ≤ 1500ms` 时保留默认开启**（注：若后续需要硬性 `≤ 1200ms` 延迟预算，备选方案 B 为缩窗 `Top-8, max_length=128`，实测重排 `~926ms`）；否则将 `describe` 默认 `cross_encoder` 调为 `False`（`p50` 由 `1.36s` 降至 `≤ 200ms`）。
 
 ---
@@ -369,7 +382,7 @@ $$S_1(i) = 100 \cdot \bigl(w_{\text{lex}} L_i + w_{\text{dense}} \tilde{d}_i\big
 | 阶段 | 涉及核心文件 | 核心工作内容 | 验收门禁（须全部通过） |
 |---|---|---|---|
 | **Phase 0**<br>备份与专项用例 | `backups/`、`tests/search_eval/queries.json` | 1. 备份 `data/library.db` 与 `bge_m3_*`<br>2. 新增 12–15 条专项用例（含「科幻史诗」「心理史学」、英文单复数/子串、单字、繁简交叉等，只进留出集）<br>3. 保存 V1 评测快照 | 备份可校验；留出集隔离完成；V1 快照落盘 |
-| **Phase 1**<br>速效修复与公平测重排（约 1 天） | `backend/search/intent.py`、`backend/build_bge_index.py`、`backend/classic_scorer.py`、`backend/search/scoring.py`、`backend/search/finalize.py`、`backend/search/recommend.py` | 1. `semantic_query` 去重<br>2. 过滤 `toc_text` 广告条目（只改编码文本，随增量更新生效；须等工作区未提交的 `build_bge_index.py` 改动提交后再做）<br>3. 合集判定（实施时按抽样结果改为 `kind == '套装合集'` 或去掉「丛书」后的正则命中，见 Phase 1 实施记录）：先抽样核对，再回填 `is_anthology`（修正 974 本 `kind` 非套装与 3 本空值误伤 + 144 本漏标）并重算 `classic_score`，评估释放书目对兴趣推荐与豆瓣抓取队列的影响<br>4. V1 打分局部修补：补齐 AI 字段与 Tier A 多字段饱和叠加（去互斥 `elif`）、Tier B 单边半词封顶在 Tier A 最低档之下、合集扣分调到 `-12`；繁体查询做查询侧简体扩展（保留原词，简体形式作同义词）并观察 `traditional` 切片收益<br>5. **按 4.5.2 补齐本地 Cross-Encoder 输入字段（`Top-12, max_length=160` + `keywords/core_points`），保留旧融合公式，在 `p50 ≤ 1500ms` 门禁下跑 `describe` 开/关 A/B 对比定默认值** | 1. gate `nDCG@10` 不低于 V1，`Bad@5 = 0`，书架 `p50 ≤ 200ms`<br>2. `科幻史诗` 下 `2382/2366/2183` 进前 10<br>3. Cross-Encoder 默认开关有清晰 A/B 数据依据（开重排时 `p50 ≤ 1500ms`，否则 `≤ 200ms`）<br>4. 全量 `./scripts/verify.sh` 通过，`behaviour_diff` 的差异逐条可解释 |
+| **Phase 1**<br>速效修复与公平测重排（约 1 天） | `backend/search/intent.py`、`backend/build_bge_index.py`、`backend/classic_scorer.py`、`backend/search/scoring.py`、`backend/search/finalize.py`、`backend/search/recommend.py` | 1. `semantic_query` 去重<br>2. 过滤 `toc_text` 广告条目（只改编码文本，随增量更新生效；须等工作区未提交的 `build_bge_index.py` 改动提交后再做）<br>3. 合集判定（实施时按抽样结果改为 `kind == '套装合集'` 或去掉「丛书」后的正则命中，见 Phase 1 实施记录）：先抽样核对，再回填 `is_anthology`（修正 974 本 `kind` 非套装与 3 本空值误伤 + 144 本漏标）并重算 `classic_score`，评估释放书目对兴趣推荐与豆瓣抓取队列的影响<br>4. V1 打分局部修补：补齐 AI 字段与 Tier A 多字段饱和叠加（去互斥 `elif`）、Tier B 单边半词封顶在 Tier A 最低档之下、合集扣分调到 `-12`；繁体查询做查询侧简体扩展（保留原词，简体形式作同义词）并观察 `traditional` 切片收益<br>5. **按 4.5.2 补齐本地 Cross-Encoder 输入字段（实测定为 `Top-8, max_length=128` + `keywords/core_points`），保留旧融合公式，在 `p50 ≤ 1500ms` 门禁下跑 `describe` 开/关 A/B 对比定默认值** | 1. gate `nDCG@10` 不低于 V1，`Bad@5 = 0`，书架 `p50 ≤ 200ms`<br>2. `科幻史诗` 下 `2382/2366/2183` 进前 10<br>3. Cross-Encoder 默认开关有清晰 A/B 数据依据（开重排时 `p50 ≤ 1500ms`，否则 `≤ 200ms`）<br>4. 全量 `./scripts/verify.sh` 通过，`behaviour_diff` 的差异逐条可解释 |
 | **Phase 2**<br>BM25F 全文索引 + 4.4 归一化融合（视 Phase 1 结果） | `backend/search/fts_index.py`（新）、`backend/database.py`、`backend/migrations.py`、`backend/search/recall.py`、`backend/search/scoring.py`、`backend/search/finalize.py` | 触发条件：Phase 1 后 gate `nDCG@10` 仍明显低于 `0.76`，或仍受 `LIKE` `LIMIT 80` 漏召回制约<br>1. 建 `books_search_fts`（`porter unicode61`、`aux_tok` 仅存 `isbn`、`tokenize_for_bm25f` 含繁简折叠与中文边界 `z0z`）+ `fts_dirty(book_id, dirty_seq)` 触发器（区分 `new.id`/`new.book_id`）+ 后台 `LIMIT 200` 分批轮询 CAS 同步（同进程可选 `event.set()` 唤醒）+ `fts_v2_ready` 就绪开关 + 离线 `rebuild_search_fts`<br>2. 核对英文单复数/子串与单字用例无退化后再移除通用主题 `LIKE` 扫表<br>3. **将 4.4.1–4.4.3 查询内归一化融合公式（含 80% 调参集标定的 $B_{\text{floor}}$、Dense 缺失行切片补算、Cross-Encoder 有界融合及 `finalize.py` 门槛协同重标定）与 BM25F 作为完整原子阶段同步落地** | 1. 离线重建完成且 `fts_dirty` 清空后 `fts_v2_ready=1`，活跃书目零漏行；分批 CAS 同步无 TOCTOU 丢失与写锁饥饿，读路径零写锁<br>2. 新旧用例（含英文单复数/子串及 `traditional`）不退化，书架 `p50 ≤ 200ms`，gate `nDCG@10` 逼近或达到 `≥ 0.76` 且 `Bad@5 = 0`<br>3. `tests/test_search_units.py` 全绿 |
 | **Phase 3**<br>双视角向量（视数据） | `backend/build_bge_index.py`、`backend/semantic_models.py` | 触发条件见 4.2.3；在现有向量热更新改动提交后实施<br>1. 构建 View A 短向量与 View B v3，补齐 `upsert_book_vectors` 原子双热更<br>2. 在候选池内实现两视角稳健中心化对齐 + 自适应 MaxSim 融合 | 短主题类查询 `nDCG@10` 明显提升；双矩阵与 `bge_m3_meta.json` 校验 `missing=0, stale=0` |
 | **Phase 4**<br>校准调参与 AI 精排协同 | `backend/tune_search_weights.py`（新）、`backend/ai_search.py`、`backend/http_api/handlers/books.py`、`frontend/assets/js/api.js`、`tests/search_eval/baseline.json`、`docs/adr/0005-*.md` | 1. 按 4.4.4 仅对已落地阶段现存的 3–4 个参数跑 5-Fold 校准，最终评估 175 条严格样本外（140 OOF + 35 Holdout）结果<br>2. DeepSeek AI 精排补全 AI 字段并递增版本缓存键；扩窗 `20→30` 前核算每日 DeepSeek 费用（单次 token 约增 50%，上限 ¥5/天）<br>3. 更新 `baseline.json`，新增 ADR-0005，视情况清理旧 `books_fts` 冗余数据 | 1. **统计门禁**（按 4.4.4）：175 条严格样本外（140 OOF + 35 Holdout）配对自助法 `nDCG` 增量 95% 置信区间下限 `> 0`、74 条人工 `gate` 子集不退化、真实 8 类各自 99.4% 配对区间不显著为负、`Bad@5 = 0`；留出集单独汇报观测过拟合<br>2. `verify.sh` 全绿；线上 `GET /api/books?q=科幻史诗` 端到端实测通过 |

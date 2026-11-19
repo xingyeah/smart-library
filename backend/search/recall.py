@@ -1,9 +1,43 @@
 import logging
+import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from search.intent import build_fts_query
 from search.shelf import load_ai_meta
 from semantic_models import get_bge_engine
+
+
+def build_fts_query(
+    primary_terms: List[str], synonym_terms: Optional[List[str]] = None
+) -> str:
+    """
+    Build SQLite FTS5 query strictly from topical terms (never from modifiers like '经典' or '书籍').
+    Uses OR across topical terms & synonyms so BM25 naturally scores multi-term hits higher
+    without zeroing out books that use synonymous terminology.
+    """
+    clean_primary: List[str] = []
+    seen: Set[str] = set()
+    for t in primary_terms:
+        tc = re.sub(r'[^\w\u4e00-\u9fff]+', "", t).lower()
+        if tc and tc not in seen:
+            seen.add(tc)
+            clean_primary.append(f'"{tc}"')
+
+    clean_syns: List[str] = []
+    if synonym_terms:
+        for st in synonym_terms[:6]:
+            stc = re.sub(r'[^\w\u4e00-\u9fff]+', "", st).lower()
+            if len(stc) >= 2 and stc not in seen:
+                seen.add(stc)
+                clean_syns.append(f'"{stc}"')
+
+    all_q = clean_primary + clean_syns
+    if not all_q:
+        return ""
+    if len(clean_primary) >= 2:
+        and_part = f"({' AND '.join(clean_primary[:3])})"
+        or_part = f"({' OR '.join(all_q[:8])})"
+        return f"{and_part} OR {or_part}"
+    return " OR ".join(all_q[:8])
 
 
 def build_allowed_ids(
@@ -113,8 +147,8 @@ def execute_dual_path_recall(
     direct_hit_ids: Set[int] = set()
     synonym_direct_ids: Set[int] = set()
 
-    exact_title = intent.get("explicit_title") or ""
-    if exact_title and len(exact_title) >= 2:
+    title_spellings = [t for t in (intent.get("explicit_title"), intent.get("explicit_title_variant")) if t and len(t) >= 2]
+    for exact_title in title_spellings:
         sql_et = f"""
             SELECT id FROM books
             WHERE (title = ? OR norm_title = ? OR title LIKE ? OR norm_title LIKE ?)

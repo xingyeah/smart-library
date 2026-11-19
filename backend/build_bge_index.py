@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import sys
 import threading
 import time
@@ -36,6 +37,12 @@ CORE_POINTS_MAX_CHARS = 180
 TOC_MAX_CHARS = 80
 MAX_KEYWORDS = 8
 MAX_CORE_POINTS = 4
+# Pirate-scan promo lines in some tables of contents ('公众号首页回复书名…', '加微信【…】免费领取'); chapter titles
+# that merely name WeChat ('微信打败米聊') must stay.
+TOC_AD_LINE = re.compile(
+    r"公众号.{0,12}(回复|留言|搜索|关注)|加微信|微信[号:：【\[]|免费领取|下载地址|每日发布新书|收藏了.{0,10}电子书"
+)
+TOC_ENTRY_SEPARATOR = " | "
 
 _worker_session = None
 _worker_tokenizer = None
@@ -117,6 +124,12 @@ def compute_passage_hash(passage: str) -> str:
     return hashlib.sha256(payload).hexdigest()[:16]
 
 
+def strip_toc_ads(toc_text: str) -> str:
+    """The table of contents without promo entries."""
+    entries = toc_text.split(TOC_ENTRY_SEPARATOR)
+    return TOC_ENTRY_SEPARATOR.join(e for e in entries if not TOC_AD_LINE.search(e)).strip()
+
+
 def build_book_passage(row: Any) -> str:
     title = _row_str(row, "clean_title") or _row_str(row, "title")
     subtitle = _row_str(row, "subtitle")
@@ -124,7 +137,7 @@ def build_book_passage(row: Any) -> str:
     cat = _row_str(row, "ai_category") or _row_str(row, "category")
     sub = _row_str(row, "subfield")
     summary = _row_str(row, "summary")
-    toc_text = _row_str(row, "toc_text")
+    toc_text = strip_toc_ads(_row_str(row, "toc_text"))
 
     head = f"《{title}》"
     if subtitle and subtitle not in title:
