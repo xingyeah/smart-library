@@ -143,7 +143,7 @@ export const SHELF_FILTER_GROUPS = [
   { key: 'category', title: '分类', options: CATEGORIES.slice(1).map(c => [c, c]) },
   { key: 'language', title: '语言（可多选）', options: [['zh-CN', '简体中文'], ['zh-TW', '繁体中文'], ['en', '英文']] },
   { key: 'format', title: '格式', options: [['epub', 'EPUB'], ['pdf', 'PDF'], ['azw3', 'AZW3'], ['mobi', 'MOBI']] },
-  { key: 'pub_period', title: '年代', options: [['2020s', '2020年代'], ['2010s', '2010年代'], ['2000s', '2000年代'], ['1900s', '20世纪'], ['pre1900', '早期经典']] },
+  { key: 'pub_period', title: '年代', options: [['thisyear', '今年'], ['2020s', '2020年代'], ['2010s', '2010年代'], ['2000s', '2000年代'], ['1900s', '20世纪'], ['pre1900', '早期经典']] },
   { key: 'source_dir', title: '来源', options: /** @type {string[][]} */ ([]) }  // filled from /api/stats: the source folders are this machine's config,
 ];
 export const SORT_SHORT_LABELS = {

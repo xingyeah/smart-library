@@ -1,5 +1,6 @@
 """Unified SQL WHERE predicate builders for book shelf, hybrid retrieval, and interest picks."""
 
+from datetime import date
 from typing import Any, List, Optional, Tuple
 
 from search.types import ShelfFilters
@@ -58,6 +59,8 @@ def build_pub_period_clause(period: str, table_alias: str = "b") -> str:
         "1990s": "199[0-9]*",
         "1900s": "19[0-9][0-9]*",
     }
+    if period == "thisyear":
+        return f"{col} GLOB '{date.today().year}*'"
     if period in glob_patterns:
         return f"{col} GLOB '{glob_patterns[period]}'"
     if period == "pre1900":

@@ -5,6 +5,7 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1] / "backend"
@@ -64,6 +65,20 @@ class Batch1PubPeriodTests(unittest.TestCase):
         rows_pre = [r[0] for r in conn.execute(f"SELECT id FROM books b WHERE {cpre}")]
         self.assertEqual(rows_1900, [2])
         self.assertEqual(rows_pre, [1])
+        conn.close()
+
+
+class ThisYearPeriodTests(unittest.TestCase):
+    def test_thisyear_matches_only_the_current_year(self):
+        this_year = date.today().year
+        conn = sqlite3.connect(":memory:")
+        conn.execute("CREATE TABLE books (id INT, pub_year TEXT)")
+        conn.executemany(
+            "INSERT INTO books VALUES (?, ?)",
+            [(1, str(this_year)), (2, str(this_year - 1)), (3, str(this_year + 1)), (4, "")],
+        )
+        clause = _build_pub_period_clause("thisyear")
+        self.assertEqual([r[0] for r in conn.execute(f"SELECT id FROM books b WHERE {clause}")], [1])
         conn.close()
 
 
