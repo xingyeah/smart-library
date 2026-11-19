@@ -289,9 +289,10 @@ class TestServerRoutesCharacterization(unittest.TestCase):
         self.assertEqual(row["status"], "resolved")
 
     @mock.patch("book_enrichment_service._extract_sample_content", return_value="Chapter 1. Variables and abstraction in mathematics.")
+    @mock.patch("book_enrichment_service.refresh_book_vector_in_memory", return_value=True)
     @mock.patch("book_enrichment_service.spawn_reindex")
     @mock.patch("deepseek_client.chat")
-    def test_post_book_enrich_refresh(self, mock_chat, mock_spawn, _sample):
+    def test_post_book_enrich_refresh(self, mock_chat, mock_spawn, _mem_refresh, _sample):
         """POST /api/books/{id}/enrich_refresh 触发单书 AI 重新提炼与元数据修正"""
         mock_chat.return_value = (
             json.dumps({

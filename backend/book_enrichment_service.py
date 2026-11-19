@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from archiver import ArchiveTarget, safe_hardlink_to_library
 from book_reader.payload import extract_book_reader_content
+from build_bge_index import refresh_book_vector_in_memory
 from config import LIBRARY_DIR, is_path_within
 from database import get_conn, write_tx
 import deepseek_client as ds
@@ -348,6 +349,10 @@ def refresh_book_ai_metadata(
     if reindex_fn is not None:
         reindex_fn(book_id)
     else:
+        try:
+            refresh_book_vector_in_memory(book_id, conn_factory=get_conn)
+        except Exception:
+            logger.warning("Immediate vector refresh failed for book %s", book_id, exc_info=True)
         spawn_reindex({book_id})
     try:
         from catalog_sync import enqueue_catalog_sync

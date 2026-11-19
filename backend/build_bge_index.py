@@ -1,6 +1,8 @@
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import fcntl
 import hashlib
 import json
+import logging
 import os
 import sys
 import threading
@@ -25,6 +27,16 @@ from semantic_models import (
     get_bge_engine,
 )
 
+logger = logging.getLogger("build_bge_index")
+
+EMBED_MAX_LENGTH = 512
+PASSAGE_SCHEMA_VERSION = 2
+SUMMARY_MAX_CHARS = 360
+CORE_POINTS_MAX_CHARS = 180
+TOC_MAX_CHARS = 80
+MAX_KEYWORDS = 8
+MAX_CORE_POINTS = 4
+
 _worker_session = None
 _worker_tokenizer = None
 _worker_input_names: List[str] = []
@@ -43,7 +55,7 @@ def _init_worker() -> None:
     )
     _worker_input_names = [inp.name for inp in _worker_session.get_inputs()]
     _worker_tokenizer = Tokenizer.from_file(str(BGE_M3_TOKENIZER))
-    _worker_tokenizer.enable_truncation(max_length=144)
+    _worker_tokenizer.enable_truncation(max_length=EMBED_MAX_LENGTH)
     _worker_tokenizer.enable_padding(pad_id=1, pad_token="<pad>")
 
 
@@ -80,25 +92,93 @@ def _encode_worker_chunk(chunk: List[Tuple[int, str]]) -> Tuple[List[int], np.nd
     return indices, np.vstack(vecs_list)
 
 
+def _row_str(row: Any, key: str) -> str:
+    try:
+        val = row[key]
+    except (KeyError, IndexError, TypeError):
+        return ""
+    return str(val).strip() if val is not None else ""
+
+
+def _parse_json_list(raw: str) -> List[str]:
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [str(x).strip() for x in parsed if str(x or "").strip()]
+
+
+def compute_passage_hash(passage: str) -> str:
+    payload = f"v{PASSAGE_SCHEMA_VERSION}:{EMBED_MAX_LENGTH}:{passage}".encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()[:16]
+
+
 def build_book_passage(row: Any) -> str:
-    title = (row["title"] or "").strip()
-    subtitle = (row["subtitle"] or "").strip()
-    author = (row["author"] or "").strip()
-    category = (row["category"] or "").strip()
-    summary = (row["summary"] or "").strip()
-    toc_text = (row["toc_text"] or "").strip()
+    title = _row_str(row, "clean_title") or _row_str(row, "title")
+    subtitle = _row_str(row, "subtitle")
+    author = _row_str(row, "author")
+    cat = _row_str(row, "ai_category") or _row_str(row, "category")
+    sub = _row_str(row, "subfield")
+    summary = _row_str(row, "summary")
+    toc_text = _row_str(row, "toc_text")
 
     head = f"《{title}》"
-    if subtitle:
-        head += f" ({subtitle[:80]})"
+    if subtitle and subtitle not in title:
+        head += f" ({subtitle[:60]})"
     if author and author != "未知作者":
         head += f" 作者：{author[:40]}"
-    if category:
-        head += f" 领域：{category}"
+    domain = "/".join(dict.fromkeys(x for x in (cat, sub) if x))
+    if domain:
+        head += f" 领域：{domain}"
+    meta_bits = "/".join(x for x in (_row_str(row, "kind"), _row_str(row, "level")) if x)
+    if meta_bits:
+        head += f" 类型：{meta_bits}"
 
-    body = summary[:240]
-    toc_part = f" 章节：{toc_text[:100]}" if toc_text else ""
-    return f"{head}。{body}{toc_part}"
+    parts = [head + "。"]
+    kws = _parse_json_list(_row_str(row, "keywords"))[:MAX_KEYWORDS]
+    if kws:
+        parts.append("关键词：" + "、".join(kws) + "。")
+    if summary:
+        parts.append(summary[:SUMMARY_MAX_CHARS])
+    if _row_str(row, "summary_source") == "ai_refreshed":
+        cps = _parse_json_list(_row_str(row, "core_points"))[:MAX_CORE_POINTS]
+        if cps:
+            parts.append(" 看点：" + "；".join(cps)[:CORE_POINTS_MAX_CHARS])
+    if toc_text:
+        parts.append(" 章节：" + toc_text[:TOC_MAX_CHARS])
+    return "".join(parts)
+
+
+_BOOK_PASSAGE_SELECT = """
+    SELECT b.id, b.title, b.subtitle, b.author, b.category, b.summary,
+           b.summary_source, b.core_points, b.toc_text,
+           m.clean_title, m.keywords, m.level, m.kind, m.ai_category, m.subfield
+    FROM books b
+    LEFT JOIN book_ai_meta m ON m.book_id = b.id
+"""
+
+
+def refresh_book_vector_in_memory(book_id: int, conn_factory: Any = None) -> bool:
+    """Re-encode one active book and swap its vector in RAM immediately after AI enrichment."""
+    conn = (conn_factory or get_conn)()
+    try:
+        row = conn.execute(
+            f"{_BOOK_PASSAGE_SELECT} WHERE b.id = ? AND b.is_deleted = 0",
+            (int(book_id),),
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return False
+    engine = get_bge_engine()
+    if not engine.is_embedder_ready() or not engine.load_vector_index():
+        return False
+    vecs = engine.encode_texts([build_book_passage(row)], max_length=EMBED_MAX_LENGTH, batch_size=1)
+    return engine.upsert_book_vector(int(book_id), vecs[0])
 
 
 _sync_lock = threading.Lock()
@@ -136,28 +216,36 @@ def _load_existing_bge_cache(force_full: bool) -> Tuple[Dict[int, np.ndarray], D
 
 
 def _write_bge_outputs(final_mat: np.ndarray, all_ids: List[int], all_hashes: List[str]) -> None:
-    tmp_npy = BGE_VEC_NPY_PATH.with_suffix(".tmp.npy")
-    tmp_meta = BGE_VEC_META_PATH.with_suffix(".tmp.json")
-    try:
-        np.save(str(tmp_npy), final_mat)
-        tmp_npy.replace(BGE_VEC_NPY_PATH)
-        with open(tmp_meta, "w", encoding="utf-8") as mf:
-            json.dump(
-                {
-                    "count": len(all_ids),
-                    "dim": EMBED_DIM,
-                    "model": "BAAI/bge-m3",
-                    "book_ids": all_ids,
-                    "passage_hashes": all_hashes,
-                    "updated_at": time.time(),
-                },
-                mf,
-            )
-        tmp_meta.replace(BGE_VEC_META_PATH)
-    except BaseException:
-        tmp_npy.unlink(missing_ok=True)
-        tmp_meta.unlink(missing_ok=True)
-        raise
+    tmp_npy = BGE_VEC_NPY_PATH.with_name(f".{BGE_VEC_NPY_PATH.name}.{os.getpid()}.tmp.npy")
+    tmp_meta = BGE_VEC_META_PATH.with_name(f".{BGE_VEC_META_PATH.name}.{os.getpid()}.tmp.json")
+    lock_path = BGE_VEC_META_PATH.with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w", encoding="utf-8") as lock_fp:
+        fcntl.flock(lock_fp.fileno(), fcntl.LOCK_EX)
+        try:
+            np.save(str(tmp_npy), final_mat)
+            tmp_npy.replace(BGE_VEC_NPY_PATH)
+            with open(tmp_meta, "w", encoding="utf-8") as mf:
+                json.dump(
+                    {
+                        "count": len(all_ids),
+                        "dim": EMBED_DIM,
+                        "max_length": EMBED_MAX_LENGTH,
+                        "passage_version": PASSAGE_SCHEMA_VERSION,
+                        "model": "BAAI/bge-m3",
+                        "book_ids": all_ids,
+                        "passage_hashes": all_hashes,
+                        "updated_at": time.time(),
+                    },
+                    mf,
+                )
+            tmp_meta.replace(BGE_VEC_META_PATH)
+        except BaseException:
+            tmp_npy.unlink(missing_ok=True)
+            tmp_meta.unlink(missing_ok=True)
+            raise
+        finally:
+            fcntl.flock(lock_fp.fileno(), fcntl.LOCK_UN)
 
 
 def _sync_bge_m3_index(force_full: bool, batch_size: int, reencode_ids) -> Dict[str, Any]:
@@ -169,7 +257,7 @@ def _sync_bge_m3_index(force_full: bool, batch_size: int, reencode_ids) -> Dict[
     conn = get_conn()
     try:
         rows = conn.execute(
-            "SELECT id, title, subtitle, author, category, summary, toc_text FROM books WHERE is_deleted = 0 ORDER BY id ASC"
+            f"{_BOOK_PASSAGE_SELECT} WHERE b.is_deleted = 0 ORDER BY b.id ASC"
         ).fetchall()
     finally:
         conn.close()
@@ -184,7 +272,7 @@ def _sync_bge_m3_index(force_full: bool, batch_size: int, reencode_ids) -> Dict[
     for i, r in enumerate(rows):
         bid = int(r["id"])
         passage = build_book_passage(r)
-        p_hash = hashlib.sha256(passage.encode("utf-8")).hexdigest()[:16]
+        p_hash = compute_passage_hash(passage)
         all_ids.append(bid)
         all_hashes.append(p_hash)
         cache_valid = bid in existing_map and bid not in reencode_ids and (
@@ -204,7 +292,7 @@ def _sync_bge_m3_index(force_full: bool, batch_size: int, reencode_ids) -> Dict[
 
     if total_to_encode > 0:
         if total_to_encode <= 64:
-            vecs = engine.encode_texts(missing_texts, max_length=144, batch_size=8)
+            vecs = engine.encode_texts(missing_texts, max_length=EMBED_MAX_LENGTH, batch_size=8)
             for idx_in_missing, row_i in enumerate(missing_indices):
                 final_mat[row_i] = vecs[idx_in_missing]
         else:

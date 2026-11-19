@@ -121,7 +121,7 @@ def enrich_batch(books: List[Dict[str, Any]], retries: int = 4) -> List[Dict[str
     return []
 
 
-def cmd_run(limit: int, ids: List[int], category: str, force: bool, workers: int) -> None:
+def cmd_run(limit: int, ids: List[int], category: str, force: bool, workers: int, reindex: bool = True) -> None:
     init_db()
     conn = get_conn()
     try:
@@ -150,6 +150,7 @@ def cmd_run(limit: int, ids: List[int], category: str, force: bool, workers: int
     print(f"{len(todo)} books to enrich ({len(rows) - len(todo)} up to date)", flush=True)
     batches = [todo[i : i + BATCH] for i in range(0, len(todo), BATCH)]
     tokens_in = tokens_out = stored = 0
+    updated_ids: List[int] = []
     t0 = time.time()
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futures = {ex.submit(enrich_batch, [b for b, _ in batch]): batch for batch in batches}
@@ -171,6 +172,7 @@ def cmd_run(limit: int, ids: List[int], category: str, force: bool, workers: int
                         (r["book_id"], r["clean_title"], r["keywords"], r["level"], r["kind"], r["ai_category"],
                          r["subfield"], hashes[r["book_id"]], ds.FLASH_MODEL, VERSION),
                     )
+                    updated_ids.append(int(r["book_id"]))
                 conn.commit()
             finally:
                 conn.close()
@@ -179,6 +181,12 @@ def cmd_run(limit: int, ids: List[int], category: str, force: bool, workers: int
                 # Peak price for deepseek-flash: ¥2/M input (cache miss), ¥8/M output; off-peak is half
                 cost = tokens_in / 1e6 * 2 + tokens_out / 1e6 * 8
                 print(f"[{n}/{len(batches)}] stored {stored} | tokens in {tokens_in} out {tokens_out} | ~¥{cost:.2f} (peak) | {time.time() - t0:.0f}s", flush=True)
+
+    if reindex and updated_ids:
+        from archiver import rebuild_vector_cache
+
+        vec_res = rebuild_vector_cache(reencode_ids=list(dict.fromkeys(updated_ids)))
+        print(f"reindexed {len(set(updated_ids))} books -> {vec_res}", flush=True)
 
 
 def cmd_report() -> None:
@@ -210,10 +218,11 @@ def main() -> None:
     r.add_argument("--category", default="")
     r.add_argument("--force", action="store_true")
     r.add_argument("--workers", type=int, default=8)
+    r.add_argument("--no-reindex", action="store_true", help="Skip vector cache rebuild after batch enrichment")
     sub.add_parser("report")
     args = ap.parse_args()
     if args.cmd == "run":
-        cmd_run(args.limit, args.ids, args.category, args.force, args.workers)
+        cmd_run(args.limit, args.ids, args.category, args.force, args.workers, reindex=not args.no_reindex)
     else:
         cmd_report()
 

@@ -337,6 +337,38 @@ class BgeM3Engine:
             return [], np.zeros((0, EMBED_DIM), dtype=np.float32)
         return valid_ids, matrix[rows]
 
+    def upsert_book_vector(self, book_id: int, vector: np.ndarray) -> bool:
+        """Atomically update or append one book's normalized vector in memory."""
+        vec = np.asarray(vector, dtype=np.float32).reshape(-1)
+        if vec.shape[0] != EMBED_DIM or not np.all(np.isfinite(vec)):
+            return False
+        norm = float(np.linalg.norm(vec))
+        if norm < MIN_VECTOR_NORM:
+            return False
+        unit = (vec / norm).astype(np.float32)
+        bid = int(book_id)
+        with self._index_lock:
+            if self._matrix is None:
+                return False
+            row = self._id_to_row.get(bid)
+            if row is not None:
+                new_mat = self._matrix.copy()
+                new_mat[row] = unit
+                new_ids = list(self._book_ids)
+                new_row_arr = self._index[1]
+                new_id_to_row = dict(self._id_to_row)
+            else:
+                new_mat = np.ascontiguousarray(np.vstack([self._matrix, unit[None, :]]), dtype=np.float32)
+                new_ids = [*self._book_ids, bid]
+                new_row_arr = np.array(new_ids, dtype=np.int64)
+                new_id_to_row = {**self._id_to_row, bid: len(new_ids) - 1}
+            self._matrix = new_mat
+            self._book_ids = new_ids
+            self._id_to_row = new_id_to_row
+            self._index = (new_mat, new_row_arr)
+            self._index_snap = (new_mat, new_row_arr, new_id_to_row)
+            return True
+
     def rerank_pairs(
         self, query: str, docs: List[Tuple[int, str]], max_length: int = 128, batch_size: int = 4
     ) -> Dict[int, float]:
