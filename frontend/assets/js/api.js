@@ -1,4 +1,5 @@
-import { appState, shelfFilters, AI_FALLBACK_TEXT } from './state.js';
+import { appState, shelfFilters, AI_FALLBACK_TEXT, SHELF_FILTER_GROUPS } from './state.js';
+import { escapeHtml } from './utils.js';
 import { renderBookCard, generatePaginationItems } from './shelf_render.js';
 import { updateOrganizeBanner, renderRunsTable } from './organize.js';
 
@@ -64,6 +65,20 @@ export async function loadAiUsage() {
   } catch (e) {}
 }
 
+/** One filter option per configured source folder, on the desktop chip row and in the phone's filter sheet. */
+function renderSourceFilters(names) {
+  const group = SHELF_FILTER_GROUPS.find(g => g.key === 'source_dir');
+  if (group) group.options = names.map(name => [name, name]);
+  const chips = document.getElementById('shelf-source-chips');
+  if (chips) {
+    chips.innerHTML = names.map(name =>
+      `<button class="chip${shelfFilters.source_dir === name ? ' active' : ''}" data-src="${escapeHtml(name)}" `
+      + `onclick="setFilter('source_dir', this.dataset.src, this)">${escapeHtml(name)}</button>`).join('');
+  }
+  const sub = document.getElementById('st-source-names');
+  if (sub) sub.innerText = names.join(' / ');
+}
+
 export async function loadStats() {
   try {
     const r = await fetch('/api/stats');
@@ -78,6 +93,8 @@ export async function loadStats() {
       `在读 ${st.reading || 0} · 已读 ${st.read || 0} · 想读 ${st.want || 0}`;
     document.getElementById('st-conflicts').innerText = d.pending_conflicts.toLocaleString();
     document.getElementById('nav-book-count').innerText = d.total_books.toLocaleString();
+
+    renderSourceFilters((d.sources || []).map(s => s.source));
 
     const langs = d.languages || {};
     const btnCn = document.getElementById('lang-btn-shelf-cn');

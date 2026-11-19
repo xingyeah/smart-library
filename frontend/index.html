@@ -111,9 +111,7 @@
 
           <span class="filter-label" style="margin-left:14px;">来源:</span>
           <button class="chip active" data-src="" onclick="setFilter('source_dir', '', this)">全部目录</button>
-          <button class="chip" data-src="微信读书" onclick="setFilter('source_dir', '微信读书', this)">微信读书</button>
-          <button class="chip" data-src="待处理电子书" onclick="setFilter('source_dir', '待处理电子书', this)">待处理电子书</button>
-          <button class="chip" data-src="旧电子书" onclick="setFilter('source_dir', '旧电子书', this)">旧电子书</button>
+          <span id="shelf-source-chips" style="display:contents"></span>
 
           <span class="filter-label" style="margin-left:14px;">年代:</span>
           <button class="chip active" data-period="" onclick="setFilter('pub_period', '', this)">全部年代</button>
@@ -256,7 +254,7 @@
         <div class="stat-card">
           <div class="stat-label"><span>总容量</span></div>
           <div class="stat-val" id="st-size-gb">- GB</div>
-          <div class="stat-sub">微信读书 / 待处理 / 旧电子书</div>
+          <div class="stat-sub" id="st-source-names"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label"><span>收藏与在读</span></div>
