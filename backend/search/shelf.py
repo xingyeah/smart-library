@@ -62,6 +62,7 @@ def load_ai_meta(conn: Any, ids: List[int]) -> Dict[int, Dict[str, Any]]:
             "level": r["level"] or "",
             "kind": r["kind"] or "",
             "ai_category": r["ai_category"] or "",
+            "subfield": r["subfield"] or "",
         }
     return meta
 

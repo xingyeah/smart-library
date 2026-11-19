@@ -14,8 +14,11 @@ from config import COVERS_DIR
 from database import get_conn, init_db
 from parser import detect_book_language
 
+# '丛书' names a publisher's series, so it marked single volumes ('物种起源 (汉译世界学术名著丛书)') as box sets.
+# The AI's book type alone is not enough: it describes the content, so '奥威尔小说全集（套装共6册）' is typed 小说文学.
+ANTHOLOGY_KIND = "套装合集"
 ANTHOLOGY_REGEX = re.compile(
-    r"(?:套装|合集|全集|作品集|必读系列|好书系列|精选集|丛书|文集|"
+    r"(?:套装|合集|全集|作品集|必读系列|好书系列|精选集|文集|"
     r"共[0-9一二三四五六七八九十百]+[册部卷辑]|"
     r"[（\(]\s*(?:套装\s*)?[0-9一二三四五六七八九十百]+\s*[册部卷辑]\s*[）\)]|"
     r"\b\d+\s*books?\s*in\s*1\b|\bbox\s*set\b|\bomnibus\b)",
@@ -101,7 +104,7 @@ def compute_book_classic_Signals(
     full_low = full_meta.lower()
 
     # 1. Anthology / Box-set detection
-    is_anthology = 1 if ANTHOLOGY_REGEX.search(f"{title} {subtitle}") else 0
+    is_anthology = is_anthology_book(title, subtitle, book.get("ai_kind") or "")
 
     score = 15.0  # Base score
 
@@ -165,6 +168,13 @@ def compute_book_classic_Signals(
     return round(min(99.5, max(10.0, score)), 2), is_anthology
 
 
+def is_anthology_book(title: str, subtitle: str, ai_kind: str) -> int:
+    """1 for a box set or collection of separate works, else 0."""
+    if ai_kind == ANTHOLOGY_KIND:
+        return 1
+    return 1 if ANTHOLOGY_REGEX.search(f"{title} {subtitle}") else 0
+
+
 def backfill_languages_and_classic_scores(only_ids: Optional[set] = None) -> Dict[str, Any]:
     """
     1. Fix all books where language NOT IN ('zh-CN', 'zh-TW', 'en').
@@ -181,7 +191,9 @@ def backfill_languages_and_classic_scores(only_ids: Optional[set] = None) -> Dic
         for fr in file_rows:
             files_by_book.setdefault(int(fr["book_id"]), []).append(fr)
 
-        all_rows = conn.execute("SELECT * FROM books").fetchall()
+        all_rows = conn.execute(
+            "SELECT b.*, m.kind AS ai_kind FROM books b LEFT JOIN book_ai_meta m ON m.book_id = b.id"
+        ).fetchall()
 
         # Count norm_title and norm_author frequencies across the whole library
         title_counts: Dict[str, int] = {}

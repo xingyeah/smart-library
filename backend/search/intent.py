@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from ebook_parser import build_cjk_search_tokens
 from enricher import CATEGORY_RULES
 from native_bridge import get_native_bridge
+from search.hanzi import to_simplified, with_traditional_variants
 from search.corpus_stats import (
     ensure_author_lexicon as _ensure_author_lexicon,
     ensure_corpus_idf_cache as _ensure_corpus_idf_cache,
@@ -61,6 +62,19 @@ def _detect_pinyin_query(q_clean: str) -> Tuple[bool, str, List[str]]:
 
 
 def analyze_query_intent(raw_query: str) -> Dict[str, Any]:
+    """Intent of `raw_query`; a traditional-Chinese query is read in simplified form.
+
+    The stopwords and dictionaries are simplified, so '關於商業策略與創新的書籍' would otherwise keep 關於 and 書籍
+    as topics. The traditional spellings of its terms stay as synonyms so books in traditional script still match.
+    """
+    query = (raw_query or "").strip()
+    simplified = to_simplified(query)
+    if simplified == query:
+        return _analyze_query_intent(query)
+    return with_traditional_variants(_analyze_query_intent(simplified), query, simplified)
+
+
+def _analyze_query_intent(raw_query: str) -> Dict[str, Any]:
     """
     4-Layer Natural Language Understanding (NLU) Query Analyzer:
       1. Negative Constraint & Style Override Extraction ('不要鸡汤', '不要太枯燥')
@@ -357,14 +371,7 @@ def analyze_query_intent(raw_query: str) -> Dict[str, Any]:
 
     # Construct clean semantic query for bge-m3 embedding (positive clauses + key extracted concepts)
     clean_pos_sentence = "，".join(positive_clauses) if positive_clauses else q
-    sem_parts = [clean_pos_sentence]
-    if primary_terms:
-        sem_parts.append(" ".join(primary_terms[:6]))
-    if parent_nouns:
-        sem_parts.append(" ".join(parent_nouns[:3]))
-    if synonym_terms:
-        sem_parts.append(" ".join(synonym_terms[:4]))
-    semantic_query = " ".join(sem_parts)
+    semantic_query = build_semantic_query(clean_pos_sentence, primary_terms[:6] + parent_nouns[:3] + synonym_terms[:4])
 
     # Run Cross-Encoder reranking on multi-concept or conversational natural language queries
     needs_reranker = (
@@ -420,6 +427,17 @@ def infer_query_categories(
             cat_scores.append((cat, sc))
     cat_scores.sort(key=lambda x: x[1], reverse=True)
     return [c for c, _ in cat_scores[:3]]
+
+
+def build_semantic_query(sentence: str, concepts: List[str]) -> str:
+    """The sentence plus the concepts it lacks; a repeat ('科幻史诗 科幻史诗') shifts the embedding off target."""
+    parts = [sentence]
+    seen = sentence.lower()
+    for concept in concepts:
+        if concept and concept.lower() not in seen:
+            parts.append(concept)
+            seen += " " + concept.lower()
+    return " ".join(parts)
 
 
 def build_fts_query(

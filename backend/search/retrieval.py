@@ -131,6 +131,7 @@ def _retrieve_one_language(
             prelim_pool=prelim_pool,
             enable_cross_encoder=enable_cross_encoder,
             max_results=max_results,
+            ai_meta=ai_meta,
         )
 
         elapsed_ms = round((time.perf_counter() - t0) * 1000, 2)

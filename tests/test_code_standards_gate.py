@@ -38,7 +38,7 @@ ALLOWED_FUNCTION_EXEMPTIONS: Dict[Tuple[str, str], str] = {
     ("ebook_parser/mobi.py", "parse_mobi_azw3"): "Palm database header parser, EXTH record tags, and PalmDOC decoding",
     ("ebook_parser/pipeline.py", "_parse_pipeline"): "Unified parse orchestration across EPUB, MOBI, PDF, TXT, OCR fallback",
     ("enricher.py", "synthesize_structured_synopsis"): "Rule-based synopsis generation and tag clustering",
-    ("search/intent.py", "analyze_query_intent"): "Natural language query tokenization, domain vocabulary matching, category inference",
+    ("search/intent.py", "_analyze_query_intent"): "Natural language query tokenization, domain vocabulary matching, category inference",
     ("search/intent.py", "infer_query_categories"): "Multi-category keyword matcher with confidence thresholds",
     ("search/recall.py", "execute_dual_path_recall"): "Parallel FTS5, LIKE, and BGE vector candidate recall",
     ("search/scoring.py", "pre_score_candidates"): "BM25 scoring, exact title matching, classic score weighting, and decay curves",

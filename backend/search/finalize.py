@@ -41,15 +41,39 @@ def _finalize_ranked_pool(pool: List[Dict[str, Any]], max_results: int) -> List[
 finalize_ranked_pool = _finalize_ranked_pool
 
 
+# Describe p50: Top-12 @160 tokens 1940 ms, Top-8 @128 992 ms; Top-8 still beats V1 nDCG with no class significantly worse
+RERANK_TOP_N = 8
+RERANK_MAX_TOKENS = 128
+
+
+def rerank_document(item: Dict[str, Any], meta: Dict[str, Any]) -> str:
+    """The text the cross-encoder reads for one book: title, author, field, AI keywords and points, blurb."""
+    field = " / ".join(x for x in (item.get("category", ""), meta.get("subfield", "")) if x)
+    keywords = "、".join(meta.get("keywords", [])[:5])
+    points = "；".join(p for p in (item.get("core_points") or [])[:2] if isinstance(p, str))
+    parts = [
+        f"《{item['title']}》 {item.get('subtitle', '')[:45]}",
+        f"作者：{item.get('author', '')[:25]}",
+        f"领域：{field}",
+    ]
+    if keywords:
+        parts.append(f"关键词：{keywords}")
+    if points:
+        parts.append(f"看点：{points}")
+    parts.append((item.get("summary") or "")[:125])
+    return " | ".join(parts)
+
+
 def rerank_and_fuse_candidates(
     raw_query: str,
     intent: Dict[str, Any],
     prelim_pool: List[Dict[str, Any]],
     enable_cross_encoder: bool,
     max_results: int,
+    ai_meta: Optional[Dict[int, Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Stage 4B: Fast Cross-Encoder Reranking on Top-12 candidates.
+    Stage 4B: Fast Cross-Encoder Reranking on the top RERANK_TOP_N candidates.
     Stage 5: Final Score Fusion, Relevance Thresholding, Recommendation Reason Generation,
     and deduplicated final pooling.
     """
@@ -59,20 +83,15 @@ def rerank_and_fuse_candidates(
     needs_reranker: bool = bool(intent.get('needs_reranker')) and enable_cross_encoder
     bge = get_bge_engine()
 
-    # Stage 4B: Single-Batch Fast Cross-Encoder Precision Reranking (bge-reranker-v2-m3) on Top-12 candidates
+    # Stage 4B: Single-Batch Fast Cross-Encoder Precision Reranking (bge-reranker-v2-m3) on the top RERANK_TOP_N candidates
     rerank_scores: Dict[int, float] = {}
     if needs_reranker and bge.is_reranker_ready() and prelim_pool:
-        top_for_rerank = prelim_pool[:12]
+        top_for_rerank = prelim_pool[:RERANK_TOP_N]
         rerank_docs: List[Tuple[int, str]] = []
         for item in top_for_rerank:
-            doc_str = (
-                f"《{item['title']}》 {item.get('subtitle', '')[:45]} | "
-                f"作者：{item.get('author', '')[:25]} | 领域：{item.get('category', '')} | "
-                f"{(item.get('summary') or '')[:125]}"
-            )
-            rerank_docs.append((int(item["id"]), doc_str))
+            rerank_docs.append((int(item["id"]), rerank_document(item, (ai_meta or {}).get(int(item["id"]), {}))))
         ce_query = " ".join(primary_terms) if (wants_classic and len(primary_terms) == 1) else raw_query
-        rerank_scores = bge.rerank_pairs(ce_query, rerank_docs, max_length=104, batch_size=12)
+        rerank_scores = bge.rerank_pairs(ce_query, rerank_docs, max_length=RERANK_MAX_TOKENS, batch_size=RERANK_TOP_N)
 
     # Stage 5: Final Score Fusion & Strict Relevance Thresholding
     final_pool: List[Dict[str, Any]] = []
