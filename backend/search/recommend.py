@@ -7,6 +7,7 @@ from search.corpus_stats import (
     ensure_corpus_idf_cache as _ensure_corpus_idf_cache,
 )
 from search.retrieval import _execute_unified_hybrid_retrieval
+from search.types import ShelfFilters
 from semantic_models import get_bge_engine
 
 
@@ -48,7 +49,7 @@ def recommend_by_description(
         return {"items": [], "elapsed_ms": 0.0}
 
     hybrid_res = _execute_unified_hybrid_retrieval(
-        raw_query=desc, language=language, max_results=max(60, top_k * 4),
+        raw_query=desc, filters=ShelfFilters(language=language), max_results=max(60, top_k * 4),
         enable_cross_encoder=cross_encoder,
     )
     selected_top = _apply_author_diversity(hybrid_res["items"], desc, top_k)

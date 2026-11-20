@@ -9,7 +9,8 @@ from search.filters import (
     build_pub_period_clause as _build_pub_period_clause,
     parse_language_filter as _parse_language_filter,
 )
-from search.types import ShelfFilters
+from search.authors import register_author_sql
+from search.types import ShelfFilters, ShelfQuery
 
 
 def _format_book_row(row: Any, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -165,37 +166,14 @@ def apply_shelf_sort(items: List[Dict[str, Any]], sort_by: str) -> None:
         )
 
 
-def search_empty_shelf(
-    category: str = "",
-    lang_list: Optional[List[str]] = None,
-    fmt: str = "",
-    source_dir: str = "",
-    reading_status: str = "",
-    only_favorite: bool = False,
-    pub_period: str = "",
-    has_rating: bool = False,
-    sort_by: str = "relevance",
-    page: int = 1,
-    page_size: int = 24,
-    start_time: float = 0.0,
-) -> Dict[str, Any]:
-    """Execute fast SQL faceted search when query string is empty."""
+def search_empty_shelf(query: ShelfQuery = ShelfQuery(), start_time: float = 0.0) -> Dict[str, Any]:
+    """Execute fast SQL faceted search when query string is empty (query.q is ignored)."""
     t0 = start_time or time.perf_counter()
+    sort_by, page, page_size = query.sort_by, query.page, query.page_size
     conn = get_conn()
+    register_author_sql(conn)
     try:
-        where_clauses, params = build_book_facet_where(
-            ShelfFilters(
-                category=category,
-                fmt=fmt,
-                source_dir=source_dir,
-                reading_status=reading_status,
-                only_favorite=only_favorite,
-                pub_period=pub_period,
-                has_rating=has_rating,
-            ),
-            table_alias="b",
-            lang_list=lang_list or [],
-        )
+        where_clauses, params = build_book_facet_where(query.filters, table_alias="b")
 
         order_map = {
             "relevance": "b.classic_score DESC, b.quality_score DESC, b.id DESC",

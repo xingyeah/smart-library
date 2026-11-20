@@ -13,6 +13,8 @@ class ShelfFilters:
     only_favorite: bool = False
     pub_period: str = ""
     has_rating: bool = False
+    # One person from an author field (search.authors); matches books whose author field names them
+    author: str = ""
 
 
 @dataclass(frozen=True)

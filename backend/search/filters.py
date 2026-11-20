@@ -3,6 +3,7 @@
 from datetime import date
 from typing import Any, List, Optional, Tuple
 
+from search.authors import AUTHOR_MATCH_SQL_FUNCTION, MAX_AUTHOR_NAME_CHARS, author_key
 from search.types import ShelfFilters
 
 _LANG_LOOKUP = {
@@ -111,4 +112,8 @@ def build_book_facet_where(
     period_clause = build_pub_period_clause(filters.pub_period, table_alias=table_alias)
     if period_clause:
         clauses.append(period_clause)
+    if filters.author:
+        # The connection must have search.authors.register_author_sql applied
+        clauses.append(f"{AUTHOR_MATCH_SQL_FUNCTION}({prefix}author, ?)")
+        params.append(author_key(filters.author[:MAX_AUTHOR_NAME_CHARS]))
     return clauses, params

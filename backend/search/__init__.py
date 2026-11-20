@@ -48,16 +48,9 @@ def search_shelf(query: ShelfQuery) -> Dict[str, Any]:
     """Execute shelf browsing or unified hybrid search given a ShelfQuery parameter object."""
     t0 = time.perf_counter()
     q_clean = (query.q or "").strip()
-    f = query.filters
-    lang_list = _parse_language_filter(f.language)
-
     if q_clean:
         hybrid_res = _execute_unified_hybrid_retrieval(
-            raw_query=q_clean, category=f.category, language=f.language, fmt=f.fmt,
-            source_dir=f.source_dir, reading_status=f.reading_status,
-            only_favorite=f.only_favorite, pub_period=f.pub_period,
-            has_rating=f.has_rating,
-            max_results=120, enable_cross_encoder=False,
+            raw_query=q_clean, filters=query.filters, max_results=120, enable_cross_encoder=False,
         )
         all_items = hybrid_res["items"]
         apply_shelf_sort(all_items, query.sort_by)
@@ -79,13 +72,7 @@ def search_shelf(query: ShelfQuery) -> Dict[str, Any]:
             "items": page_items,
         }
 
-    return search_empty_shelf(
-        category=f.category, lang_list=lang_list, fmt=f.fmt,
-        source_dir=f.source_dir, reading_status=f.reading_status,
-        only_favorite=f.only_favorite, pub_period=f.pub_period,
-        has_rating=f.has_rating,
-        sort_by=query.sort_by, page=query.page, page_size=query.page_size, start_time=t0,
-    )
+    return search_empty_shelf(query, start_time=t0)
 
 
 def instant_search(

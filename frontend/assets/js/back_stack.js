@@ -5,6 +5,7 @@ import { closeBookModal } from './book_modal.js';
 import { closeOnlineReader } from './reader.js';
 import { closeShelfSheet } from './shelf_sheets.js';
 import { closeMobileSheets } from './reader_prefs.js';
+import { closeAuthorFilterLayer } from './shelf_author.js';
 
 const BACK_STATE_KEY = 'libraryLayerOpen';
 
@@ -14,6 +15,7 @@ const LAYERS = [
   { elementId: 'm-sheet-backdrop', close: closeMobileSheets },
   { elementId: 'immersive-reader-overlay', close: closeOnlineReader },
   { elementId: 'book-modal', close: closeBookModal },
+  { elementId: 'author-filter-layer', close: closeAuthorFilterLayer },
 ];
 
 let isIgnoringNextPop = false;

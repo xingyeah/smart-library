@@ -1,4 +1,4 @@
-import { COVER_THUMB_WIDTH, READING_STATUS_LABEL, RATING_SOURCE_NAMES } from './state.js';
+import { COVER_THUMB_WIDTH, READING_STATUS_LABEL, RATING_SOURCE_NAMES, shelfFilters } from './state.js';
 import { escapeHtml, bookCoverImgHtml, timeAgo } from './utils.js';
 import { icon } from './icons.js';
 
@@ -16,6 +16,21 @@ export function readProgressHtml(b) {
         <div style="height:100%; width:${pct || 0}%; background:var(--accent);"></div>
       </div>
     </div>`;
+}
+
+/** The detail page's author line: each named person links to all their books, placeholders stay plain text. */
+export function authorLinksHtml(b) {
+  const people = b.authors && b.authors.length ? b.authors : [{ name: b.author || '', linkable: false }];
+  return people.filter(p => p.name).map(p => (p.linkable
+    ? `<button type="button" class="author-link" data-author="${escapeHtml(p.name)}" title="查看这位作者的全部书"
+        onclick="closeBookModal(); showAuthorBooks(this.dataset.author)">${escapeHtml(p.name)}</button>`
+    : `<span>${escapeHtml(p.name)}</span>`)).join('、');
+}
+
+/** The author filter as a removable chip; '' when no author is picked. */
+export function authorFilterChipHtml(className) {
+  if (!shelfFilters.author) return '';
+  return `<button class="${className}" onclick="exitAuthorFilter()" title="去掉作者筛选">作者：${escapeHtml(shelfFilters.author)}${icon('close')}</button>`;
 }
 
 export function getReaderButtonHtml(b) {

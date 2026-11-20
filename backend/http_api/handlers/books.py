@@ -11,8 +11,10 @@ from http_api import state
 from http_api.background import spawn_reindex
 from http_api.responses import send_json
 from ratings import composite_rating
+from search import ShelfFilters, ShelfQuery, search_shelf
+from search.authors import author_links
 from search.shelf import load_ai_meta
-from search_engine import _format_book_row as format_book_row, instant_search
+from search_engine import _format_book_row as format_book_row
 from semantic_models import get_bge_engine
 
 logger = logging.getLogger("http_api.books")
@@ -160,21 +162,14 @@ def handle_get_books(handler: Any, qs: Dict[str, List[str]], body: Dict[str, Any
         send_json(handler, {"error": "page / page_size must be integers"}, 400)
         return
 
-    res = instant_search(
-        q=q_str("q"),
-        category=q_str("category"),
-        language=q_str("language"),
-        fmt=q_str("format"),
-        source_dir=q_str("source_dir"),
-        reading_status=q_str("reading_status"),
-        only_favorite=q_str("only_favorite") in ("1", "true"),
-        pub_period=q_str("pub_period"),
-        has_rating=q_str("has_rating") in ("1", "true"),
-        sort_by=q_str("sort_by", "relevance"),
-        page=page,
-        page_size=page_size,
+    filters = ShelfFilters(
+        category=q_str("category"), language=q_str("language"), fmt=q_str("format"),
+        source_dir=q_str("source_dir"), reading_status=q_str("reading_status"),
+        only_favorite=q_str("only_favorite") in ("1", "true"), pub_period=q_str("pub_period"),
+        has_rating=q_str("has_rating") in ("1", "true"), author=q_str("author").strip(),
     )
-    send_json(handler, res)
+    query = ShelfQuery(q=q_str("q"), filters=filters, sort_by=q_str("sort_by", "relevance"), page=page, page_size=page_size)
+    send_json(handler, search_shelf(query))
 
 
 def _extract_reviews_from_row(row_reviews_json: str) -> List[Dict[str, Any]]:
@@ -237,7 +232,7 @@ def handle_get_book_detail(
                 (bid,),
             ).fetchall()
         ]
-        b = _with_clean_title(conn, format_book_row(row, {"files": files}))
+        b = _with_clean_title(conn, format_book_row(row, {"files": files, "authors": author_links(row["author"] or "")}))
         b["external_meta"] = _build_external_meta(conn, bid, row)
     finally:
         conn.close()

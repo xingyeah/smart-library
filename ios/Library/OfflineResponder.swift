@@ -23,10 +23,12 @@ enum OfflineResponder {
     }
 
     /// The shelf offline: downloaded books, then books read online (`offline_partial`), filtered by the search box
-    /// text against title and author.
+    /// text against title and author, and by the author link the detail page opened (`author`).
     private static func shelf(_ request: ProxyRequest, store: OfflineStore) -> ProxyResponse {
         let needle = (request.query("q") ?? "").trimmingCharacters(in: .whitespaces).lowercased()
+        let author = request.query("author") ?? ""
         let items = (store.details() + store.partialDetails()).filter { book in
+            guard author.isEmpty || names(book, author: author) else { return false }
             guard !needle.isEmpty else { return true }
             let text = "\(book["title"] ?? "") \(book["author"] ?? "")".lowercased()
             return text.contains(needle)
@@ -38,6 +40,21 @@ enum OfflineResponder {
             "page_size": max(items.count, 1),
             "elapsed_ms": 0,
         ])
+    }
+
+    /// Whether `book` names `author`. Details saved since author links carry the server's split `authors`; older
+    /// ones fall back to the raw author line. Case, spacing and punctuation are ignored; scripts are not folded.
+    static func names(_ book: [String: Any], author: String) -> Bool {
+        let key = authorKey(author)
+        guard !key.isEmpty else { return false }
+        if let people = book["authors"] as? [[String: Any]] {
+            return people.contains { authorKey(($0["name"] as? String) ?? "") == key }
+        }
+        return authorKey((book["author"] as? String) ?? "").contains(key)
+    }
+
+    private static func authorKey(_ name: String) -> String {
+        String(name.lowercased().unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) })
     }
 
     /// The reader opens a book with `/read` (no chapter) and the server picks the saved chapter; offline the

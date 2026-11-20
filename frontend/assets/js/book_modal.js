@@ -1,7 +1,7 @@
 import { appState, shelfFilters, COVER_DETAIL_WIDTH, RATING_SOURCE_NAMES } from './state.js';
 import { escapeHtml, bookCoverImgHtml } from './utils.js';
 import { icon, favoriteLabelHtml, wantLabelHtml } from './icons.js';
-import { getReaderButtonHtml, sourceQualityText, syncBookCards } from './shelf_render.js';
+import { authorLinksHtml, getReaderButtonHtml, sourceQualityText, syncBookCards } from './shelf_render.js';
 import { loadStats } from './api.js';
 import { loadShelfBooks } from './shelf.js';
 import { loadMismergedBooks } from './organize.js';
@@ -102,14 +102,15 @@ function detailMetaHtml(b) {
 }
 
 function detailHeadHtml(b) {
-  const people = [b.author, b.translator ? `${b.translator} 译` : '', b.publisher, b.pub_year].filter(Boolean);
+  const others = [b.translator ? `${b.translator} 译` : '', b.publisher, b.pub_year].filter(Boolean).map(escapeHtml);
+  const people = [authorLinksHtml(b), ...others].filter(Boolean);
   return `
     <div class="detail-head">
       ${b.cover_path ? `<img class="detail-cover" src="${escapeHtml(b.cover_path)}?w=${COVER_DETAIL_WIDTH}" alt="" onerror="this.remove()" />` : ''}
       <div class="detail-main">
         <h2 class="detail-title" onclick="this.classList.toggle('expanded')" title="${escapeHtml(b.title)}">${escapeHtml(b.clean_title || b.title)}</h2>
         ${b.subtitle ? `<div class="detail-subtitle">${escapeHtml(b.subtitle)}</div>` : ''}
-        <div class="detail-people">${people.map(escapeHtml).join(' · ')}</div>
+        <div class="detail-people">${people.join(' · ')}</div>
         ${detailMetaHtml(b)}
         <div class="detail-actions">
           ${getReaderButtonHtml(b)}

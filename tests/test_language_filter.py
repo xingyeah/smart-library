@@ -4,6 +4,7 @@ from pathlib import Path
 
 import database
 from search.shelf import _parse_language_filter, search_empty_shelf
+from search.types import ShelfFilters, ShelfQuery
 
 
 class TestLanguageFilter(unittest.TestCase):
@@ -46,7 +47,7 @@ class TestLanguageFilter(unittest.TestCase):
         from unittest import mock
 
         with mock.patch.object(shelf_mod, "get_conn", lambda: database.get_conn(self.db_path)):
-            res = shelf_mod.search_empty_shelf(lang_list=_parse_language_filter("zh-CN"))
+            res = shelf_mod.search_empty_shelf(ShelfQuery(filters=ShelfFilters(language="zh-CN")))
             self.assertEqual(res["total"], 1)
             self.assertEqual(res["items"][0]["title"], "书1")
 

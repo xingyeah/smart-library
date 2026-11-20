@@ -44,6 +44,7 @@ import {
 } from './reader_toc.js';
 import { cycleReadingStatus, toggleFavorite } from './shelf_actions.js';
 import { closeShelfSheet, openShelfSheet, pickShelfSort } from './shelf_sheets.js';
+import { exitAuthorFilter, showAuthorBooks } from './shelf_author.js';
 import {
   adjustReaderFontSize, closeMobileMenu, closeMobileSheets, setMobileChrome, setReaderFont,
   setReaderLineHeight, setReaderTheme, toggleReaderSidebar, toggleReaderWidth,
@@ -109,7 +110,7 @@ Object.assign(window, {
   setReaderTheme, setReaderFont, adjustReaderFontSize, toggleReaderWidth,
   toggleReaderSidebar, closeOnlineReader, filterReaderToc,
   onReaderTocClick, stepReaderChapter, navigateReaderChapter, openOnlineReader, scrollToReaderAnchor,
-  toggleAppOfflineCopy, libraryAppSetOffline,
+  toggleAppOfflineCopy, libraryAppSetOffline, showAuthorBooks, exitAuthorFilter,
 });
 
 // Initial boot

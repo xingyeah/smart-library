@@ -45,6 +45,9 @@ enum SelfTest {
         let stamped = LibrarySchemeHandler.stampOpenedAt(Data(#"{"chapter_idx":2}"#.utf8))
         let json = (try? JSONSerialization.jsonObject(with: stamped)) as? [String: Any]
         check(json?["opened_at"] != nil && json?["chapter_idx"] as? Int == 2, "progress gets opened_at")
+        let coauthored: [String: Any] = ["authors": [["name": "Marvin Karlins"], ["name": "Joe Navarro"]]]
+        check(OfflineResponder.names(coauthored, author: "joe  navarro"), "offline author filter matches a co-author")
+        check(!OfflineResponder.names(["author": "Joe Navarrow"], author: "Navarro Joe"), "offline author filter rejects others")
     }
 
     static func checkDownloads(store: OfflineStore, bookIDs: [Int]) async {

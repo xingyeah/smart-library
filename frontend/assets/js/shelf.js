@@ -4,7 +4,7 @@ import {
 } from './state.js';
 import { escapeHtml } from './utils.js';
 import { icon } from './icons.js';
-import { generatePaginationItems, renderBookCard } from './shelf_render.js';
+import { authorFilterChipHtml, generatePaginationItems, renderBookCard } from './shelf_render.js';
 import { aiRerankOn, applyShelfAiRerank, loadAiUsage, loadStats } from './api.js';
 import { loadInterestView, runPresetDescribe, triggerDescribeRecommend } from './recommend.js';
 import { loadConflicts, loadMismergedBooks } from './organize.js';
@@ -124,7 +124,7 @@ export function resetShelfFilters() {
   /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).value = '';
   Object.assign(shelfFilters, {
     q: '', category: '', language: '', format: '', source_dir: '',
-    reading_status: '', pub_period: '', only_favorite: false, has_rating: false, page: 1, page_size: 24
+    reading_status: '', pub_period: '', only_favorite: false, has_rating: false, author: '', page: 1, page_size: 24
   });
   langSelections.shelf.clear();
   initCategoryChips();
@@ -189,7 +189,7 @@ export function toggleShelfFilter(key, val) {
 /** Clears the filters but keeps the search text and sort. */
 export function clearShelfFilters() {
   applyShelfStatus('');
-  ['category', 'format', 'source_dir', 'pub_period', 'language'].forEach(k => { shelfFilters[k] = ''; });
+  ['category', 'format', 'source_dir', 'pub_period', 'language', 'author'].forEach(k => { shelfFilters[k] = ''; });
   langSelections.shelf.clear();
   syncDesktopShelfChips();
   loadShelfBooks(1, { scrollToTop: true });
@@ -228,21 +228,23 @@ export function shelfChipHtml(key, val, label, isActive) {
 export function renderShelfChipRow() {
   const row = document.getElementById('m-chip-row');
   const picked = shelfPickedFilters();
-  if (!picked.length) {
+  const authorChip = authorFilterChipHtml('chip active');
+  if (!picked.length && !authorChip) {
     row.innerHTML = SHELF_STATUS_OPTIONS.filter(([k]) => QUICK_STATUS_KEYS.includes(k))
       .map(([k, label]) => shelfChipHtml('status', k, label, false)).join('')
       + `<button class="chip" onclick="openShelfSheet('filter', 'category')">分类 ▾</button>`;
     return;
   }
-  row.innerHTML = picked.map(p => shelfChipHtml(p.group.key, p.val, `${shelfOptionLabel(p.group, p.val)} ✕`, true)).join('')
+  row.innerHTML = authorChip + picked.map(p => shelfChipHtml(p.group.key, p.val, `${shelfOptionLabel(p.group, p.val)} ✕`, true)).join('')
     + `<button class="chip" onclick="clearShelfFilters()">清除</button>`;
 }
 
 /** The filters in force, after the result count: each one removes itself on click, 清空 removes them all. */
 export function renderShelfActiveFilters() {
   const picked = shelfPickedFilters();
-  document.getElementById('shelf-active-filters').innerHTML = picked.length
-    ? picked.map(p => `<button class="active-filter" onclick="toggleShelfFilter('${p.group.key}', '${escapeHtml(p.val)}')"
+  const authorChip = authorFilterChipHtml('active-filter');
+  document.getElementById('shelf-active-filters').innerHTML = picked.length || authorChip
+    ? authorChip + picked.map(p => `<button class="active-filter" onclick="toggleShelfFilter('${p.group.key}', '${escapeHtml(p.val)}')"
         title="去掉这个筛选">${escapeHtml(shelfOptionLabel(p.group, p.val))}${icon('close')}</button>`).join('')
       + '<button class="active-filter-clear" onclick="clearShelfFilters()">清空</button>'
     : '';
@@ -253,7 +255,7 @@ export function renderMobileShelfUi() {
   const picks = shelfPickedFilters().length;
   const btn = document.getElementById('m-filter-btn');
   // The count only helps once the list is narrowed; the whole library size is on the stats line
-  const isNarrowed = picks > 0 || Boolean(shelfFilters.q);
+  const isNarrowed = picks > 0 || Boolean(shelfFilters.q || shelfFilters.author);
   btn.textContent = isNarrowed ? `筛选 · ${appState.shelfLastTotal.toLocaleString()}` : '筛选';
   btn.classList.toggle('has-picks', picks > 0);
   renderShelfChipRow();
@@ -327,6 +329,12 @@ export function shelfRequestWindow(page, opts) {
   return { page: 1, size: pages * shelfFilters.page_size, loadedPages: pages };
 }
 
+// An author's books lead with their best known; plain browsing shows the newest imports
+function defaultBrowseSort() {
+  if (shelfFilters.author) return 'classic';
+  return shelfFilters.reading_status === 'reading' ? 'opened' : 'imported';
+}
+
 export async function loadShelfBooks(page = 1, opts = {}) {
   shelfFilters.page = page;
   if (opts.scrollToTop) {
@@ -344,7 +352,9 @@ export async function loadShelfBooks(page = 1, opts = {}) {
   // A picked sort holds for the search it was picked on; a new search ranks by relevance again
   if (currentInputVal !== appState.shelfLastQuery) appState.shelfSortTouched = false;
   appState.shelfLastQuery = currentInputVal;
-  if (!appState.shelfSortTouched) sortEl.value = currentInputVal ? 'relevance' : (shelfFilters.reading_status === 'reading' ? 'opened' : 'imported');
+  if (!appState.shelfSortTouched) sortEl.value = currentInputVal ? 'relevance' : defaultBrowseSort();
+  // The back gesture closes the author filter like a layer (back_stack.js), so its marker follows the state
+  document.getElementById('author-filter-layer').classList.toggle('open', Boolean(shelfFilters.author));
   const sort_by = sortEl.value;
   const reqWindow = shelfRequestWindow(page, opts);
   if (!opts.append) shelfFilters.page = reqWindow.loadedPages;
@@ -367,6 +377,7 @@ export async function loadShelfBooks(page = 1, opts = {}) {
     only_favorite: shelfFilters.only_favorite ? '1' : '0',
     has_rating: shelfFilters.has_rating ? '1' : '0',
     pub_period: shelfFilters.pub_period,
+    author: shelfFilters.author,
     sort_by,
     page: String(reqWindow.page),
     page_size: String(reqWindow.size),

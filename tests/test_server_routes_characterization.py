@@ -522,11 +522,13 @@ class TestServerRoutesCharacterization(unittest.TestCase):
         self.assertIn("三体", translator._llm_user_prompt(["hello"], context))  # the shape the LLM engines read
 
     def test_paging_values_are_clamped_not_reset(self):
-        with mock.patch.object(books, "instant_search", return_value={"items": [], "total": 0}) as search:
+        with mock.patch.object(books, "search_shelf", return_value={"items": [], "total": 0}) as search:
             self.simulate_request("GET", "/api/books?page_size=500&page=0")
-            self.assertEqual((search.call_args.kwargs["page"], search.call_args.kwargs["page_size"]), (1, 200))
+            self.assertEqual((search.call_args.args[0].page, search.call_args.args[0].page_size), (1, 200))
             self.simulate_request("GET", "/api/books?page_size=")
-            self.assertEqual(search.call_args.kwargs["page_size"], 24)
+            self.assertEqual(search.call_args.args[0].page_size, 24)
+            self.simulate_request("GET", "/api/books?author=Joe%20Navarro")
+            self.assertEqual(search.call_args.args[0].filters.author, "Joe Navarro")
             self.assertEqual(self.simulate_request("GET", "/api/books?page=abc")[0], 400)
         with mock.patch.object(recommend, "recommend_by_interests", return_value={"items": []}) as rec:
             self.simulate_request("GET", "/api/recommend/interests")

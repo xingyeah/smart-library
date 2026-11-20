@@ -1,7 +1,9 @@
+import dataclasses
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from database import get_conn
+from search.authors import register_author_sql
 from search.filters import build_book_facet_where
 from search.finalize import finalize_ranked_pool, _finalize_ranked_pool, rerank_and_fuse_candidates
 from search.intent import analyze_query_intent, _translate_english_query
@@ -34,14 +36,7 @@ def _execute_unified_hybrid_retrieval(raw_query: str, **options: Any) -> Dict[st
 
 def _retrieve_one_language(
     raw_query: str,
-    category: str = "",
-    language: str = "",
-    fmt: str = "",
-    source_dir: str = "",
-    reading_status: str = "",
-    only_favorite: bool = False,
-    pub_period: str = "",
-    has_rating: bool = False,
+    filters: ShelfFilters = ShelfFilters(),
     max_results: int = 120,
     enable_cross_encoder: bool = True,
 ) -> Dict[str, Any]:
@@ -54,6 +49,7 @@ def _retrieve_one_language(
       Stage 5: Strict Relevance Cutoff Threshold & Deduplicated Pool Finalization
     """
     t0 = time.perf_counter()
+    category = filters.category
     intent = analyze_query_intent(raw_query)
     inferred_cats: List[str] = intent.get("inferred_categories") or []
 
@@ -66,20 +62,10 @@ def _retrieve_one_language(
             effective_category = ""
 
     conn = get_conn()
+    register_author_sql(conn)
     try:
-        # Build SQL filter for hard metadata facets (category, language, format, source, status, favorite)
-        facet_clauses, facet_params = build_book_facet_where(
-            ShelfFilters(
-                category=effective_category,
-                language=language,
-                fmt=fmt,
-                source_dir=source_dir,
-                reading_status=reading_status,
-                only_favorite=only_favorite,
-                pub_period=pub_period,
-                has_rating=has_rating,
-            )
-        )
+        # Build SQL filter for hard metadata facets (category, language, format, source, status, favorite, author)
+        facet_clauses, facet_params = build_book_facet_where(dataclasses.replace(filters, category=effective_category))
 
         allowed_ids = build_allowed_ids(conn, facet_clauses, facet_params)
         if len(facet_clauses) > 1 and not allowed_ids:

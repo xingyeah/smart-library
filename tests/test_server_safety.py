@@ -79,7 +79,7 @@ class HttpTest(TempDbCase):
         self.assertEqual(r.status, 404)  # same-origin JSON still reaches the router
 
     def test_handler_error_returns_500_not_dropped_connection(self):
-        with mock.patch.object(books, "instant_search", side_effect=RuntimeError("boom")):
+        with mock.patch.object(books, "search_shelf", side_effect=RuntimeError("boom")):
             r, body = self.request("GET", "/api/books")
         self.assertEqual(r.status, 500)
         self.assertIn(b"internal server error", body)

@@ -45,6 +45,7 @@ export const shelfFilters = {
   reading_status: '',
   pub_period: '',
   only_favorite: false,
+  author: '',  // one person from a book's author line: lists every book naming them
   page: 1,
   page_size: 24,
 };

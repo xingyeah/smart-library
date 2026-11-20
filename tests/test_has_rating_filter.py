@@ -5,6 +5,7 @@ from unittest import mock
 
 import database
 from search.shelf import search_empty_shelf
+from search.types import ShelfFilters, ShelfQuery
 
 
 class TestHasRatingFilter(unittest.TestCase):
@@ -88,11 +89,11 @@ class TestHasRatingFilter(unittest.TestCase):
     def test_search_shelf_has_rating_filter(self):
         with mock.patch("search.shelf.get_conn", lambda: database.get_conn(self.db_path)):
             # 不加过滤，应返回全部 4 本
-            all_res = search_empty_shelf()
+            all_res = search_empty_shelf(ShelfQuery())
             self.assertEqual(all_res["total"], 4)
 
             # 加上 has_rating 过滤，只应返回书 1、书 2 和书 4
-            rated_res = search_empty_shelf(has_rating=True)
+            rated_res = search_empty_shelf(ShelfQuery(filters=ShelfFilters(has_rating=True)))
             self.assertEqual(rated_res["total"], 3)
             titles = {b["title"] for b in rated_res["items"]}
             self.assertIn("豆瓣高分书", titles)
