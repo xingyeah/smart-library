@@ -46,7 +46,10 @@ def _load_core_foundation() -> Optional[Any]:
 
 
 def _create_cf_string(text: str) -> Optional[int]:
-    data = text.encode("utf-8")
+    try:
+        data = text.encode("utf-8")
+    except UnicodeEncodeError:
+        return None
     return _CF.CFStringCreateWithBytes(None, data, len(data), CF_UTF8, False)
 
 
@@ -133,7 +136,10 @@ def with_traditional_variants(intent: Dict[str, Any], original: str, simplified:
     if len(original) != len(simplified):
         return intent
     variants = _variants(intent["primary_terms"], original, simplified)
-    intent["synonym_terms"] = variants + [s for s in intent["synonym_terms"] if s not in variants]
+    merged = variants + [s for s in intent["synonym_terms"] if s not in variants]
+    intent["synonym_terms"] = merged
+    if "expanded_terms" in intent:
+        intent["expanded_terms"] = merged
     intent["negative_terms"] = intent["negative_terms"] + _variants(intent["negative_terms"], original, simplified)
     title = intent.get("explicit_title") or ""
     intent["explicit_title_variant"] = original_spelling(title, original, simplified) if title else ""

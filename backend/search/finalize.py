@@ -49,9 +49,9 @@ RERANK_MAX_TOKENS = 128
 def rerank_document(item: Dict[str, Any]) -> str:
     """The text the cross-encoder reads for one book: title, author, field, AI keywords and points, blurb."""
     meta = item.get("_ai_meta") or {}
-    field = " / ".join(x for x in (item.get("category"), meta.get("subfield")) if x)
+    field = " / ".join(x for x in (meta.get("ai_category") or item.get("category"), meta.get("subfield")) if x)
     keywords = "、".join([k for k in (meta.get("keywords") or []) if isinstance(k, str)][:5])
-    points = "；".join(p for p in (item.get("core_points") or [])[:2] if isinstance(p, str))
+    points = "；".join([p for p in (item.get("core_points") or []) if isinstance(p, str)][:2])
     parts = [
         f"《{item.get('title') or ''}》 {(item.get('subtitle') or '')[:45]}",
         f"作者：{(item.get('author') or '')[:25]}",

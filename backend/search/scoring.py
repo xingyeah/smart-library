@@ -63,7 +63,7 @@ def pre_score_candidates(
 
     # Stage 4A: Pre-score candidates with multi-concept coverage + lexical + bge-m3 dense + classic_score + category prior
     prelim_pool: List[Dict[str, Any]] = []
-    q_exact_low = raw_query.strip().lower()
+    q_exact_low = to_simplified(raw_query.strip().lower())
 
     for bid in top_cand_ids:
         row = rows_by_id.get(bid)
@@ -148,7 +148,7 @@ def pre_score_candidates(
         target_title = clean_et or clean_q
         lex_before_title_pin = lexical_score
         if not is_pinyin and target_title and len(target_title) >= 2:
-            if clean_title == target_title or isbn_low == q_exact_low or author_low == q_exact_low:
+            if clean_title == target_title or isbn_low == q_exact_low or to_simplified(author_low) == q_exact_low:
                 lexical_score += 480.0
                 primary_hit_count += 3
                 matched_concept_groups += 2

@@ -22,7 +22,7 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -38,7 +38,7 @@ MODES = ("shelf", "describe")
 K = 10
 
 
-def load_queries(path: Path = QUERIES_PATH, generated_path: Path = GENERATED_PATH) -> List[Dict[str, Any]]:
+def load_queries(path: Path = QUERIES_PATH, generated_path: Optional[Path] = GENERATED_PATH) -> List[Dict[str, Any]]:
     with open(path, "r", encoding="utf-8") as f:
         queries = json.load(f)["queries"]
     if generated_path and generated_path.exists():
@@ -144,18 +144,19 @@ def summarize(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def run(modes=MODES, only: str = "", ai: bool = False) -> Dict[str, Any]:
+def _prepare_queries(queries: List[Dict[str, Any]], only: str, ai: bool) -> List[Dict[str, Any]]:
     global AI_RERANK
     AI_RERANK = ai
-    queries = load_queries()
-    if only:
-        queries = [q for q in queries if q["id"] == only or only in q["query"]]
-    return evaluate_queries(modes, queries)
+    return [q for q in queries if q["id"] == only or only in q["query"]] if only else queries
 
 
-def run_holdout(modes=MODES) -> Dict[str, Any]:
+def run(modes=MODES, only: str = "", ai: bool = False) -> Dict[str, Any]:
+    return evaluate_queries(modes, _prepare_queries(load_queries(), only, ai))
+
+
+def run_holdout(modes=MODES, only: str = "", ai: bool = False) -> Dict[str, Any]:
     """The Phase 0 holdout cases alone; their GATE line is the holdout result."""
-    return evaluate_queries(modes, load_queries(HOLDOUT_PATH, generated_path=None))
+    return evaluate_queries(modes, _prepare_queries(load_queries(HOLDOUT_PATH, generated_path=None), only, ai))
 
 
 def evaluate_queries(modes, queries: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -197,7 +198,7 @@ def main() -> None:
     args = ap.parse_args()
 
     modes = MODES if args.mode == "both" else (args.mode,)
-    report = run_holdout(modes) if args.holdout else run(modes, args.only, args.ai)
+    report = run_holdout(modes, args.only, args.ai) if args.holdout else run(modes, args.only, args.ai)
     baseline = json.loads(Path(args.compare).read_text(encoding="utf-8")) if args.compare else {}
     print_report(report, baseline, args.verbose)
     if args.save:
