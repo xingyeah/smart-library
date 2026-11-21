@@ -25,6 +25,16 @@ class TestBilingualTitlePreservation(unittest.TestCase):
         res = _preserve_bilingual_title("Organizational Change", "Organizational Change")
         self.assertEqual(res, "Organizational Change")
 
+    def test_english_only_proposal_keeps_the_chinese_title(self):
+        current = ("以终为始的烧钱商业模式 (Build a Business Designed to Die The Burn-and-Churn Cash Flow Model "
+                   "in a High-Velocity Digital Economy)")
+        proposed = "Build a Business Designed to Die: The Burn-and-Churn Cash Flow Model in a High-Velocity Digital Economy"
+        self.assertEqual(_preserve_bilingual_title(proposed, current), f"以终为始的烧钱商业模式 ({proposed})")
+
+    def test_long_english_title_is_kept_when_dropped(self):
+        current = "以终为始的烧钱商业模式 (Build a Business Designed to Die The Burn-and-Churn Cash Flow Model in a Digital Economy)"
+        self.assertEqual(_preserve_bilingual_title("以终为始的烧钱商业模式", current), current)
+
     def test_sanitize_llm_response_restores_bilingual(self):
         fallback = {"title": "组织变革 (Organizational Change)", "category": "商业管理与创投", "summary": "简介"}
         data = {"clean_title": "组织变革", "category": "商业管理与创投", "summary": "新简介"}

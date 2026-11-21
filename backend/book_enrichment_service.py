@@ -121,22 +121,29 @@ def _call_llm_enrichment(book_row: Any, sample_text: str, feature: str = "refres
     return _sanitize_llm_response(data, fallback_row=book_row)
 
 
+_CJK_CHAR = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf]")
+_TRAILING_PAREN = re.compile(r"^(.*?)\s*[\(（]([^()（）]+)[\)）]\s*$")
+
+
+def _split_bilingual_title(title: str) -> Tuple[str, str]:
+    """('中文名', 'English Title') from '中文名 (English Title)'; a title in one language fills only its side."""
+    title = title.strip()
+    m = _TRAILING_PAREN.match(title)
+    if m and _CJK_CHAR.search(m.group(1)) and not _CJK_CHAR.search(m.group(2)):
+        return m.group(1).strip(), m.group(2).strip()
+    return (title, "") if _CJK_CHAR.search(title) else ("", title)
+
+
 def _preserve_bilingual_title(proposed_title: str, fallback_title: str) -> str:
-    """Ensure standard '中文书名 (English Title)' format is preserved if original title had an English title."""
+    """Keeps the standard '中文书名 (English Title)': a side the AI dropped is taken from the current title."""
     proposed = proposed_title.strip()
     if not proposed:
         return fallback_title
-
-    # Check if fallback_title had English title in parentheses e.g. '组织变革 (Organizational Change)'
-    m_en = re.search(r"[\(（]([A-Za-z0-9\s,.:'’\-&/]{2,80})[\)）]\s*$", fallback_title)
-    if m_en:
-        en_part = m_en.group(1).strip()
-        has_en_paren = bool(re.search(r"[\(（][A-Za-z0-9\s,.:'’\-&/]{2,80}[\)）]", proposed))
-        if not has_en_paren:
-            zh_part = re.sub(r"[\(（][^\(\)（）]*[\)）]$", "", proposed).strip() or proposed
-            if zh_part.lower() != en_part.lower():
-                return f"{zh_part} ({en_part})"
-    return proposed
+    current_zh, current_en = _split_bilingual_title(fallback_title)
+    if not (current_zh and current_en):
+        return proposed
+    proposed_zh, proposed_en = _split_bilingual_title(proposed)
+    return f"{proposed_zh or current_zh} ({proposed_en or current_en})"
 
 
 def _sanitize_llm_response(data: Dict[str, Any], fallback_row: Any) -> Dict[str, Any]:
