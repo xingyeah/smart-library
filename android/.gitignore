@@ -1,0 +1,11 @@
+.gradle/
+build/
+local.properties
+.idea/
+captures/
+*.iml
+*.jks
+*.keystore
+# The root .gitignore drops every local/ and Library/ folder; these are the app's package folders
+!local/
+!library/
