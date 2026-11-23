@@ -7,6 +7,7 @@ import android.net.Network
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,12 +17,14 @@ import kotlinx.coroutines.withContext
 
 private const val LOG_TAG = "AppModel"
 private const val STATUS_FORBIDDEN = 403
+private const val OFFLINE_FOLDER = "Offline"
 
 /** Why a connect attempt failed, already worded for the connect page. */
 class ConnectFailure(val message: String)
 
 class AppModel(application: Application) : AndroidViewModel(application) {
     private val configStore = ServerConfigStore(application)
+    val store = OfflineStore(File(application.filesDir, OFFLINE_FOLDER))
     private val connectionState = MutableStateFlow<Connection?>(null)
     private val replacedConfigState = MutableStateFlow<ServerConfig?>(null)
     private val settingsState = MutableStateFlow(false)
@@ -57,7 +60,7 @@ class AppModel(application: Application) : AndroidViewModel(application) {
         configStore.save(config)
         replacedConfigState.value = null
         connectionState.value?.close()
-        connectionState.value = Connection(config, configStore)
+        connectionState.value = Connection(config, configStore, store)
     }
 
     /** Re-picks the server address; called on network changes and when the app comes back to the foreground. */

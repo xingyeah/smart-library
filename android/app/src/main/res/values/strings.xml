@@ -19,6 +19,9 @@
     <string name="launch_offline_title">连不上服务器</string>
     <string name="launch_offline_detail">正在打开本机缓存的书</string>
 
+    <string name="download_progress">下载离线：%1$s</string>
+    <string name="download_dismiss">关闭</string>
+
     <string name="dialog_ok">好</string>
     <string name="dialog_confirm">确定</string>
     <string name="dialog_cancel">取消</string>

@@ -14,6 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * The library's own web page, loaded from [PAGE_URL] and answered by [LibraryProxy]. The page talks back over
@@ -28,10 +30,12 @@ fun LibraryWebView(
 ) {
     var webView by remember { mutableStateOf<WebView?>(null) }
     val isOffline by connection.proxy.isOffline.collectAsStateWithLifecycle()
+    val libraryVersion by connection.libraryVersion.collectAsStateWithLifecycle()
 
     // The state also goes into the page's HTML, but a change after the page loaded has to be pushed
-    LaunchedEffect(webView, isOffline) {
-        webView?.evaluateJavascript(offlineStateScript(connection.downloadedBookIds(), isOffline), null)
+    LaunchedEffect(webView, isOffline, libraryVersion) {
+        val downloadedIds = withContext(Dispatchers.IO) { connection.downloadedBookIds() }
+        webView?.evaluateJavascript(offlineStateScript(downloadedIds, isOffline), null)
     }
 
     AndroidView(

@@ -75,6 +75,7 @@ class LibraryWebClient(
 
     private fun toWebResponse(path: String, response: ProxyResponse): WebResourceResponse {
         val status = usableStatus(path, response.status)
+        if (status >= FIRST_NON_REDIRECT_STATUS) Log.w(LOG_TAG, "Answering with an error: path=$path status=$status")
         val body = if (path in SHELL_PATHS && status == 200) injectShell(response.body) else response.body
         val headers = response.headers.filterKeys { it != "Content-Type" }.toMutableMap()
         headers["Content-Length"] = body.size.toString()
