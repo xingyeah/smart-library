@@ -35,6 +35,7 @@ class LibraryWebClient(
     private val proxy: LibraryProxy,
     private val offlineScript: () -> String,
     private val onPageReady: () -> Unit,
+    private val onCanGoBackChange: (Boolean) -> Unit,
 ) : WebViewClient() {
 
     override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
@@ -61,6 +62,10 @@ class LibraryWebClient(
             Log.w(LOG_TAG, "No app can open the link: url=${request.url}", error)
         }
         return true
+    }
+
+    override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+        onCanGoBackChange(view.canGoBack())
     }
 
     override fun onPageFinished(view: WebView, url: String?) {

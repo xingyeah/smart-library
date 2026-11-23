@@ -22,6 +22,28 @@
     <string name="download_progress">下载离线：%1$s</string>
     <string name="download_dismiss">关闭</string>
 
+    <string name="settings_title">设置</string>
+    <string name="settings_done">完成</string>
+    <string name="settings_servers">服务器</string>
+    <string name="settings_in_use">使用中</string>
+    <string name="settings_delete">删除</string>
+    <string name="settings_sync">同步地址</string>
+    <string name="settings_syncing">正在同步…</string>
+    <string name="settings_change_server">更换服务器</string>
+    <string name="settings_servers_footer">地址只在点「同步地址」时从服务器更新；不再用的地址点「删除」去掉。</string>
+    <string name="settings_sync_unreachable">同步失败：连不上服务器</string>
+    <string name="settings_sync_no_addresses">同步失败：服务器没有返回地址</string>
+    <string name="settings_sync_added">已同步，新增 %1$d 个地址</string>
+    <string name="settings_sync_unchanged">已同步，地址没有变化</string>
+    <string name="settings_clear_cache">清除阅读缓存（%1$s）</string>
+    <string name="settings_cache_footer">在线读过的内容会自动缓存，断网时可接着读；超过 %1$s 先删最久没读的书。</string>
+    <string name="settings_downloaded">已下载（%1$d 本，%2$s）</string>
+    <string name="settings_downloaded_empty">在书籍详情的 ⋯ 菜单里选「下载离线」</string>
+    <string name="settings_book_fallback_title">第 %1$d 本书</string>
+
+    <string name="notice_offline">离线模式：只显示本机缓存的书</string>
+    <string name="notice_reconnected">已重新连接</string>
+
     <string name="dialog_ok">好</string>
     <string name="dialog_confirm">确定</string>
     <string name="dialog_cancel">取消</string>

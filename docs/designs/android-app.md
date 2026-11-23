@@ -1,6 +1,6 @@
 # Design: Android app for the library (WebView shell + offline cache proxy)
 
-Status: APPROVED (grilled and confirmed 2026-11-23)
+Status: IMPLEMENTED (grilled and confirmed 2026-11-23; phases A to C verified in the emulator 2026-11-24)
 Mirrors: `docs/designs/ios-app.md`. Where this file is silent, the iOS behaviour applies.
 
 ## Problem Statement
@@ -52,6 +52,16 @@ offline / reconnected notices · JS alert / confirm / prompt dialogs · dark the
 - **B** — offline store, downloader, offline shelf, progress replay, POST cache.
 - **C** — settings sheet, notices, back key, icon.
 Each phase is verified in the emulator (server reached at `10.0.2.2:8765`) and committed on its own.
+
+## Differences from iOS (known, accepted)
+- `shouldInterceptRequest` has no cancel callback, so a request the page abandons keeps running until it
+  answers or times out; iOS cancels the underlying task. Nothing is mistaken for "offline" because of it.
+- Intercepted responses bypass the web view's HTTP cache, so ETag / `If-None-Match` revalidation never happens
+  and covers are fetched again on each load. Fixing it needs an app-side cache for `/covers/` and `/vendor/`.
+- Bodies are held in memory (as on iOS); very large PDFs streamed whole are the weak spot.
+- The server's loopback gate trusts requests that arrive from 127.0.0.1. In the emulator use
+  `adb reverse tcp:8765 tcp:8765` and connect to `http://127.0.0.1:8765`; the LAN address the server reports
+  arrives as a LAN client and needs the token. Delete that address in settings when testing without a token.
 
 ## Verification
 - JVM unit tests (`gradlew test`): `ServerConfig.parse`, cache key, `assetPaths`, store read/write,

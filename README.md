@@ -63,6 +63,7 @@ flowchart LR
     end
     backend <-->|网页和 JSON 接口| web["浏览器<br/>frontend/"]
     backend <-->|同一套接口| ios["iPhone app<br/>ios/"]
+    backend <-->|同一套接口| android["Android app<br/>android/"]
     backend -.->|可选| cloud["外部服务<br/>豆瓣、Google Books<br/>Claude、DeepSeek"]
 ```
 
@@ -144,6 +145,7 @@ Apple 本机翻译需要 macOS 26，并在"系统设置 › 通用 › 语言与
 | `backend/migrations.py` | 数据库结构的版本迁移 |
 | `frontend/` | 网页前端 |
 | `ios/` | iPhone app，见 [ios/README.md](ios/README.md) |
+| `android/` | Android app，功能与 iPhone app 一致，见 [android/README.md](android/README.md) |
 | `tests/` | 测试和离线评估的基线 |
 | `data/`、`Library/` | 书库数据和归档后的书，不进 git |
 
@@ -193,6 +195,7 @@ DeepSeek 相关的离线工具：
 - [推荐算法重构实施计划.md](推荐算法重构实施计划.md)：兴趣推荐的设计、实测数据和每个阶段的实施记录
 - [推荐算法重构实施计划_评审与修正.md](推荐算法重构实施计划_评审与修正.md)：对实施计划的评审意见和修正
 - [docs/designs/ios-app.md](docs/designs/ios-app.md)：iPhone app 的设计决定
+- [docs/designs/android-app.md](docs/designs/android-app.md)：Android app 的设计决定
 
 ## 许可
 

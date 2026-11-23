@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.graphics.Color
 import android.webkit.WebView
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +30,7 @@ fun LibraryWebView(
     modifier: Modifier = Modifier,
 ) {
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var canGoBack by remember { mutableStateOf(false) }
     val isOffline by connection.proxy.isOffline.collectAsStateWithLifecycle()
     val libraryVersion by connection.libraryVersion.collectAsStateWithLifecycle()
 
@@ -38,10 +40,14 @@ fun LibraryWebView(
         webView?.evaluateJavascript(offlineStateScript(downloadedIds, isOffline), null)
     }
 
+    // The page keeps its open sheets and the reader in history entries, so back closes the top layer first
+    BackHandler(enabled = canGoBack) { webView?.goBack() }
+
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            createWebView(context, connection, actionListener, onPageReady).also { webView = it }
+            val events = PageEvents(actionListener, onPageReady) { canGoBack = it }
+            createWebView(context, connection, events).also { webView = it }
         },
         onRelease = { view ->
             (view.tag as? PageBridge)?.close()
@@ -50,17 +56,19 @@ fun LibraryWebView(
     )
 }
 
+/** What the page tells the screen around it. */
+private class PageEvents(
+    val actionListener: PageActionListener,
+    val onPageReady: () -> Unit,
+    val onCanGoBackChange: (Boolean) -> Unit,
+)
+
 @SuppressLint("SetJavaScriptEnabled")
-private fun createWebView(
-    context: Context,
-    connection: Connection,
-    actionListener: PageActionListener,
-    onPageReady: () -> Unit,
-): WebView {
+private fun createWebView(context: Context, connection: Connection, events: PageEvents): WebView {
     val webView = WebView(context)
     val bridge = PageBridge(
         proxy = connection.proxy,
-        listener = actionListener,
+        listener = events.actionListener,
         runOnPage = { script -> webView.post { webView.evaluateJavascript(script, null) } },
     )
     webView.tag = bridge
@@ -76,7 +84,8 @@ private fun createWebView(
     webView.webViewClient = LibraryWebClient(
         proxy = connection.proxy,
         offlineScript = { offlineStateScript(connection.downloadedBookIds(), connection.proxy.isOffline.value) },
-        onPageReady = onPageReady,
+        onPageReady = events.onPageReady,
+        onCanGoBackChange = events.onCanGoBackChange,
     )
     webView.webChromeClient = PageChromeClient()
     val isDebuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0

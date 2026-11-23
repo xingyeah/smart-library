@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The three bars and dot of ios/design/app-icon.svg, centred inside the adaptive icon's safe zone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="110"
+    android:viewportHeight="110">
+    <path
+        android:pathData="M30,36 L80,36"
+        android:strokeWidth="12"
+        android:strokeColor="#06B6D4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M30,55 L68,55"
+        android:strokeWidth="12"
+        android:strokeColor="#818CF8"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M30,74 L56,74"
+        android:strokeWidth="12"
+        android:strokeColor="#4F46E5"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M80,68 a6,6 0 1,0 0.001,0 z" />
+</vector>
