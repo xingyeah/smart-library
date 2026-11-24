@@ -90,6 +90,30 @@ class DenseSearchByVectorTest(VectorIndexCase):
         self.assertFalse(any(np.isnan(score) for _, score in hits))
 
 
+class HalfPublishedIndexTest(VectorIndexCase):
+    """A rebuild replaces the vector file first and its meta second; a load in between must not mix them."""
+
+    def write_stamped_meta(self, book_ids: list) -> None:
+        npy = self.root / Path(semantic_models.BGE_VEC_NPY_PATH).name
+        meta = {"book_ids": book_ids, "vectors_stamp": semantic_models.vector_file_stamp(npy.stat())}
+        (self.root / Path(semantic_models.BGE_VEC_META_PATH).name).write_text(json.dumps(meta), encoding="utf-8")
+
+    def test_new_vectors_with_old_meta_keep_the_old_index(self):
+        self.write_stamped_meta(list(range(1, BOOK_COUNT + 1)))
+        self.assertEqual(self.nearest_ids(query_axis(), top_k=1), [1])
+        npy = self.root / Path(semantic_models.BGE_VEC_NPY_PATH).name
+        np.save(str(npy), fan_of_vectors()[::-1])  # same count, rows now in the opposite book order
+        self.assertEqual(self.nearest_ids(query_axis(), top_k=1), [1])
+        self.write_stamped_meta(list(range(BOOK_COUNT, 0, -1)))
+        self.assertEqual(self.nearest_ids(query_axis(), top_k=1), [1])
+        self.assertEqual(self.engine.get_book_matrix()[0][0], BOOK_COUNT)
+
+    def test_mismatched_pair_is_not_loaded_cold(self):
+        self.write_stamped_meta(list(range(1, BOOK_COUNT + 1)))
+        np.save(str(self.root / Path(semantic_models.BGE_VEC_NPY_PATH).name), fan_of_vectors()[::-1])
+        self.assertEqual(self.nearest_ids(query_axis(), top_k=1), [])
+
+
 class SimilarBooksTest(VectorIndexCase):
     """Book 1 asks for its neighbours; its two nearest are a deleted book and an anthology."""
 

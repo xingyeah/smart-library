@@ -215,5 +215,17 @@ class HoldoutSetTests(unittest.TestCase):
         self.assertFalse(set(holdout) & set(ids("queries.json") + ids("generated_queries.json")))
 
 
+class QueryLengthCapTest(unittest.TestCase):
+    def test_pasted_page_is_searched_by_its_first_chars_only(self):
+        from search import retrieval
+
+        seen = []
+        empty = {"items": [], "total": 0, "elapsed_ms": 0.0}
+        with mock.patch.object(retrieval, "_retrieve_one_language", lambda q, **_: seen.append(q) or dict(empty)), \
+             mock.patch.object(retrieval, "_translate_english_query", lambda q: ""):
+            retrieval._execute_unified_hybrid_retrieval("词" * 5000)
+        self.assertEqual(seen, ["词" * retrieval.MAX_QUERY_CHARS])
+
+
 if __name__ == "__main__":
     unittest.main()

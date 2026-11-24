@@ -107,6 +107,60 @@ class TestEnricherScheduler(unittest.TestCase):
             conn.close()
 
 
+    def candidate_ids(self):
+        """Every book the enricher would pick, in turn (each pick is hidden inside a rolled-back transaction)."""
+        from enrichers.scheduler import _fetch_next_enrich_candidate
+
+        conn = database.get_conn(self.db_path)
+        try:
+            found = set()
+            row = _fetch_next_enrich_candidate(conn)
+            while row is not None:
+                found.add(row["id"])
+                conn.execute("UPDATE books SET is_anthology = 1 WHERE id = ?", (row["id"],))
+                row = _fetch_next_enrich_candidate(conn)
+            conn.rollback()
+            return found
+        finally:
+            conn.close()
+
+    def test_unanswered_channels_do_not_mark_the_book_missing(self):
+        from enrichers.scheduler import RETRY_STATUS, MultiSourceSlowEnricher
+
+        enricher = MultiSourceSlowEnricher(db_path=self.db_path)
+        conn = database.get_conn(self.db_path)
+        row = conn.execute("SELECT * FROM books WHERE id = ?", (self.zh_book_id,)).fetchone()
+        conn.close()
+        enricher.cb.trigger_cooldown("google_books", duration_sec=60.0)  # one channel cooling down
+        with mock.patch.object(enricher.douban, "fetch", side_effect=OSError("network down")), \
+             mock.patch.object(enricher.open_library, "fetch", return_value=None):
+            self.assertFalse(enricher.enrich_book_row(row))
+
+        metas = database.get_external_meta_by_book(self.db_path, self.zh_book_id)
+        self.assertEqual([(m["source"], m["status"]) for m in metas], [("none", RETRY_STATUS)])
+        self.assertNotIn(self.zh_book_id, self.candidate_ids())
+
+        conn = database.get_conn(self.db_path)
+        conn.execute("UPDATE book_external_meta SET fetched_at = datetime('now', '-8 days')")
+        conn.commit()
+        conn.close()
+        self.assertIn(self.zh_book_id, self.candidate_ids())
+
+    def test_every_channel_missing_marks_not_found(self):
+        from enrichers.scheduler import MultiSourceSlowEnricher
+
+        enricher = MultiSourceSlowEnricher(db_path=self.db_path)
+        conn = database.get_conn(self.db_path)
+        row = conn.execute("SELECT * FROM books WHERE id = ?", (self.en_book_id,)).fetchone()
+        conn.close()
+        with mock.patch.object(enricher.douban, "fetch", return_value=None), \
+             mock.patch.object(enricher.google_books, "fetch", return_value=None), \
+             mock.patch.object(enricher.open_library, "fetch", return_value=None):
+            self.assertFalse(enricher.enrich_book_row(row))
+        metas = database.get_external_meta_by_book(self.db_path, self.en_book_id)
+        self.assertEqual([(m["source"], m["status"]) for m in metas], [("none", "not_found")])
+        self.assertNotIn(self.en_book_id, self.candidate_ids())
+
 
 class ExternalBonusTest(unittest.TestCase):
     def test_few_votes_give_no_bonus(self):

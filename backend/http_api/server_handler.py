@@ -14,6 +14,9 @@ class LibraryRequestHandler(BaseHTTPRequestHandler):
     """HTTP request dispatcher matching paths via declarative routing table."""
 
     protocol_version = "HTTP/1.1"
+    # Each connection holds a thread; without a timeout an idle keep-alive socket (or one that never sends a
+    # request, so never reaches the LAN gate) holds it forever. Long enough for a phone pausing a book download.
+    timeout = 60
     router = build_default_router()
 
     def log_message(self, format: str, *args: Any) -> None:

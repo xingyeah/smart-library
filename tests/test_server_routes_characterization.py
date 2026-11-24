@@ -31,6 +31,9 @@ class MockSocket:
         self.rfile = io.BytesIO(request_bytes)
         self.wfile = io.BytesIO()
 
+    def settimeout(self, timeout):
+        """The handler sets a socket timeout on every connection; an in-memory socket never blocks."""
+
     def makefile(self, mode: str, *args, **kwargs):
         if "b" in mode:
             if "r" in mode:

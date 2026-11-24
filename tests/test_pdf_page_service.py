@@ -78,6 +78,13 @@ class RenderedPagesTest(unittest.TestCase):
         self.assertEqual(pps.page_layout(1)["page_count"], 3)
         self.assertFalse(old_image.exists())
 
+    def test_truncated_layout_is_rebuilt(self):
+        layout_path = self.cache / "1" / pps.LAYOUT_FILE
+        pps.page_layout(1)
+        layout_path.write_text('{"source": {"pa', encoding="utf-8")  # a crash mid-write
+        self.assertEqual(pps.page_layout(1)["page_count"], 2)
+        self.assertEqual(pps._read_layout(layout_path)["page_count"], 2)
+
     def test_eviction_drops_least_recently_read_book_first(self):
         for book_id, age in (("7", 300), ("8", 200), ("9", 0)):
             book_dir = self.cache / book_id

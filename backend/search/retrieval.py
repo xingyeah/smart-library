@@ -12,8 +12,17 @@ from search.scoring import pre_score_candidates
 from search.types import ShelfFilters
 
 
+# Every query term costs a corpus scan and a pass over the candidates, so a pasted page (1500 words: 16 s, and other
+# searches slow down meanwhile) is cut here; the longest real query in the eval sets is 103 chars.
+MAX_QUERY_CHARS = 200
+
+
 def _execute_unified_hybrid_retrieval(raw_query: str, **options: Any) -> Dict[str, Any]:
-    """Hybrid retrieval; English sentences are also searched in Chinese and both result lists merged."""
+    """Hybrid retrieval; English sentences are also searched in Chinese and both result lists merged.
+
+    Only the first MAX_QUERY_CHARS of `raw_query` are searched.
+    """
+    raw_query = (raw_query or "")[:MAX_QUERY_CHARS]
     res = _retrieve_one_language(raw_query, **options)
     zh_query = _translate_english_query(raw_query or "")
     if not zh_query:

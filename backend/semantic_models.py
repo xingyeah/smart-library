@@ -31,6 +31,24 @@ EMBED_DIM = 1024
 MIN_VECTOR_NORM = 1e-12  # a vector shorter than this has no direction to compare
 
 
+def vector_file_stamp(stat: os.stat_result) -> List[int]:
+    """[size, mtime_ns] of a vector file; the meta file records it so a reader can tell the two belong together."""
+    return [stat.st_size, stat.st_mtime_ns]
+
+
+def load_vectors_for_meta(meta: Dict[str, Any], npy_path: Path) -> Optional[np.ndarray]:
+    """The vector matrix `meta` describes; None while a rebuild has replaced the vector file but not yet its meta
+    (rows would map to the wrong books). Meta written before stamps existed is trusted.
+
+    The stamp is taken from the open file, so a replace between the check and the read cannot slip in.
+    """
+    with open(npy_path, "rb") as vector_file:
+        stamp = meta.get("vectors_stamp")
+        if stamp is not None and list(stamp) != vector_file_stamp(os.fstat(vector_file.fileno())):
+            return None
+        return np.load(vector_file)
+
+
 def _id_array(book_ids: Any) -> np.ndarray:
     return np.fromiter(book_ids, dtype=np.int64, count=len(book_ids))
 
@@ -221,8 +239,11 @@ class BgeM3Engine:
             try:
                 with open(BGE_VEC_META_PATH, "r", encoding="utf-8") as mf:
                     meta = json.load(mf)
+                mat = load_vectors_for_meta(meta, BGE_VEC_NPY_PATH)
+                if mat is None:
+                    # Mid-rebuild: keep serving the old index; the next call sees the new meta and reloads
+                    return self._matrix is not None
                 book_ids = [int(x) for x in (meta.get("book_ids") or [])]
-                mat = np.load(str(BGE_VEC_NPY_PATH))
                 if mat.ndim == 2 and mat.shape[0] == len(book_ids) and mat.shape[1] == EMBED_DIM:
                     norm_mat = np.ascontiguousarray(mat, dtype=np.float32)
                     row_arr = np.array(book_ids, dtype=np.int64)

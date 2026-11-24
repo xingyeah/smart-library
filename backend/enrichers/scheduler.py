@@ -17,6 +17,13 @@ from enrichers.open_library import OpenLibraryEnricher
 logger = logging.getLogger("enrichers.scheduler")
 
 
+# A channel that could not be asked (cooling down, or the request failed), unlike a channel that found nothing
+CHANNEL_UNANSWERED = object()
+# Marker for a book some channel could not be asked about; it is tried again after this many days
+RETRY_STATUS = "retry"
+RETRY_UNANSWERED_AFTER_DAYS = 7
+
+
 class CircuitBreakerManager:
     """Manages channel-level circuit breaker cooldowns to prevent cascading stalls."""
 
@@ -96,10 +103,12 @@ class MultiSourceSlowEnricher:
 
     def _attempt_channel_fetch(
         self, enricher: BaseBookEnricher, row: Any, lang: str
-    ) -> Optional[EnrichedBookMeta]:
+    ) -> Any:
+        """The channel's answer (a result, or None for a miss), or CHANNEL_UNANSWERED when it is cooling down or
+        failed: that is no evidence the book is missing."""
         ch = enricher.source_name
         if not self.cb.is_available(ch):
-            return None
+            return CHANNEL_UNANSWERED
         try:
             query = BookQuery(
                 isbn=str(row["isbn"] or ""),
@@ -111,7 +120,7 @@ class MultiSourceSlowEnricher:
         except Exception as e:
             logger.warning("Channel '%s' failed for book #%s: %s", ch, row["id"], e)
             self.cb.trigger_cooldown(ch, duration_sec=300.0)
-            return None
+            return CHANNEL_UNANSWERED
 
     def _update_book_records(self, bid: int, res: EnrichedBookMeta, current_score: float) -> None:
         """Persist metadata to book_external_meta and update books classic score, summary & cover."""
@@ -153,21 +162,25 @@ class MultiSourceSlowEnricher:
         lang = (row["language"] or "zh-CN").lower()
         current_score = float(row["classic_score"] or 50.0)
         success_count = 0
+        has_unanswered_channel = False
 
         for enricher in self._select_channel_order(lang):
             res = self._attempt_channel_fetch(enricher, row, lang)
-            if res and res.status == "success":
+            if res is CHANNEL_UNANSWERED:
+                has_unanswered_channel = True
+            elif res and res.status == "success":
                 self._update_book_records(bid, res, current_score)
                 success_count += 1
 
         if success_count > 0:
             return True
-
+        # not_found is permanent (the book is never picked again), so it needs every channel's answer; without
+        # them the book waits RETRY_UNANSWERED_AFTER_DAYS instead of blocking the queue head
         database.upsert_external_meta(
             self.db_path,
             book_id=bid,
             source="none",
-            status="not_found",
+            status=RETRY_STATUS if has_unanswered_channel else "not_found",
         )
         return False
 
@@ -180,10 +193,15 @@ def _fetch_next_enrich_candidate(conn) -> Any:
     return conn.execute(
         """
         SELECT b.* FROM books b
-        LEFT JOIN book_external_meta em ON b.id = em.book_id
-        WHERE em.id IS NULL AND b.is_anthology = 0 AND b.is_deleted = 0
+        WHERE b.is_anthology = 0 AND b.is_deleted = 0
+          AND NOT EXISTS (
+              SELECT 1 FROM book_external_meta em
+              WHERE em.book_id = b.id
+                AND NOT (em.source = 'none' AND em.status = ? AND em.fetched_at < datetime('now', ?))
+          )
         ORDER BY b.classic_score DESC, b.id ASC LIMIT 1
-        """
+        """,
+        (RETRY_STATUS, f"-{RETRY_UNANSWERED_AFTER_DAYS} days"),
     ).fetchone()
 
 

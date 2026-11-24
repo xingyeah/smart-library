@@ -26,6 +26,8 @@ from semantic_models import (
     BGE_VEC_NPY_PATH,
     EMBED_DIM,
     get_bge_engine,
+    load_vectors_for_meta,
+    vector_file_stamp,
 )
 
 logger = logging.getLogger("build_bge_index")
@@ -217,7 +219,9 @@ def _load_existing_bge_cache(force_full: bool) -> Tuple[Dict[int, np.ndarray], D
             meta = json.load(mf)
         old_ids = [int(x) for x in (meta.get("book_ids") or [])]
         old_hashes = meta.get("passage_hashes") or []
-        old_mat = np.load(str(BGE_VEC_NPY_PATH))
+        old_mat = load_vectors_for_meta(meta, BGE_VEC_NPY_PATH)
+        if old_mat is None:
+            return {}, {}
         if old_mat.ndim == 2 and old_mat.shape[0] == len(old_ids) and old_mat.shape[1] == EMBED_DIM:
             for idx, bid in enumerate(old_ids):
                 existing_map[bid] = old_mat[idx]
@@ -237,6 +241,7 @@ def _write_bge_outputs(final_mat: np.ndarray, all_ids: List[int], all_hashes: Li
         fcntl.flock(lock_fp.fileno(), fcntl.LOCK_EX)
         try:
             np.save(str(tmp_npy), final_mat)
+            vectors_stamp = vector_file_stamp(tmp_npy.stat())  # a rename keeps size and mtime
             tmp_npy.replace(BGE_VEC_NPY_PATH)
             with open(tmp_meta, "w", encoding="utf-8") as mf:
                 json.dump(
@@ -249,6 +254,7 @@ def _write_bge_outputs(final_mat: np.ndarray, all_ids: List[int], all_hashes: Li
                         "book_ids": all_ids,
                         "passage_hashes": all_hashes,
                         "updated_at": time.time(),
+                        "vectors_stamp": vectors_stamp,
                     },
                     mf,
                 )

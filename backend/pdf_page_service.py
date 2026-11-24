@@ -70,7 +70,7 @@ def page_layout(book_id: int) -> Dict[str, Any]:
     layout_path = book_dir / LAYOUT_FILE
     stamp = _source_stamp(pdf_path)
     if layout_path.exists():
-        layout = json.loads(layout_path.read_text(encoding="utf-8"))
+        layout = _read_layout(layout_path)
         if layout.get("source") == stamp:
             os.utime(book_dir)  # marks the book as recently read for eviction
             return layout
@@ -80,8 +80,21 @@ def page_layout(book_id: int) -> Dict[str, Any]:
         raise PdfPagesUnavailable(f"book {book_id}: PDFKit cannot open {os.path.basename(pdf_path)}")
     layout = {"source": stamp, "page_count": len(sizes), "sizes": sizes}
     book_dir.mkdir(parents=True, exist_ok=True)
-    layout_path.write_text(json.dumps(layout), encoding="utf-8")
+    # A crash mid-write must not leave a truncated layout that fails every later open of the book
+    tmp_path = layout_path.with_name(f".{LAYOUT_FILE}.{threading.get_ident()}.tmp")
+    tmp_path.write_text(json.dumps(layout), encoding="utf-8")
+    os.replace(tmp_path, layout_path)
     return layout
+
+
+def _read_layout(layout_path: Path) -> Dict[str, Any]:
+    """The cached layout, or {} when it is unreadable (the caller then rebuilds the book's cache)."""
+    try:
+        layout = json.loads(layout_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        logger.warning("Unreadable PDF layout cache %s; rebuilding it", layout_path, exc_info=True)
+        return {}
+    return layout if isinstance(layout, dict) else {}
 
 
 def _check_page(layout: Dict[str, Any], page_no: int) -> None:
