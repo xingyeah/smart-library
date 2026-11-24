@@ -60,6 +60,25 @@ class SummaryValidationTest(unittest.TestCase):
         self.assertFalse(asr.is_summary_valid_chinese("针对《暗店街》作者莫迪亚诺诺贝尔文学奖作品的简短说明文本"))
 
 
+class RefresherLoopTest(unittest.TestCase):
+    def test_loop_survives_a_database_error(self):
+        steps = []
+
+        def fail_once_then_stop(*_args):
+            steps.append(1)
+            if len(steps) == 1:
+                raise database.sqlite3.OperationalError("database is locked")
+            asr._stop_event.set()
+            return 0.0
+
+        asr._stop_event.clear()
+        self.addCleanup(asr._stop_event.clear)
+        with mock.patch.object(asr, "_refresh_next_book", fail_once_then_stop), \
+             mock.patch.object(asr._stop_event, "wait", return_value=False):
+            asr._refresher_loop(Path("unused.db"))
+        self.assertEqual(len(steps), 2)
+
+
 class AutoSummaryRefresherDbTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

@@ -161,6 +161,27 @@ class TestEnricherScheduler(unittest.TestCase):
         self.assertEqual([(m["source"], m["status"]) for m in metas], [("none", "not_found")])
         self.assertNotIn(self.en_book_id, self.candidate_ids())
 
+    def test_daemon_loop_survives_a_database_error(self):
+        from enrichers import scheduler
+
+        enricher = scheduler.MultiSourceSlowEnricher(db_path=self.db_path)
+        steps = []
+
+        def fail_once_then_stop(*_args):
+            steps.append(1)
+            if len(steps) == 1:
+                raise database.sqlite3.OperationalError("database is locked")
+            scheduler._slow_enricher_stop.set()
+            return 0.0
+
+        scheduler._slow_enricher_stop.clear()
+        self.addCleanup(scheduler._slow_enricher_stop.clear)
+        with mock.patch.object(scheduler.time, "sleep"), \
+             mock.patch.object(scheduler, "_enrich_next_book", fail_once_then_stop), \
+             mock.patch.object(scheduler._slow_enricher_stop, "wait", return_value=False):
+            scheduler._enricher_daemon_loop(enricher, self.db_path, 12.0)
+        self.assertEqual(len(steps), 2)
+
 
 class ExternalBonusTest(unittest.TestCase):
     def test_few_votes_give_no_bonus(self):

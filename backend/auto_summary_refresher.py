@@ -237,34 +237,43 @@ def _flush_pending_reindex(pending_reindex: List[int]) -> None:
     spawn_reindex(batch)
 
 
+def _refresh_next_book(db_path: Path, pending_reindex: List[int]) -> float:
+    """Refresh the next queued or sweep-found book; returns how long to wait before the next one."""
+    try:
+        bid: Optional[int] = _queue.get_nowait()
+    except queue.Empty:
+        conn = get_conn(db_path)
+        try:
+            bid = fetch_next_missing_target_book(conn)
+        finally:
+            conn.close()
+
+    if bid is None:
+        _flush_pending_reindex(pending_reindex)
+        return SWEEP_IDLE_WAIT_SEC
+
+    try:
+        ok = _process_candidate(bid, db_path, pending_reindex=pending_reindex)
+    finally:
+        with _queued_lock:
+            _queued_ids.discard(bid)
+
+    if len(pending_reindex) >= REINDEX_BATCH_SIZE or not ok:
+        _flush_pending_reindex(pending_reindex)
+    return ITEM_COOLDOWN_SEC if ok else CAP_COOLDOWN_SEC
+
+
 def _refresher_loop(db_path: Path) -> None:
     _stop_event.wait(20.0)
     pending_reindex: List[int] = []
     while not _stop_event.is_set():
-        bid: Optional[int] = None
         try:
-            bid = _queue.get_nowait()
-        except queue.Empty:
-            conn = get_conn(db_path)
-            try:
-                bid = fetch_next_missing_target_book(conn)
-            finally:
-                conn.close()
-
-        if bid is None:
-            _flush_pending_reindex(pending_reindex)
-            _stop_event.wait(SWEEP_IDLE_WAIT_SEC)
-            continue
-
-        try:
-            ok = _process_candidate(bid, db_path, pending_reindex=pending_reindex)
-        finally:
-            with _queued_lock:
-                _queued_ids.discard(bid)
-
-        if len(pending_reindex) >= REINDEX_BATCH_SIZE or not ok:
-            _flush_pending_reindex(pending_reindex)
-        _stop_event.wait(ITEM_COOLDOWN_SEC if ok else CAP_COOLDOWN_SEC)
+            wait_sec = _refresh_next_book(db_path, pending_reindex)
+        except Exception:
+            # A locked or full database must not end the thread: nothing would restart it before the next launch
+            logger.exception("Auto summary refresher step failed; retrying in %ds", SWEEP_IDLE_WAIT_SEC)
+            wait_sec = SWEEP_IDLE_WAIT_SEC
+        _stop_event.wait(wait_sec)
     _flush_pending_reindex(pending_reindex)
 
 

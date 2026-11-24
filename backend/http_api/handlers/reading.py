@@ -185,6 +185,9 @@ def _detect_image_mime(head: bytes, ext: str) -> str:
 COVER_THUMB_WIDTHS = ("360", "720")
 COVER_THUMB_MIN_BYTES = 60 * 1024  # smaller originals are cheap to send, and sips would upscale them
 COVER_THUMB_DIR = COVERS_DIR / "thumbs"
+SIPS_TIMEOUT_SEC = 30
+MAX_CONCURRENT_SIPS = 4
+_SIPS_SLOTS = threading.BoundedSemaphore(MAX_CONCURRENT_SIPS)
 
 
 def _cover_thumbnail(original: Path, width: int) -> Path:
@@ -199,7 +202,16 @@ def _cover_thumbnail(original: Path, width: int) -> Path:
     tmp = thumb.with_name(f".{thumb.name}.{threading.get_ident()}.tmp")
     cmd = ["sips", "-Z", str(width * 3 // 2), "-s", "format", "jpeg", "-s", "formatOptions", "70",
            str(original), "--out", str(tmp)]
-    result = subprocess.run(cmd, capture_output=True, timeout=30)
+    # A shelf page asks for ~24 covers at once; without the cap that is 24 sips processes
+    with _SIPS_SLOTS:
+        if thumb.exists():
+            return thumb
+        try:
+            result = subprocess.run(cmd, capture_output=True, timeout=SIPS_TIMEOUT_SEC)
+        except (subprocess.TimeoutExpired, OSError) as error:
+            logger.warning("Cover thumbnail failed for %s: %s", original.name, error)
+            tmp.unlink(missing_ok=True)
+            return original
     if result.returncode != 0 or not tmp.exists():
         logger.warning("Cover thumbnail failed for %s: %s", original.name, result.stderr[:200])
         return original

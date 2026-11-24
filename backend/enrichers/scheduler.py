@@ -22,6 +22,7 @@ CHANNEL_UNANSWERED = object()
 # Marker for a book some channel could not be asked about; it is tried again after this many days
 RETRY_STATUS = "retry"
 RETRY_UNANSWERED_AFTER_DAYS = 7
+IDLE_WAIT_SEC = 60.0  # nothing to enrich, or the last step failed
 
 
 class CircuitBreakerManager:
@@ -210,25 +211,33 @@ def stop_background_slow_enricher() -> None:
     _slow_enricher_stop.set()
 
 
+def _enrich_next_book(enricher: MultiSourceSlowEnricher, db_path: Path, interval_sec: float) -> float:
+    """Enrich the next candidate; returns how long to wait before the next one."""
+    conn = database.get_conn(db_path)
+    try:
+        row = _fetch_next_enrich_candidate(conn)
+    finally:
+        conn.close()
+
+    if not row:
+        return IDLE_WAIT_SEC
+    try:
+        enricher.enrich_book_row(row)
+    except Exception as e:
+        logger.warning("Error during slow enrichment for book #%s: %s", row["id"], e)
+    return interval_sec
+
+
 def _enricher_daemon_loop(enricher: MultiSourceSlowEnricher, db_path: Path, interval_sec: float) -> None:
     time.sleep(15.0)
     while not _slow_enricher_stop.is_set():
-        conn = database.get_conn(db_path)
         try:
-            row = _fetch_next_enrich_candidate(conn)
-        finally:
-            conn.close()
-
-        if not row:
-            _slow_enricher_stop.wait(60.0)
-            continue
-
-        try:
-            enricher.enrich_book_row(row)
-        except Exception as e:
-            logger.warning("Error during slow enrichment for book #%s: %s", row["id"], e)
-
-        _slow_enricher_stop.wait(interval_sec)
+            wait_sec = _enrich_next_book(enricher, db_path, interval_sec)
+        except Exception:
+            # A locked or full database must not end the thread: nothing would restart it before the next launch
+            logger.exception("Slow enricher step failed; retrying in %ds", IDLE_WAIT_SEC)
+            wait_sec = IDLE_WAIT_SEC
+        _slow_enricher_stop.wait(wait_sec)
 
 
 def start_background_slow_enricher(interval_sec: float = 12.0, db_path: Path = DB_PATH) -> None:

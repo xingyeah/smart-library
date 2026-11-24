@@ -40,5 +40,21 @@ class CoverThumbnailTest(unittest.TestCase):
         self.assertEqual(reading._cover_thumbnail(cover, 360), cover)
 
 
+class CoverThumbnailFailureTest(unittest.TestCase):
+    def test_sips_timeout_serves_the_original(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+             mock.patch.object(reading, "COVER_THUMB_DIR", Path(tmp) / "thumbs"):
+            cover = Path(tmp) / "big.jpg"
+            cover.write_bytes(b"\xff\xd8\xff" + b"0" * reading.COVER_THUMB_MIN_BYTES)
+            timeout = reading.subprocess.TimeoutExpired("sips", reading.SIPS_TIMEOUT_SEC)
+            with mock.patch.object(reading.subprocess, "run", side_effect=timeout):
+                self.assertEqual(reading._cover_thumbnail(cover, 360), cover)
+            # the slot is released: a hung sips must not shrink the pool for later requests
+            for _ in range(reading.MAX_CONCURRENT_SIPS):
+                self.assertTrue(reading._SIPS_SLOTS.acquire(blocking=False))
+            for _ in range(reading.MAX_CONCURRENT_SIPS):
+                reading._SIPS_SLOTS.release()
+
+
 if __name__ == "__main__":
     unittest.main()
