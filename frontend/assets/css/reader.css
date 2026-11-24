@@ -64,16 +64,22 @@
 }
 
 .reader-topbar {
-  height: 54px;
+  min-height: 54px;
   background: var(--r-sidebar);
   border-bottom: 1px solid var(--r-border);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
-  gap: 12px;
+  padding: 6px 14px;
+  gap: 6px 10px;
   flex-shrink: 0;
   color: var(--r-text);
+}
+.reader-topbar .reader-ctrl-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  gap: 4px;
 }
 
 .reader-body-wrap {

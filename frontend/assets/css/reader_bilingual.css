@@ -308,6 +308,8 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .reader-ctrl-btn:hover:not(:disabled) {
   border-color: var(--r-accent);
