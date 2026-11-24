@@ -22,7 +22,7 @@ import math
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Callable, Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple
 
 import numpy as np
 
@@ -309,6 +309,7 @@ def _describe_pick(book: Dict[str, Any], channel: _Channel, pick: _Pick) -> None
         cosine_similarity=round(float(channel.scores[pick.row]), 3),
         match_score=round(MATCH_SCORE_FLOOR + MATCH_SCORE_SPAN * blended, 1),
         recommend_reason=f"【{channel.source} · {cluster}】{reason}，经典指数 {round(classic, 1)}",
+        reason_text=reason,
     )
 
 
@@ -371,6 +372,7 @@ def _pick_explore(session: _PickSession, marks_per_category: Dict[str, int]) -> 
             interest_cluster=f"跨界经典拓展 · {book['category']}", cluster_source=EXPLORE_SOURCE,
             recommend_type="explore", match_score=round(min(EXPLORE_MATCH_MAX, max(EXPLORE_MATCH_MIN, match)), 1),
             recommend_reason=f"【跨界高分探索 · {book['category']}】跳出日常阅读茧房，馆藏经典指数 {classic} 分代表作",
+            reason_text=f"换个口味：{book['category']}里的经典",
         )
         session.books.append(book)
 
@@ -429,13 +431,23 @@ def _fill_picks(session: _PickSession, liked: List[Any], phrase_vectors: Dict[st
     session.books.extend(sorted(books, key=lambda book: -book["match_score"]))
 
 
-def _recommend(top_k: int, language: str, exploration_ratio: Optional[float]) -> Dict[str, Any]:
-    """recommend_by_interests with the reader's exploration ratio, or with `exploration_ratio` in its place."""
+@dataclass(frozen=True)
+class _Request:
+    top_k: int
+    language: str
+    exploration_ratio: Optional[float]  # None: the reader's own
+    exclude_ids: FrozenSet[int] = frozenset()  # books this call must not recommend, on top of the never-recommended
+
+
+def _recommend(request: _Request) -> Dict[str, Any]:
+    """recommend_by_interests with the reader's exploration ratio, or with the request's in its place."""
+    top_k, language, exploration_ratio = request.top_k, request.language, request.exploration_ratio
     started = time.perf_counter()
     conn = get_conn()
     try:
         config = _load_config(conn)
         liked, blocked_ids = _load_marks(conn, config["excluded_categories"])
+        blocked_ids |= request.exclude_ids
         phrase_categories, phrase_vectors = _read_prompt(config["interest_prompt"])
         row_book_ids, matrix = get_bge_engine().get_book_matrix()
         session = _PickSession(
@@ -463,10 +475,16 @@ def recommend_by_interests(top_k: int = 10, language: str = "") -> Dict[str, Any
     ('exploit' or 'explore') and recommend_reason, plus the interest settings and clusters for display.
     `language` is a comma-separated filter. With no vector index only exploration picks come back, and with
     the exploration ratio at zero and nothing marked or written, nothing at all."""
-    return _recommend(top_k, language, None)
+    return _recommend(_Request(top_k, language, None))
 
 
 def interest_candidates(top_k: int = 10, language: str = "") -> Dict[str, Any]:
     """recommend_by_interests without exploration picks: only books chosen for the reader's prompt and liked
     books, for a caller that goes on to choose among them. The settings in the result are the reader's own."""
-    return _recommend(top_k, language, 0.0)
+    return _recommend(_Request(top_k, language, 0.0))
+
+
+def recommend_for_tonight(top_k: int, exclude_ids: Set[int]) -> Dict[str, Any]:
+    """recommend_by_interests without a language filter, leaving out `exclude_ids` (books already shown or swiped
+    away); each book also carries `reason_text`, the one line saying why it was picked."""
+    return _recommend(_Request(top_k, "", None, frozenset(exclude_ids)))

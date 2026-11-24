@@ -1,12 +1,15 @@
-import { appState, pdfState, readerState, shelfFilters } from './state.js';
+import { MOBILE_QUERY, appState, pdfState, readerState, shelfFilters } from './state.js';
 import { escapeHtml } from './utils.js';
 import { aiRerankOn, loadStats, setAiRerank } from './api.js';
 import {
   bindShelfSearchIme, clearShelfFilters, clearShelfSearch, debounceShelfSearch, initCategoryChips,
-  initMobileShelf, loadMoreShelfBooks, loadShelfBooks, resetShelfFilters, setFilter, switchTab,
+  initMobileShelf, loadMoreShelfBooks, loadShelfBooks, resetShelfFilters, setFilter, showReadingShelf, switchTab,
   toggleLangFilter, toggleShelfFilter, toggleShelfMoreFilters, updateShelfSearchClear,
 } from './shelf.js';
 import { initBackStack } from './back_stack.js';
+import {
+  askTonight, loadTonightView, moreTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
+} from './tonight.js';
 import {
   loadInterestView, runPresetDescribe, saveInterestConfig, showExploreRatio, triggerDescribeRecommend,
 } from './recommend.js';
@@ -93,7 +96,8 @@ Object.assign(window, {
   resetShelfFilters, debounceShelfSearch, toggleFavorite, cycleReadingStatus, toggleShelfMoreFilters,
   toggleShelfFilter, clearShelfFilters, updateShelfSearchClear, clearShelfSearch,
   openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
-  loadShelfBooks,
+  loadShelfBooks, showReadingShelf,
+  loadTonightView, moreTonight, askTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
   runPresetDescribe, triggerDescribeRecommend, loadInterestView, saveInterestConfig, showExploreRatio,
   startOrganize, loadConflicts, resolveConflict, rollbackRun,
   loadMismergedBooks, triggerSplitSingleBook, triggerBatchSplitMismerged,
@@ -135,6 +139,7 @@ initCategoryChips();
 bindShelfSearchIme();
 initMobileShelf();
 loadStats();
-loadShelfBooks(1);
+// The phone opens on tonight; the shelf is one tab away
+if (window.matchMedia(MOBILE_QUERY).matches) switchTab('tonight'); else loadShelfBooks(1);
 initReaderSelectionHandler();
 initBackStack();

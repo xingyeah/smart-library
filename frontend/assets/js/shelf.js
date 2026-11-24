@@ -9,6 +9,7 @@ import { aiRerankOn, applyShelfAiRerank, loadAiUsage, loadStats } from './api.js
 import { loadInterestView, runPresetDescribe, triggerDescribeRecommend } from './recommend.js';
 import { loadConflicts, loadMismergedBooks } from './organize.js';
 import { initShelfSheetDrag, renderShelfSheet } from './shelf_sheets.js';
+import { loadTonightView } from './tonight.js';
 
 const isMobileViewport = () => window.matchMedia(MOBILE_QUERY).matches;
 
@@ -62,10 +63,11 @@ export function toggleLangFilter(scope, langCode, btn) {
 
 export function switchTab(tab) {
   appState.currentTab = tab;
-  ['shelf', 'describe', 'interest', 'organize'].forEach(t => {
+  ['tonight', 'shelf', 'describe', 'interest', 'organize'].forEach(t => {
     document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
     document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
   });
+  if (tab === 'tonight') loadTonightView();
   if (tab === 'shelf') loadShelfBooks(shelfFilters.page);
   if (tab === 'describe' && !document.getElementById('describe-grid').innerHTML.trim()) {
     runPresetDescribe('剖析人类非理性决策、认知偏差、思考快与慢或潜意识行为心理学的经典著作');
@@ -77,6 +79,13 @@ export function switchTab(tab) {
     loadConflicts('pending');
     loadMismergedBooks();
   }
+}
+
+/** The shelf narrowed to the books marked as being read (the tonight page's 'other books being read'). */
+export function showReadingShelf() {
+  applyShelfStatus('reading');
+  shelfFilters.page = 1;
+  switchTab('shelf');
 }
 
 export function setFilter(key, val, btn) {

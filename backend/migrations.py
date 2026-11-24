@@ -159,6 +159,22 @@ def _migrate_v9(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_v10(conn: sqlite3.Connection) -> None:
+    """Books the reader swiped away on the tonight page, kept as a record of what they did not want."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS book_skips (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            book_id INTEGER NOT NULL,
+            context TEXT NOT NULL,
+            query TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_book_skips_book ON book_skips(book_id, created_at)")
+
+
 _MIGRATIONS = [
     (1, _migrate_v1),
     (2, _migrate_v2),
@@ -169,6 +185,7 @@ _MIGRATIONS = [
     (7, _migrate_v7),
     (8, _migrate_v8),
     (9, _migrate_v9),
+    (10, _migrate_v10),
 ]
 
 

@@ -1,4 +1,4 @@
-from http_api.handlers import books, connection, organize, pdf_pages, reading, recommend, translate
+from http_api.handlers import books, connection, organize, pdf_pages, reading, recommend, tonight, translate
 from http_api.router import Router
 
 
@@ -22,6 +22,7 @@ def build_default_router() -> Router:
     router.add("GET", r"/api/books/(?P<book_id>\d+)/pdf_page/(?P<page_no>\d+)", pdf_pages.handle_get_pdf_page)
     router.add("GET", r"/api/books/(?P<book_id>\d+)/pdf_text/(?P<page_no>\d+)", pdf_pages.handle_get_pdf_text)
     router.add("GET", r"/api/recommend/interests", recommend.handle_get_recommend_interests)
+    router.add("GET", r"/api/tonight", tonight.handle_get_tonight)
     router.add("GET", r"/api/conflicts", organize.handle_get_conflicts)
     router.add("GET", r"/api/organize/mismerged", organize.handle_get_mismerged_books)
     router.add("GET", r"/api/organize/status", organize.handle_get_organize_status)
@@ -39,6 +40,8 @@ def build_default_router() -> Router:
     router.add("POST", r"/api/recommend/interests/ai", recommend.handle_post_interests_ai)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/progress", books.handle_post_book_progress)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/meta", books.handle_post_book_meta)
+    router.add("POST", r"/api/skips", tonight.handle_post_skip)
+    router.add("POST", r"/api/skips/undo", tonight.handle_post_skip_undo)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/enrich_refresh", books.handle_post_book_enrich_refresh)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/delete", books.handle_post_book_delete)
     router.add("POST", r"/api/conflicts/(?P<conflict_id>\d+)/resolve", organize.handle_post_conflict_resolve)

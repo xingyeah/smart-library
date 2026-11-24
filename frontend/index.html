@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/assets/css/main.css" />
   <link rel="stylesheet" href="/assets/css/main_grid.css" />
   <link rel="stylesheet" href="/assets/css/main_refinements.css" />
+  <link rel="stylesheet" href="/assets/css/tonight.css" />
   <link rel="stylesheet" href="/assets/css/reader.css" />
   <link rel="stylesheet" href="/assets/css/reader_bilingual.css" />
   <link rel="stylesheet" href="/assets/css/reader_mobile.css" />
@@ -33,14 +34,15 @@
     </div>
 
     <nav class="nav-tabs">
+      <button class="nav-tab m-only" onclick="switchTab('tonight')" id="tab-btn-tonight">今晚</button>
       <button class="nav-tab active" onclick="switchTab('shelf')" id="tab-btn-shelf">
         书架
         <span class="badge-pill" id="nav-book-count">0</span>
       </button>
-      <button class="nav-tab" onclick="switchTab('describe')" id="tab-btn-describe">
+      <button class="nav-tab d-only" onclick="switchTab('describe')" id="tab-btn-describe">
         <span class="d-only">按描述找书</span><span class="m-only">找书</span>
       </button>
-      <button class="nav-tab" onclick="switchTab('interest')" id="tab-btn-interest">
+      <button class="nav-tab d-only" onclick="switchTab('interest')" id="tab-btn-interest">
         <span class="d-only">兴趣推荐</span><span class="m-only">推荐</span>
       </button>
       <button class="nav-tab" onclick="switchTab('organize')" id="tab-btn-organize">
@@ -51,6 +53,35 @@
   </header>
 
   <main class="container">
+
+    <!-- ==================== PHONE HOME: TONIGHT ==================== -->
+    <section id="view-tonight" class="hidden">
+      <div class="tonight-head">
+        <div>
+          <div class="tonight-date" id="tonight-date"></div>
+          <h1 class="tonight-title">今晚读什么？</h1>
+        </div>
+        <button class="btn" onclick="switchTab('interest')" aria-label="兴趣设置">兴趣设置</button>
+      </div>
+      <div id="tonight-continue"></div>
+      <div class="tonight-stack-head">
+        <span id="tonight-stack-title">今晚推荐</span>
+        <button class="tonight-link hidden" id="tonight-back" onclick="loadTonightView()">‹ 返回今晚</button>
+      </div>
+      <div class="tonight-stack" id="tonight-stack"></div>
+      <div class="tonight-actions" id="tonight-actions">
+        <button class="btn tonight-act" onclick="tonightSkip()">跳过</button>
+        <button class="btn tonight-act" onclick="tonightOpen()">详情</button>
+        <button class="btn btn-primary tonight-act" onclick="tonightWant()">想读</button>
+      </div>
+      <div class="tonight-hint">右滑想读 · 左滑跳过 · 上滑看详情</div>
+      <div class="tonight-presets" id="tonight-presets"></div>
+      <form class="tonight-ask" onsubmit="askTonight(event)">
+        <input id="tonight-ask-input" type="text" enterkeyhint="search" autocomplete="off"
+               placeholder="说出你想读什么，比如“轻松的行为经济学”" />
+        <button type="submit" class="tonight-ask-go" aria-label="找书">找</button>
+      </form>
+    </section>
 
     <!-- ==================== TAB 1: SHELF & INSTANT SEARCH ==================== -->
     <section id="view-shelf">
@@ -196,6 +227,7 @@
 
     <!-- ==================== TAB 3: INTEREST COMPASS & RECOMMENDATIONS ==================== -->
     <section id="view-interest" class="hidden">
+      <button class="btn m-only" style="margin-bottom:10px;" onclick="switchTab('tonight')">‹ 回到今晚</button>
       <div class="section-card">
         <div>
           <div>
