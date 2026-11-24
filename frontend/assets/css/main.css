@@ -129,11 +129,6 @@ body {
   color: var(--text-muted);
 }
 
-.badge-pill.warn {
-  background: #be123c; /* --rose under white text is 3.7:1; this is 6:1 */
-  color: #fff;
-}
-
 /* Main Container */
 .container {
   max-width: 1440px;

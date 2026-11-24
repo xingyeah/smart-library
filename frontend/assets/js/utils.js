@@ -1,6 +1,6 @@
 import {
   appState, readerState, isMobileReader,
-  COVER_THUMB_WIDTH, LATIN_TEXT_SAMPLE_CHARS, LATIN_TO_CJK_RATIO, MOBILE_NOTICE_MS,
+  COVER_THUMB_WIDTH, LATIN_TEXT_SAMPLE_CHARS, LATIN_TO_CJK_RATIO, MOBILE_NOTICE_MS, UNDO_TOAST_MS,
 } from './state.js';
 
 export function escapeHtml(s) {
@@ -72,3 +72,21 @@ export function showMobileNotice(text) {
   setTimeout(() => notice.remove(), MOBILE_NOTICE_MS);
 }
 
+/** A short message with an 撤销 button; a newer toast replaces it. `onUndo` runs at most once. */
+export function showUndoToast(text, onUndo) {
+  document.querySelectorAll('.undo-toast').forEach(old => old.remove());
+  const toast = document.createElement('div');
+  toast.className = 'undo-toast';
+  const label = document.createElement('span');
+  label.textContent = text;
+  const undo = document.createElement('button');
+  undo.type = 'button';
+  undo.textContent = '撤销';
+  undo.onclick = () => {
+    toast.remove();
+    onUndo();
+  };
+  toast.append(label, undo);
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), UNDO_TOAST_MS);
+}

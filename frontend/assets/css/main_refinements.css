@@ -147,7 +147,12 @@ h1 { font-size: 20px; }
 
 /* Card actions: the heart and the status sit at the card's foot, right-aligned. On a pointer screen they appear
    on hover, except a liked heart and a set status, which are information; touch screens always show them */
-.card-actions { justify-content: flex-end; gap: 6px; }
+.card-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.book-footer .card-actions { width: 100%; }
+@media (pointer: coarse) { .card-actions .btn-icon { min-height: 36px; } }
+.undo-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2200; display: flex; align-items: center;
+  gap: 14px; padding: 8px 8px 8px 16px; border-radius: 18px; background: rgba(15, 23, 42, 0.9); color: #f8fafc; font-size: 13px; }
+.undo-toast button { border: 0; background: transparent; color: #7dd3c0; font-size: 13px; font-weight: 600; padding: 6px 10px; cursor: pointer; }
 @media (hover: hover) {
   .card-actions .btn-icon:not(.fav-active):not(.has-status) { opacity: 0; transition: opacity 0.15s ease-out; }
   .book-card:hover .card-actions .btn-icon, .book-card:focus-within .card-actions .btn-icon { opacity: 1; }

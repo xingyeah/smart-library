@@ -87,10 +87,10 @@ export async function loadStats() {
     document.getElementById('st-total-files').innerText = `物理文件 ${d.total_files.toLocaleString()} 个`;
     document.getElementById('st-merged').innerText = d.duplicates_merged.toLocaleString();
     document.getElementById('st-size-gb').innerText = `${d.total_size_gb} GB`;
-    document.getElementById('st-fav-count').innerText = d.favorite_count.toLocaleString();
     const st = d.reading_statuses || {};
+    document.getElementById('st-reading-count').innerText = (st.reading || 0).toLocaleString();
     document.getElementById('st-read-breakdown').innerText =
-      `在读 ${st.reading || 0} · 已读 ${st.read || 0} · 想读 ${st.want || 0}`;
+      `喜欢 ${d.favorite_count.toLocaleString()} · 想读 ${st.want || 0} · 已读 ${st.read || 0}`;
     document.getElementById('st-conflicts').innerText = d.pending_conflicts.toLocaleString();
     document.getElementById('nav-book-count').innerText = d.total_books.toLocaleString();
 

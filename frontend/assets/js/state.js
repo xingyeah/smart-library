@@ -86,6 +86,7 @@ export const PDF_LONG_PRESS_MS = 550;
 export const PDF_LONG_PRESS_MOVE_PX = 10;
 export const PDF_LONG_PRESS_TAP_GUARD_MS = 700;
 export const MOBILE_NOTICE_MS = 2500;
+export const UNDO_TOAST_MS = 5000;
 
 export const pdfState = {
   doc: null,

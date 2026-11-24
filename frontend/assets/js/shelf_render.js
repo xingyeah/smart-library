@@ -2,15 +2,16 @@ import { COVER_THUMB_WIDTH, READING_STATUS_LABEL, RATING_SOURCE_NAMES, shelfFilt
 import { escapeHtml, bookCoverImgHtml, timeAgo } from './utils.js';
 import { icon } from './icons.js';
 
-export function readProgressHtml(b) {
+export function readProgressHtml(b, actionsHtml = '') {
   if (!b.last_opened_at) return '';
   const pct = b.read_progress != null ? Math.round(b.read_progress * 100) : null;
   const label = ((b.read_pos || {}).label || '').slice(0, 24);
   return `
     <div class="read-progress" style="margin:8px 0 4px;" onclick="event.stopPropagation()">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);">
-        <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(label)}">${pct != null ? `已读 ${pct}%` : '已打开'} · ${timeAgo(b.last_opened_at)}${label ? ` · ${escapeHtml(label)}` : ''}</span>
+        <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(label)}">${pct != null ? `已读 ${pct}%` : '已打开'} · ${timeAgo(b.last_opened_at)}</span>
         <button class="btn-icon" style="white-space:nowrap;" onclick="openOnlineReader(${b.id})">继续阅读</button>
+        ${actionsHtml}
       </div>
       <div style="height:4px; border-radius:6px; background:var(--border); margin-top:5px; overflow:hidden;">
         <div style="height:100%; width:${pct || 0}%; background:var(--accent);"></div>
@@ -106,6 +107,12 @@ export function renderBookCard(b, opts = {}) {
     ? `<span class="tag-xs rating" style="background:rgba(202,138,4,0.1);color:#a16207;border:1px solid rgba(202,138,4,0.3);font-weight:600;" title="综合分 · ${escapeHtml(ratingDetail)}">${icon('star')}${Number(b.composite_rating).toFixed(1)}</span>`
     : '';
 
+  // An opened book already has a progress row; the heart and status join it there instead of adding a row
+  const actionsHtml = `<span class="card-actions" onclick="event.stopPropagation()">
+        <button class="btn-icon card-fav ${favClass}" onclick="toggleFavorite(${b.id}, ${b.is_favorite ? 0 : 1}, this)" aria-label="${b.is_favorite ? '已喜欢' : '喜欢'}" title="${b.is_favorite ? '已喜欢' : '喜欢'}">${icon('heart')}</button>
+        <button class="btn-icon card-status${status === 'unread' ? '' : ' has-status'}" onclick="cycleReadingStatus(${b.id}, '${status}', this)" title="切换阅读状态">${READING_STATUS_LABEL[status] || '未读'}</button>
+      </span>`;
+
   return `
     <article class="book-card" data-book-id="${b.id}" onclick="openBookModal(${b.id})">
       <div class="book-card-top">
@@ -131,13 +138,7 @@ export function renderBookCard(b, opts = {}) {
       </div>
       ${reasonHtml}
       <div class="book-summary">${escapeHtml(b.summary || '暂无简介')}</div>
-      ${readProgressHtml(b)}
-      <div class="book-footer card-actions" onclick="event.stopPropagation()">
-        <button class="btn-icon card-fav ${favClass}" onclick="toggleFavorite(${b.id}, ${b.is_favorite ? 0 : 1}, this)" aria-label="${b.is_favorite ? '已喜欢' : '喜欢'}" title="${b.is_favorite ? '已喜欢' : '喜欢'}">${icon('heart')}</button>
-        <button class="btn-icon card-status${status === 'unread' ? '' : ' has-status'}" onclick="cycleReadingStatus(${b.id}, '${status}', this)" title="切换阅读状态">
-          ${READING_STATUS_LABEL[status] || '未读'}
-        </button>
-      </div>
+      ${b.last_opened_at ? readProgressHtml(b, actionsHtml) : `<div class="book-footer">${actionsHtml}</div>`}
     </article>
   `;
 }
