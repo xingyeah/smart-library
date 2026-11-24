@@ -5,8 +5,10 @@ import json
 import logging
 import os
 import ssl
+import threading
 import urllib.request
-from typing import Any, Dict, List, Optional, Tuple
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from database import get_conn
 
@@ -27,6 +29,37 @@ _FLASH_PRICE = (2.0, 8.0)
 
 class DailyCapReached(RuntimeError):
     pass
+
+
+_reserved_lock = threading.Lock()
+_reserved_cny: Dict[str, float] = {}
+
+
+@contextmanager
+def _reserve_spend(feature: Optional[str], model: str, max_tokens: int) -> Iterator[None]:
+    """Holds the most a call can still cost against its daily cap until the call has been recorded.
+
+    Checking only the recorded spend lets calls that start together all pass; the overrun is then one call's worth
+    per concurrent caller. The reservation counts output tokens only, so it is a floor on the real cost.
+    """
+    if feature in CAPPED_FEATURES:
+        group, features, cap = "capped", CAPPED_FEATURES, DAILY_CAP_CNY
+    elif feature == "auto_refresh":
+        group, features, cap = "auto_refresh", ("auto_refresh",), AUTO_REFRESH_CAP_CNY
+    else:
+        yield
+        return
+    spent = today_cost(features)
+    estimate = max_tokens / 1e6 * _PRICE.get(model, _FLASH_PRICE)[1]
+    with _reserved_lock:
+        if spent + _reserved_cny.get(group, 0.0) >= cap:
+            raise DailyCapReached(f"daily {group} AI cap CNY {cap} reached")
+        _reserved_cny[group] = _reserved_cny.get(group, 0.0) + estimate
+    try:
+        yield
+    finally:
+        with _reserved_lock:
+            _reserved_cny[group] -= estimate
 
 
 def _today() -> str:
@@ -128,10 +161,6 @@ def chat(
     key = api_key()
     if not key:
         raise RuntimeError("DEEPSEEK_API_KEY is not set")
-    if feature in CAPPED_FEATURES and today_cost() >= DAILY_CAP_CNY:
-        raise DailyCapReached(f"daily AI cap CNY {DAILY_CAP_CNY} reached")
-    if feature == "auto_refresh" and today_cost(("auto_refresh",)) >= AUTO_REFRESH_CAP_CNY:
-        raise DailyCapReached(f"daily auto_refresh AI cap CNY {AUTO_REFRESH_CAP_CNY} reached")
     body: Dict[str, Any] = {
         "model": model,
         "messages": messages,
@@ -148,15 +177,16 @@ def chat(
         data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
     )
-    data = _send_deepseek_request(req, timeout)
-    choices = data.get("choices") or []
-    content = ((choices[0].get("message") or {}).get("content") if choices else "") or ""
-    usage = data.get("usage") or {}
-    if feature:
-        try:
-            record_usage(feature, model, usage)
-        except Exception as e:  # accounting must never break the feature
-            logger.warning(f"usage logging failed: {e}")
+    with _reserve_spend(feature, model, max_tokens):
+        data = _send_deepseek_request(req, timeout)
+        choices = data.get("choices") or []
+        content = ((choices[0].get("message") or {}).get("content") if choices else "") or ""
+        usage = data.get("usage") or {}
+        if feature:
+            try:
+                record_usage(feature, model, usage)
+            except Exception as e:  # accounting must never break the feature
+                logger.warning(f"usage logging failed: {e}")
     return content, usage
 
 

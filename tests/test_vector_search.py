@@ -114,6 +114,21 @@ class HalfPublishedIndexTest(VectorIndexCase):
         self.assertEqual(self.nearest_ids(query_axis(), top_k=1), [])
 
 
+class RerankCacheTest(unittest.TestCase):
+    def test_refreshed_blurb_is_scored_again(self):
+        engine = semantic_models.BgeM3Engine()
+        encoded = mock.Mock(ids=[1, 2], attention_mask=[1, 1])
+        engine._rerank_tokenizer = mock.Mock(encode_batch=lambda pairs: [encoded] * len(pairs))
+        engine._rerank_input_names = []
+        engine._rerank_session = mock.Mock(run=mock.Mock(side_effect=lambda *_: [np.array([[0.0]])]))
+        with mock.patch.object(engine, "_ensure_reranker", return_value=True):
+            engine.rerank_pairs("query", [(1, "old blurb")])
+            engine.rerank_pairs("query", [(1, "old blurb")])
+            self.assertEqual(engine._rerank_session.run.call_count, 1)
+            engine.rerank_pairs("query", [(1, "new blurb")])
+            self.assertEqual(engine._rerank_session.run.call_count, 2)
+
+
 class SimilarBooksTest(VectorIndexCase):
     """Book 1 asks for its neighbours; its two nearest are a deleted book and an anthology."""
 

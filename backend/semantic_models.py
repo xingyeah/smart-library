@@ -401,7 +401,8 @@ class BgeM3Engine:
         if not docs or not self._ensure_reranker():
             return {}
         q = query.strip()
-        cache_key = (q, tuple(bid for bid, _ in docs))
+        # The text is in the key: a book whose blurb was refreshed must not get its old score back
+        cache_key = (q, max_length, tuple((bid, hash(text)) for bid, text in docs))
         cached = self._rerank_cache.get(cache_key)
         if cached is not None:
             return cached
