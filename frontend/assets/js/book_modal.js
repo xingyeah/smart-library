@@ -5,6 +5,7 @@ import { authorLinksHtml, getReaderButtonHtml, sourceQualityText, syncBookCards 
 import { loadStats } from './api.js';
 import { loadShelfBooks } from './shelf.js';
 import { loadMismergedBooks } from './organize.js';
+import { homeDetailHtml, homeSimilarHtml } from './home_detail.js';
 
 // The phone shows the modal full screen, so the loading and error states need their own way back
 function bookModalStatusHtml(message) {
@@ -38,21 +39,46 @@ async function fetchBookDetail(bookId) {
   }
 }
 
-// The desktop home shows the detail in its right column instead of a dialog over the list
+// The desktop home shows a short detail in its right column; everywhere else, and for 完整详情, the dialog
 const isHomeDetail = () => appState.currentTab === 'shelf' && !window.matchMedia(MOBILE_QUERY).matches;
+
+const DIALOG_TARGET = {
+  boxId: 'book-modal-content', shellId: 'book-modal',
+  html: b => `${detailCornerHtml(b)}${detailHeadHtml(b)}${detailSummaryHtml(b)}${detailReviewsHtml(b)}
+    <div id="detail-similar-slot"></div>${detailFoldsHtml(b)}`,
+  similarHtml: items => detailSimilarHtml(items),
+};
+const PANEL_TARGET = { boxId: 'home-detail-body', shellId: 'home-detail', html: homeDetailHtml, similarHtml: homeSimilarHtml };
 
 let detailRequestSeq = 0;
 
 function detailBox() {
-  return document.getElementById(isHomeDetail() ? 'home-detail-body' : 'book-modal-content');
+  return document.getElementById(isHomeDetail() && !isDialogOpen() ? PANEL_TARGET.boxId : DIALOG_TARGET.boxId);
 }
 
-export async function openBookModal(bookId) {
-  const box = detailBox();
+const isDialogOpen = () => document.getElementById('book-modal').classList.contains('open');
+
+/** A book's detail: in the desktop home's right column, otherwise as a dialog. */
+export function openBookModal(bookId) {
+  return showBookDetail(bookId, isHomeDetail() && !isDialogOpen() ? PANEL_TARGET : DIALOG_TARGET);
+}
+
+/** A book's whole detail as a dialog, also on the desktop home. */
+export function openBookDialog(bookId) {
+  return showBookDetail(bookId, DIALOG_TARGET);
+}
+
+function renderBookDetail(b, target) {
   // One detail on the page at a time: both places use the same element ids
-  const otherBox = document.getElementById(isHomeDetail() ? 'book-modal-content' : 'home-detail-body');
-  otherBox.innerHTML = '';
-  document.getElementById(isHomeDetail() ? 'home-detail' : 'book-modal').classList.add('open');
+  const otherTarget = target === PANEL_TARGET ? DIALOG_TARGET : PANEL_TARGET;
+  document.getElementById(otherTarget.boxId).innerHTML = '';
+  document.getElementById(target.boxId).innerHTML = target.html(b);
+  loadSimilarBooks(b.id, target);
+}
+
+async function showBookDetail(bookId, target) {
+  const box = document.getElementById(target.boxId);
+  document.getElementById(target.shellId).classList.add('open');
   box.innerHTML = loadingModalHtml(bookId);
 
   // Walking the home list with j/k opens one detail after another; only the last one asked for may land
@@ -64,20 +90,11 @@ export async function openBookModal(bookId) {
     return;
   }
   appState.currentActiveBookDetail = b;
-
-  box.innerHTML = `
-    ${detailCornerHtml(b)}
-    ${detailHeadHtml(b)}
-    ${detailSummaryHtml(b)}
-    ${detailReviewsHtml(b)}
-    <div id="detail-similar-slot"></div>
-    ${detailFoldsHtml(b)}
-  `;
-  loadSimilarBooks(b.id);
+  renderBookDetail(b, target);
 }
 
 // The vector search and its rows are most of the detail's cost, so they arrive after the detail shows
-async function loadSimilarBooks(bookId) {
+async function loadSimilarBooks(bookId, target) {
   let items = [];
   try {
     const r = await fetch(`/api/books/${bookId}/similar`);
@@ -88,7 +105,7 @@ async function loadSimilarBooks(bookId) {
   const slot = document.getElementById('detail-similar-slot');
   // Another book may have been opened while this was loading
   if (!slot || !appState.currentActiveBookDetail || appState.currentActiveBookDetail.id !== bookId) return;
-  slot.outerHTML = detailSimilarHtml(items);
+  slot.outerHTML = target.similarHtml(items);
 }
 
 function detailCornerHtml(b) {
@@ -245,7 +262,13 @@ function detailEditFormHtml(b) {
 }
 
 export function closeBookModal() {
+  const wasDialog = isDialogOpen();
   document.getElementById('book-modal').classList.remove('open');
+  // The dialog over the desktop home emptied the right column; leaving it puts the short detail back
+  if (wasDialog && isHomeDetail() && appState.currentActiveBookDetail) {
+    renderBookDetail(appState.currentActiveBookDetail, PANEL_TARGET);
+    return;
+  }
   document.getElementById('home-detail').classList.remove('open');
 }
 

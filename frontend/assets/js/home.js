@@ -1,7 +1,10 @@
-// The desktop home: filter column on the left, a compact list (or the cover grid) in the middle, the selected
-// book's detail on the right. It talks to the shelf, detail and status code through their window globals, so it
-// stays out of the shelf's import cycle (tests/test_frontend_structure.py).
-import { MOBILE_QUERY, READING_STATUS_LABEL, SHELF_FILTER_GROUPS, appState, readerState, shelfFilters, shelfGroupValues } from './state.js';
+// The desktop home: library and filter column on the left, a compact list (or the cover grid) in the middle, the
+// selected book's detail on the right. It talks to the shelf, detail and status code through their window
+// globals, so it stays out of the shelf's import cycle (tests/test_frontend_structure.py).
+import {
+  COVER_THUMB_WIDTH, MOBILE_QUERY, READING_STATUS_LABEL, SHELF_FILTER_GROUPS, appState, readerState, shelfFilters,
+  shelfGroupValues,
+} from './state.js';
 import { escapeHtml, showMobileNotice, showUndoToast } from './utils.js';
 import { icon } from './icons.js';
 import { renderBookCard, splitBilingualTitle } from './shelf_render.js';
@@ -9,23 +12,20 @@ import { renderBookCard, splitBilingualTitle } from './shelf_render.js';
 // The shelf, detail, reader and status functions, reached through the globals main.js sets up
 const app = /** @type {any} */ (window);
 const HOME_VIEW_KEY = 'lib_home_view';
+const COVER_SIZE_KEY = 'lib_home_cover_size';
 const WIDE_HOME_QUERY = '(min-width: 1100px)';
-const COMMAND_BOOK_MATCHES = 3;
-const COMMAND_JUMP_MATCHES = 3;
 // Holding j shows each row's detail only once the cursor rests, not one fetch per row passed
 const DETAIL_FOLLOW_DELAY_MS = 150;
-const MAX_BATCH_BOOKS = 200;
-// Status and category are what the list is narrowed by most; the rest fold away until something is picked in them
-const OPEN_NAV_GROUPS = ['status', 'category'];
-const JUMP_TABS = [['interest', '推荐'], ['organize', '整理']];
+export const MAX_BATCH_BOOKS = 200;
+const LIBRARY_ITEMS = [['reading', '在读'], ['want', '想读'], ['read', '已读'], ['fav', '喜欢']];
+// The library section covers the main statuses; the rarer filter groups fold under 更多筛选
+const MORE_FILTER_KEYS = ['language', 'format', 'pub_period', 'source_dir'];
 
 const homeState = {
   items: /** @type {any[]} */ ([]),
   activeIndex: -1,
   checked: /** @type {Set<number>} */ (new Set()),
   view: readHomeView(),
-  suggestions: /** @type {{label: string, hint: string, run: () => void}[]} */ ([]),
-  suggestIndex: -1,
   detailTimer: /** @type {any} */ (null),
 };
 
@@ -33,9 +33,27 @@ function readHomeView() {
   try { return localStorage.getItem(HOME_VIEW_KEY) === 'grid' ? 'grid' : 'list'; } catch (e) { return 'list'; }
 }
 
-const isDesktopHome = () => !window.matchMedia(MOBILE_QUERY).matches;
+export const isDesktopHome = () => !window.matchMedia(MOBILE_QUERY).matches;
 const isWideHome = () => window.matchMedia(WIDE_HOME_QUERY).matches;
 const isHomeListView = () => isDesktopHome() && homeState.view === 'list';
+
+/** The books on the page now, in list order. */
+export function homeItems() {
+  return homeState.items;
+}
+
+function applyCoverSize(isBig) {
+  document.body.classList.toggle('home-big-covers', isBig);
+  const btn = document.getElementById('home-cover-size-btn');
+  if (btn) btn.textContent = isBig ? '小图' : '大图';
+}
+
+/** Switches the list's covers between the small and the big size; the choice is remembered. */
+export function toggleHomeCoverSize() {
+  const isBig = !document.body.classList.contains('home-big-covers');
+  applyCoverSize(isBig);
+  try { localStorage.setItem(COVER_SIZE_KEY, isBig ? 'big' : 'small'); } catch (e) { console.warn('cover size not saved', e); }
+}
 
 /** Switches the desktop home between the compact list and the cover grid; the choice is remembered. */
 export function toggleHomeView() {
@@ -49,9 +67,12 @@ export function toggleHomeView() {
  * opts: { showRank?, isAiOrder?, prefixHtml?, emptyHtml? }. */
 export function fillShelfGrid(items, opts = {}) {
   const grid = document.getElementById('shelf-grid');
+  // The cursor stays on its book when the list reloads (a status change); a different list starts without one
+  const activeId = homeState.items[homeState.activeIndex]?.id;
   homeState.items = items;
-  homeState.activeIndex = Math.min(homeState.activeIndex, items.length - 1);
+  homeState.activeIndex = items.findIndex(b => b.id === activeId);
   grid.className = isHomeListView() ? 'home-list' : 'book-grid';
+  document.body.classList.toggle('home-list-view', isHomeListView());
   const viewBtn = document.getElementById('home-view-btn');
   if (viewBtn) viewBtn.textContent = homeState.view === 'list' ? '封面' : '列表';
   if (!items.length) {
@@ -67,33 +88,39 @@ export function fillShelfGrid(items, opts = {}) {
 function homeListHeadHtml() {
   const isPageChecked = homeState.items.length > 0 && homeState.items.every(b => homeState.checked.has(b.id));
   return `<div class="home-list-head">
-      <label class="home-check-cell" title="勾选这一页的书"><input type="checkbox" id="home-check-page"
-        ${isPageChecked ? 'checked' : ''} onchange="toggleHomePageChecks(this.checked)" />选本页</label>
-      <span>书名</span><span>作者</span><span>分类</span><span>进度 / 年份</span><span></span>
+      <span class="home-check-cell"><input type="checkbox" id="home-check-page" title="勾选这一页" aria-label="勾选这一页"
+        ${isPageChecked ? 'checked' : ''} onchange="toggleHomePageChecks(this.checked)" /></span>
+      <span></span><span>书名</span><span>进度</span><span>状态</span><span>评分</span>
     </div>`;
 }
 
+function rowCoverHtml(b) {
+  if (!b.cover_path) return '<span class="home-row-cover is-empty"></span>';
+  return `<img class="home-row-cover" src="${escapeHtml(b.cover_path)}?w=${COVER_THUMB_WIDTH}" alt="" loading="lazy"
+    decoding="async" onerror="this.outerHTML='<span class=&quot;home-row-cover is-empty&quot;></span>'" />`;
+}
+
+function rowProgressHtml(b) {
+  if (!b.last_opened_at) return '<span class="home-row-progress is-empty">—</span>';
+  const pct = b.read_progress != null ? Math.round(b.read_progress * 100) : 0;
+  return `<span class="home-row-progress" title="已读 ${pct}%"><span class="home-bar"><i style="width:${pct}%"></i></span>${pct}%</span>`;
+}
+
 function homeRowHtml(b, index) {
-  const { main, sub } = splitBilingualTitle(b.clean_title || b.title);
   const status = b.reading_status || 'unread';
   const isChecked = homeState.checked.has(b.id);
-  const progress = b.last_opened_at && b.read_progress != null ? `已读 ${Math.round(b.read_progress * 100)}%` : '';
-  const rating = b.composite_rating ? `<span class="home-row-rate">${icon('star')}${Number(b.composite_rating).toFixed(1)}</span>` : '';
+  const rating = b.composite_rating ? Number(b.composite_rating).toFixed(1) : '—';
   return `<div class="home-row${index === homeState.activeIndex ? ' active' : ''}${isChecked ? ' checked' : ''}"
       data-book-id="${b.id}" data-index="${index}" onclick="selectHomeRow(${index})" ondblclick="openOnlineReader(${b.id})">
       <span class="home-check-cell" onclick="event.stopPropagation()"><input type="checkbox" ${isChecked ? 'checked' : ''}
         aria-label="勾选" onchange="toggleHomeCheck(${b.id})" /></span>
-      <span class="home-row-title"><span class="book-title" title="${escapeHtml(b.title)}">${escapeHtml(main)}</span>
-        ${sub ? `<span class="home-row-sub">${escapeHtml(sub)}</span>` : ''}</span>
-      <span class="home-row-author book-author">${escapeHtml(b.author)}</span>
-      <span class="home-row-cat">${escapeHtml(b.category || '')}</span>
-      <span class="home-row-year">${progress || escapeHtml(b.pub_year || '')}${rating}</span>
-      <span class="card-actions" onclick="event.stopPropagation()">
-        <button class="btn-icon card-fav ${b.is_favorite ? 'fav-active' : ''}" onclick="toggleFavorite(${b.id}, ${b.is_favorite ? 0 : 1})"
-          title="${b.is_favorite ? '已喜欢' : '喜欢'}" aria-label="${b.is_favorite ? '已喜欢' : '喜欢'}">${icon('heart')}</button>
-        <button class="btn-icon card-status${status === 'unread' ? '' : ' has-status'}" onclick="cycleReadingStatus(${b.id}, '${status}')"
-          title="切换阅读状态">${READING_STATUS_LABEL[status] || '未读'}</button>
-      </span>
+      ${rowCoverHtml(b)}
+      <span class="home-row-title"><span class="book-title" title="${escapeHtml(b.title)}">${escapeHtml(splitBilingualTitle(b.clean_title || b.title).main)}${b.is_favorite ? `<span class="home-row-fav" title="已喜欢">${icon('heart')}</span>` : ''}</span>
+        <span class="home-row-author book-author">${escapeHtml(b.author)}</span></span>
+      ${rowProgressHtml(b)}
+      <span onclick="event.stopPropagation()"><button class="home-pill card-status${status === 'unread' ? '' : ' has-status'}${status === 'reading' ? ' is-reading' : ''}"
+        onclick="cycleReadingStatus(${b.id}, '${status}')" title="切换阅读状态（s）">${READING_STATUS_LABEL[status] || '未读'}</button></span>
+      <span class="home-row-rate">${rating}</span>
     </div>`;
 }
 
@@ -110,6 +137,13 @@ export function selectHomeRow(index) {
   app.openBookModal(homeState.items[index].id);
 }
 
+/** Puts the cursor on the first row, so j/k carry on from there after a search. */
+export function focusFirstHomeRow() {
+  if (!homeState.items.length) return;
+  homeState.activeIndex = -1;
+  moveHomeRow(1);
+}
+
 function moveHomeRow(delta) {
   if (!homeState.items.length) return;
   homeState.activeIndex = Math.max(0, Math.min(homeState.items.length - 1, homeState.activeIndex + delta));
@@ -122,117 +156,78 @@ function moveHomeRow(delta) {
   homeState.detailTimer = setTimeout(() => app.openBookModal(bookId), DETAIL_FOLLOW_DELAY_MS);
 }
 
-/** The narrow window's filter column is a drawer; this opens or closes it. */
+// ---------- the left column ----------
+/** The narrow window's left column is a drawer; this opens or closes it. */
 export function toggleHomeNav() {
   document.getElementById('home-nav').classList.toggle('open');
 }
 
-// ---------- the filter column ----------
-function navItemHtml(group, option, picked) {
-  const [val, label] = option;
-  const count = (appState.libraryCounts[group.key] || {})[val];
-  return `<button class="home-nav-item${picked.includes(val) ? ' active' : ''}" data-key="${group.key}" data-val="${escapeHtml(val)}"
-      onclick="toggleShelfFilter(this.dataset.key, this.dataset.val)"><span>${escapeHtml(label)}</span>
-      <span class="home-nav-count">${count != null ? Number(count).toLocaleString() : ''}</span></button>`;
+const isRecentSort = () => appState.shelfSortTouched
+  && /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort')).value === 'opened';
+
+/** 最近打开: every book, the last opened first. */
+export function showRecentlyOpened() {
+  /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort')).value = 'opened';
+  appState.shelfSortTouched = true;
+  app.clearShelfGroup('status');
 }
 
-function navGroupHtml(group) {
+function navCountHtml(count) {
+  return `<span class="home-nav-count">${count != null ? Number(count).toLocaleString() : ''}</span>`;
+}
+
+function navButtonHtml(item) {
+  return `<button class="home-nav-item${item.isActive ? ' active' : ''}" ${item.attrs}><span>${escapeHtml(item.label)}</span>${navCountHtml(item.count)}</button>`;
+}
+
+function filterItemAttrs(key, val) {
+  return `data-key="${key}" data-val="${escapeHtml(val)}" onclick="toggleShelfFilter(this.dataset.key, this.dataset.val)"`;
+}
+
+function librarySectionHtml() {
+  const picked = shelfGroupValues('status');
+  const counts = appState.libraryCounts;
+  const items = [
+    { label: '全部', count: (counts.library || {}).total, isActive: !picked.length && !isRecentSort(), attrs: 'onclick="clearShelfGroup(\'status\')"' },
+    ...LIBRARY_ITEMS.map(([val, label]) => ({ label, count: (counts.status || {})[val], isActive: picked.includes(val), attrs: filterItemAttrs('status', val) })),
+    { label: '最近打开', count: null, isActive: isRecentSort(), attrs: 'onclick="showRecentlyOpened()"' },
+  ];
+  return `<h6 class="home-nav-title">书库</h6>${items.map(navButtonHtml).join('')}`;
+}
+
+function pendingSectionHtml() {
+  const items = [
+    { label: '待确认', count: (appState.libraryCounts.library || {}).pending, isActive: false, attrs: 'onclick="switchTab(\'organize\')"' },
+    { label: '合并错了', count: null, isActive: false, attrs: 'onclick="switchTab(\'organize\')"' },
+  ];
+  return `<h6 class="home-nav-title">待处理</h6>${items.map(navButtonHtml).join('')}`;
+}
+
+function filterGroupItemsHtml(group) {
   const picked = shelfGroupValues(group.key);
-  const items = `<button class="home-nav-item${picked.length ? '' : ' active'}" onclick="clearShelfGroup('${group.key}')"><span>全部</span></button>`
-    + group.options.map(option => navItemHtml(group, option, picked)).join('');
-  const isOpen = OPEN_NAV_GROUPS.includes(group.key) || picked.length > 0;
-  return `<details class="home-nav-group" ${isOpen ? 'open' : ''}><summary>${escapeHtml(group.title)}</summary>${items}</details>`;
+  const counts = appState.libraryCounts[group.key] || {};
+  return [{ label: '全部', count: null, isActive: !picked.length, attrs: `onclick="clearShelfGroup('${group.key}')"` },
+    ...group.options.map(([val, label]) => ({ label, count: counts[val], isActive: picked.includes(val), attrs: filterItemAttrs(group.key, val) })),
+  ].map(navButtonHtml).join('');
 }
 
-/** The left column: every filter group with its library-wide counts, the picked values marked. */
+function moreFiltersHtml() {
+  const groups = SHELF_FILTER_GROUPS.filter(g => MORE_FILTER_KEYS.includes(g.key) && g.options.length);
+  const ratingPicked = shelfGroupValues('status').includes('has_rating');
+  const isOpen = ratingPicked || groups.some(g => shelfGroupValues(g.key).length);
+  const rating = navButtonHtml({ label: '有评分 / 书评', count: null, isActive: ratingPicked, attrs: filterItemAttrs('status', 'has_rating') });
+  return `<details class="home-nav-more" ${isOpen ? 'open' : ''}><summary>更多筛选</summary>${rating}`
+    + groups.map(g => `<div class="home-nav-sub">${escapeHtml(g.title)}</div>${filterGroupItemsHtml(g)}`).join('') + '</details>';
+}
+
+/** The left column: library statuses, what waits to be sorted out, categories, and the rarer filters folded. */
 export function renderHomeNav() {
   const nav = document.getElementById('home-nav');
   if (!nav || !isDesktopHome()) return;
+  const category = SHELF_FILTER_GROUPS.find(g => g.key === 'category');
   nav.innerHTML = '<div class="home-nav-head"><span>筛选</span><button class="btn" onclick="toggleHomeNav()">完成</button></div>'
-    + SHELF_FILTER_GROUPS.filter(g => g.options.length).map(navGroupHtml).join('');
-}
-
-// ---------- the command bar ----------
-function jumpSuggestions(query) {
-  const tabs = JUMP_TABS.filter(([, label]) => label.includes(query) || query.includes(label))
-    .map(([tab, label]) => ({ label: `去「${label}」`, hint: '页面', run: () => app.switchTab(tab) }));
-  const filters = SHELF_FILTER_GROUPS.flatMap(g => g.options
-    .filter(([, label]) => label.includes(query) || query.includes(label))
-    .map(([val, label]) => ({ label: `只看「${label}」`, hint: g.title, run: () => runFilterJump(g.key, val) })));
-  return [...tabs, ...filters].slice(0, COMMAND_JUMP_MATCHES);
-}
-
-function runFilterJump(key, val) {
-  /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).value = '';
-  shelfFilters.q = '';
-  if (!shelfGroupValues(key).includes(val)) app.toggleShelfFilter(key, val);
-  else app.loadShelfBooks(1);
-}
-
-export function hideCommandSuggest() {
-  homeState.suggestions = [];
-  document.getElementById('cmd-suggest')?.classList.add('hidden');
-}
-
-/** Under the search box while it has focus: the first matching books and the pages or filters the words name.
- * Enter without picking one runs the search over the whole library by meaning. */
-export function renderCommandSuggest() {
-  const box = document.getElementById('cmd-suggest');
-  const query = shelfFilters.q;
-  if (!box || !isDesktopHome() || !query || document.activeElement?.id !== 'shelf-search-input') {
-    hideCommandSuggest();
-    return;
-  }
-  homeState.suggestions = [
-    ...homeState.items.slice(0, COMMAND_BOOK_MATCHES).map(b => ({
-      label: splitBilingualTitle(b.clean_title || b.title).main, hint: b.author || '', run: () => app.openBookModal(b.id),
-    })),
-    ...jumpSuggestions(query),
-  ];
-  homeState.suggestIndex = -1;
-  box.innerHTML = homeState.suggestions.map((item, i) => `<button class="cmd-item" data-index="${i}"
-      onmousedown="event.preventDefault(); runCommandSuggest(${i})"><span>${escapeHtml(item.label)}</span>
-      <span class="cmd-hint">${escapeHtml(item.hint)}</span></button>`).join('')
-    + '<div class="cmd-foot">↑↓ 选择 · 回车 按意思搜全库 · Esc 清空</div>';
-  box.classList.remove('hidden');
-}
-
-export function runCommandSuggest(index) {
-  const item = homeState.suggestions[index];
-  hideCommandSuggest();
-  if (item) item.run();
-}
-
-function moveCommandSuggest(delta) {
-  // Positions run -1 (nothing picked, Enter searches) to count - 1, wrapping at both ends
-  const slots = homeState.suggestions.length + 1;
-  homeState.suggestIndex = (((homeState.suggestIndex + 1 + delta) % slots) + slots) % slots - 1;
-  document.querySelectorAll('#cmd-suggest .cmd-item').forEach(el => {
-    el.classList.toggle('active', Number(/** @type {HTMLElement} */ (el).dataset.index) === homeState.suggestIndex);
-  });
-}
-
-/** Keys inside the search box; true when the key was handled here and the box's own Enter search must not run. */
-export function onCommandKey(event) {
-  if (!isDesktopHome() || event.isComposing) return false;
-  if (event.key === 'Escape') {
-    app.clearShelfSearch();
-    hideCommandSuggest();
-    /** @type {HTMLElement} */ (event.target).blur();
-    return true;
-  }
-  if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && homeState.suggestions.length) {
-    event.preventDefault();
-    moveCommandSuggest(event.key === 'ArrowDown' ? 1 : -1);
-    return true;
-  }
-  if (event.key === 'Enter' && homeState.suggestIndex >= 0) {
-    runCommandSuggest(homeState.suggestIndex);
-    return true;
-  }
-  // The search runs and the box lets go of the keys, so j/k walk the results at once
-  if (event.key === 'Enter') /** @type {HTMLElement} */ (event.target).blur();
-  return false;
+    + librarySectionHtml() + pendingSectionHtml()
+    + `<h6 class="home-nav-title">分类</h6>${filterGroupItemsHtml(category)}` + moreFiltersHtml();
 }
 
 // ---------- ticks and the batch bar ----------
@@ -262,6 +257,7 @@ function renderHomeBatchBar() {
   const bar = document.getElementById('home-batch-bar');
   if (!bar) return;
   const count = homeState.checked.size;
+  document.body.classList.toggle('home-has-checks', count > 0);
   bar.classList.toggle('hidden', !count || !isDesktopHome());
   if (!count) return;
   const isTooMany = count > MAX_BATCH_BOOKS;
@@ -290,17 +286,22 @@ function refreshAfterMarks() {
   app.loadStats();
 }
 
-/** Sets one batch action's mark on every ticked book; the toast's 撤销 puts back each book's own marks. */
-export async function applyHomeBatch(actionIndex) {
-  const [label, marks] = BATCH_ACTIONS[actionIndex];
-  const ids = Array.from(homeState.checked);
+/** Sets `marks` on every book of `ids` in one call; the toast's 撤销 puts back each book's own marks.
+ * Resolves true when the server took them. */
+export async function applyMarksToBooks(ids, marks, label) {
   const previous = await postBatchMarks(ids.map(id => ({ id, ...marks })));
-  if (!previous) return;
-  homeState.checked.clear();
+  if (!previous) return false;
   refreshAfterMarks();
   showUndoToast(`已改 ${ids.length} 本 · ${label}`, async () => {
     if (await postBatchMarks(previous)) refreshAfterMarks();
   });
+  return true;
+}
+
+/** One batch bar button: its mark on every ticked book. */
+export async function applyHomeBatch(actionIndex) {
+  const [label, marks] = BATCH_ACTIONS[actionIndex];
+  if (await applyMarksToBooks(Array.from(homeState.checked), marks, label)) homeState.checked.clear();
 }
 
 // ---------- keys ----------
@@ -338,6 +339,79 @@ function onHomeKey(event) {
   action();
 }
 
-export function initHomeKeys() {
+// ---------- column widths ----------
+const PANE_WIDTH_KEY = 'lib_home_pane_widths';
+const PANE_LIMITS = { nav: { min: 160, max: 380, cssVar: '--home-nav-w' }, detail: { min: 260, max: 620, cssVar: '--home-detail-w' } };
+// The list in the middle never gets narrower than this, whatever the two sides ask for
+const MIN_LIST_WIDTH_PX = 420;
+
+function readPaneWidths() {
+  try { return JSON.parse(localStorage.getItem(PANE_WIDTH_KEY) || '{}'); } catch (e) { return {}; }
+}
+
+function setPaneWidth(layout, pane, width) {
+  const limits = PANE_LIMITS[pane];
+  const other = PANE_LIMITS[pane === 'nav' ? 'detail' : 'nav'];
+  const otherWidth = parseFloat(getComputedStyle(layout).getPropertyValue(other.cssVar)) || 0;
+  const room = layout.clientWidth - otherWidth - MIN_LIST_WIDTH_PX;
+  const clamped = Math.round(Math.max(limits.min, Math.min(limits.max, room, width)));
+  layout.style.setProperty(limits.cssVar, `${clamped}px`);
+  return clamped;
+}
+
+function savePaneWidth(pane, width) {
+  try {
+    localStorage.setItem(PANE_WIDTH_KEY, JSON.stringify({ ...readPaneWidths(), [pane]: width }));
+  } catch (e) {
+    console.warn('pane width not saved', pane, e);
+  }
+}
+
+function dragPane(handle, layout, downEvent) {
+  const pane = handle.dataset.pane;
+  const box = layout.getBoundingClientRect();
+  let width = 0;
+  const onMove = (event) => {
+    width = setPaneWidth(layout, pane, pane === 'nav' ? event.clientX - box.left : box.right - event.clientX);
+  };
+  const onUp = () => {
+    handle.classList.remove('dragging');
+    document.body.classList.remove('home-resizing');
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    if (width) savePaneWidth(pane, width);
+  };
+  downEvent.preventDefault();
+  handle.classList.add('dragging');
+  document.body.classList.add('home-resizing');
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+}
+
+/** The column borders are handles: drag to set the left column's or the detail's width, double-click to reset. */
+function initPaneResizers() {
+  const layout = /** @type {HTMLElement} */ (document.querySelector('.home-layout'));
+  Object.entries(readPaneWidths()).forEach(([pane, width]) => {
+    if (PANE_LIMITS[pane]) layout.style.setProperty(PANE_LIMITS[pane].cssVar, `${Number(width)}px`);
+  });
+  layout.querySelectorAll('.home-resizer').forEach(el => {
+    const handle = /** @type {HTMLElement} */ (el);
+    handle.addEventListener('pointerdown', event => dragPane(handle, layout, event));
+    handle.addEventListener('dblclick', () => {
+      layout.style.removeProperty(PANE_LIMITS[handle.dataset.pane].cssVar);
+      savePaneWidth(handle.dataset.pane, undefined);
+    });
+  });
+}
+
+/** Desktop only: the search box moves into the top bar, where it serves as the command bar on every page, and the
+ * home's column borders become drag handles. */
+export function initDesktopHome() {
   document.addEventListener('keydown', onHomeKey);
+  if (!isDesktopHome()) return;
+  document.getElementById('top-cmd-slot').appendChild(document.querySelector('#view-shelf .search-input-wrap'));
+  initPaneResizers();
+  let savedSize = '';
+  try { savedSize = localStorage.getItem(COVER_SIZE_KEY) || ''; } catch (e) { console.warn('cover size not read', e); }
+  applyCoverSize(savedSize === 'big');
 }

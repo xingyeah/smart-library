@@ -34,6 +34,8 @@
       </div>
     </div>
 
+    <div class="top-cmd-slot d-only" id="top-cmd-slot"></div>
+
     <nav class="nav-tabs">
       <button class="nav-tab m-only" onclick="switchTab('tonight')" id="tab-btn-tonight">今晚</button>
       <button class="nav-tab active" onclick="switchTab('shelf')" id="tab-btn-shelf">
@@ -87,15 +89,14 @@
       <div class="home-main">
       <div class="search-panel">
         <div class="search-row">
-          <button class="btn d-only home-nav-toggle" onclick="toggleHomeNav()">筛选</button>
           <div class="search-input-wrap">
             <input
               type="text"
               id="shelf-search-input"
               class="search-input"
-              placeholder="书名、作者、拼音，或说想读什么"
+              placeholder="搜书，或说一句：把想读里讲决策的书设为在读"
               oninput="debounceShelfSearch(); updateShelfSearchClear()"
-              onfocus="renderCommandSuggest()"
+              onfocus="if (appState.currentTab !== 'shelf') switchTab('shelf'); renderCommandSuggest()"
               onblur="hideCommandSuggest()"
               enterkeyhint="search"
               autocomplete="off"
@@ -107,7 +108,22 @@
           </div>
           <button class="m-only shelf-sort-btn" onclick="openShelfSheet('sort')" aria-label="排序">↕︎</button>
           <button class="m-only m-filter-btn" id="m-filter-btn" onclick="openShelfSheet('filter')">筛选</button>
-          <select class="select-sm d-only" id="shelf-sort" onchange="appState.shelfSortTouched = true; loadShelfBooks(1)">
+        </div>
+      </div>
+
+      <div class="m-only m-chip-row" id="m-chip-row"></div>
+
+      <div class="d-only home-result-row">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="btn home-nav-toggle" onclick="toggleHomeNav()">筛选</button>
+          <div style="font-size:14px; color:var(--text-muted);" id="shelf-result-info">共找到 0 本藏书</div>
+          <div class="active-filters" id="shelf-active-filters"></div>
+        </div>
+        <div class="home-tools">
+          <label class="home-ai-toggle" title="按回车后由 DeepSeek 重新排序前 20 本，会用掉 AI 额度">
+            <input type="checkbox" id="shelf-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排
+          </label>
+          <select class="select-sm" id="shelf-sort" onchange="appState.shelfSortTouched = true; loadShelfBooks(1)">
             <option value="imported" selected>最近导入</option>
             <option value="imported_asc">最早导入</option>
             <option value="opened">最近打开</option>
@@ -119,23 +135,8 @@
             <option value="rating">我的评分</option>
             <option value="title">书名音序</option>
           </select>
-          <label class="filter-label d-only" style="display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;" title="按回车后由 DeepSeek 重新排序前 20 本，会用掉 AI 额度">
-            <input type="checkbox" id="shelf-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排（耗额度）
-          </label>
-        </div>
-      </div>
-
-      <div class="m-only m-chip-row" id="m-chip-row"></div>
-
-      <div class="d-only home-result-row">
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <div style="font-size:14px; color:var(--text-muted);" id="shelf-result-info">共找到 0 本藏书</div>
-          <div class="active-filters" id="shelf-active-filters"></div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span class="home-key-hint" title="j / k 上下移动 · 回车 打开阅读 · s 切换状态 · f 喜欢 · x 勾选 · / 搜索">j k ↵ s f x</span>
+          <button class="btn" id="home-cover-size-btn" onclick="toggleHomeCoverSize()" title="列表里的封面：小图 / 大图">大图</button>
           <button class="btn" id="home-view-btn" onclick="toggleHomeView()" title="列表 / 封面">封面</button>
-          <span style="display:flex; gap:8px;" id="shelf-pagination-top"></span>
         </div>
       </div>
 
@@ -146,7 +147,13 @@
       <div class="m-only m-load-more" id="m-load-more"></div>
       </div>
       <aside class="home-detail d-only" id="home-detail" aria-label="书籍详情"><div id="home-detail-body"></div></aside>
+      <div class="home-resizer d-only" data-pane="nav" role="separator" aria-orientation="vertical" title="拖动调整宽度，双击还原"></div>
+      <div class="home-resizer d-only" data-pane="detail" role="separator" aria-orientation="vertical" title="拖动调整宽度，双击还原"></div>
       </div>
+      <footer class="home-status d-only">
+        <span>j / k 移动 · Enter 打开 · s 切换状态 · f 喜欢 · x 勾选 · ⌘K 命令</span>
+        <span class="home-pager" id="shelf-pagination-top"></span>
+      </footer>
     </section>
 
     <!-- ==================== TAB 3: INTEREST COMPASS & RECOMMENDATIONS ==================== -->

@@ -78,6 +78,7 @@ function countsByValue(rows, valueKey) {
 function storeLibraryCounts(d) {
   const statuses = d.reading_statuses || {};
   appState.libraryCounts = {
+    library: { total: d.total_books, pending: d.pending_conflicts },
     status: { fav: d.favorite_count, reading: statuses.reading || 0, want: statuses.want || 0, read: statuses.read || 0 },
     category: countsByValue(d.categories, 'category'),
     format: Object.fromEntries((d.formats || []).map(row => [String(row.format || '').toLowerCase(), row.count])),

@@ -2,14 +2,15 @@ import { MOBILE_QUERY, appState, pdfState, readerState, shelfFilters } from './s
 import { escapeHtml } from './utils.js';
 import { aiRerankOn, loadStats, setAiRerank } from './api.js';
 import {
-  bindShelfSearchIme, clearShelfFilters, clearShelfGroup, clearShelfSearch, debounceShelfSearch,
+  bindShelfSearchIme, clearShelfFilters, clearShelfGroup, clearShelfSearch, debounceShelfSearch, fetchShelfIds,
   initMobileShelf, loadMoreShelfBooks, loadShelfBooks, resetShelfFilters, showReadingShelf, switchTab,
   toggleLangFilter, toggleShelfFilter, updateShelfSearchClear,
 } from './shelf.js';
 import {
-  applyHomeBatch, clearHomeChecks, hideCommandSuggest, initHomeKeys, onCommandKey, renderCommandSuggest,
-  runCommandSuggest, selectHomeRow, toggleHomeCheck, toggleHomeNav, toggleHomePageChecks, toggleHomeView,
+  applyHomeBatch, clearHomeChecks, initDesktopHome, toggleHomeCoverSize, selectHomeRow, showRecentlyOpened, toggleHomeCheck, toggleHomeNav,
+  toggleHomePageChecks, toggleHomeView,
 } from './home.js';
+import { hideCommandSuggest, onCommandKey, renderCommandSuggest, runCommandSuggest } from './home_command.js';
 import { initBackStack } from './back_stack.js';
 import {
   askTonight, loadTonightView, moreTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
@@ -20,7 +21,7 @@ import {
   triggerBatchSplitMismerged, triggerSplitSingleBook,
 } from './organize.js';
 import {
-  acceptProposedTitle, closeBookModal, openBookModal, saveBookMeta, toggleModalFavorite, toggleModalWant,
+  acceptProposedTitle, closeBookModal, openBookDialog, openBookModal, saveBookMeta, toggleModalFavorite, toggleModalWant,
   triggerAiRefresh, triggerDeleteBook, triggerSplitFromModal,
 } from './book_modal.js';
 import { initPdfLongPress, openPdfPageTextSheet } from './reader_pdf.js';
@@ -98,7 +99,8 @@ Object.assign(window, {
   resetShelfFilters, debounceShelfSearch, toggleFavorite, cycleReadingStatus,
   toggleShelfFilter, clearShelfFilters, clearShelfGroup, updateShelfSearchClear, clearShelfSearch,
   selectHomeRow, toggleHomeCheck, toggleHomePageChecks, clearHomeChecks, applyHomeBatch, toggleHomeNav,
-  toggleHomeView, onCommandKey, renderCommandSuggest, hideCommandSuggest, runCommandSuggest,
+  toggleHomeView, toggleHomeCoverSize, onCommandKey, renderCommandSuggest, hideCommandSuggest, runCommandSuggest, showRecentlyOpened,
+  fetchShelfIds, openBookDialog,
   openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
   loadShelfBooks, showReadingShelf,
   loadTonightView, moreTonight, askTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
@@ -140,10 +142,10 @@ window.addEventListener('resize', () => {
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushReaderProgress(); });
 migrateLocalReaderProgress();
 bindShelfSearchIme();
-initHomeKeys();
+initDesktopHome();
 initMobileShelf();
 loadStats();
 // The phone opens on tonight; the shelf is one tab away
-if (window.matchMedia(MOBILE_QUERY).matches) switchTab('tonight'); else loadShelfBooks(1);
+switchTab(window.matchMedia(MOBILE_QUERY).matches ? 'tonight' : 'shelf');
 initReaderSelectionHandler();
 initBackStack();

@@ -7,7 +7,8 @@ import { icon } from './icons.js';
 import { authorFilterChipHtml, generatePaginationItems, renderBookCard } from './shelf_render.js';
 import { aiRerankOn, applyShelfAiRerank, loadAiUsage, loadStats } from './api.js';
 import { loadInterestView } from './recommend.js';
-import { fillShelfGrid, renderCommandSuggest, renderHomeNav } from './home.js';
+import { fillShelfGrid, renderHomeNav } from './home.js';
+import { parseCommand, renderCommandSuggest } from './home_command.js';
 import { loadConflicts, loadMismergedBooks } from './organize.js';
 import { initShelfSheetDrag, renderShelfSheet } from './shelf_sheets.js';
 import { loadTonightView } from './tonight.js';
@@ -43,6 +44,8 @@ export function toggleLangFilter(scope, langCode, btn) {
 
 export function switchTab(tab) {
   appState.currentTab = tab;
+  // The desktop home fills the window; the other pages scroll as documents (home.css)
+  document.body.dataset.tab = tab;
   ['tonight', 'shelf', 'interest', 'organize'].forEach(t => {
     document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
     document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
@@ -259,6 +262,43 @@ export function shelfRequestWindow(page, opts) {
   return { page: 1, size: pages * shelfFilters.page_size, loadedPages: pages };
 }
 
+function scrollShelfToTop() {
+  if (!isMobileViewport()) {
+    document.querySelector('.home-main')?.scrollTo({ top: 0 });
+    return;
+  }
+  const topEl = document.getElementById('view-shelf');
+  window.scrollTo({ top: Math.max(0, topEl.offsetTop - 60), behavior: 'smooth' });
+}
+
+/** The desktop search box takes commands: status words become status filters (shown in the left column) and the
+ * rest is the search text. */
+function applyCommandText(raw) {
+  const command = parseCommand(raw);
+  const picked = shelfGroupValues('status');
+  const added = command.filterStatus.filter(v => !picked.includes(v));
+  if (added.length) setShelfGroup('status', [...picked, ...added]);
+  return command.query;
+}
+
+function shelfParams(sortBy, page, size) {
+  return new URLSearchParams({
+    q: shelfFilters.q, category: shelfFilters.category, language: shelfFilters.language, format: shelfFilters.format,
+    source_dir: shelfFilters.source_dir, reading_status: shelfFilters.reading_status,
+    only_favorite: shelfFilters.only_favorite ? '1' : '0', has_rating: shelfFilters.has_rating ? '1' : '0',
+    pub_period: shelfFilters.pub_period, author: shelfFilters.author, sort_by: sortBy,
+    page: String(page), page_size: String(size),
+  });
+}
+
+/** Ids of the first `limit` books the shelf lists now, across pages: what a command's 操作 acts on. */
+export async function fetchShelfIds(limit) {
+  const sortBy = /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort')).value;
+  const r = await fetch(`/api/books?${shelfParams(sortBy, 1, limit).toString()}`);
+  if (!r.ok) throw new Error(`shelf ids: server answered ${r.status}`);
+  return ((await r.json()).items || []).map(b => b.id);
+}
+
 // An author's books lead with their best known; plain browsing shows the newest imports
 function defaultBrowseSort() {
   if (shelfFilters.author) return 'classic';
@@ -267,17 +307,12 @@ function defaultBrowseSort() {
 
 export async function loadShelfBooks(page = 1, opts = {}) {
   shelfFilters.page = page;
-  if (opts.scrollToTop) {
-    const topEl = document.getElementById('view-shelf');
-    if (topEl) {
-      window.scrollTo({ top: Math.max(0, topEl.offsetTop - 60), behavior: 'smooth' });
-    }
-  }
+  if (opts.scrollToTop) scrollShelfToTop();
   const searchInput = /** @type {HTMLInputElement | null} */ (document.getElementById('shelf-search-input'));
   const currentInputVal = searchInput
     ? searchInput.value.trim()
     : shelfFilters.q;
-  shelfFilters.q = currentInputVal;
+  shelfFilters.q = isMobileViewport() ? currentInputVal : applyCommandText(currentInputVal);
   const sortEl = /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort'));
   // A picked sort holds for the search it was picked on; a new search ranks by relevance again
   if (currentInputVal !== appState.shelfLastQuery) appState.shelfSortTouched = false;
@@ -297,21 +332,7 @@ export async function loadShelfBooks(page = 1, opts = {}) {
   appState.shelfAbortController = new AbortController();
   const reqId = ++appState.shelfReqSeq;
 
-  const params = new URLSearchParams({
-    q: shelfFilters.q,
-    category: shelfFilters.category,
-    language: shelfFilters.language,
-    format: shelfFilters.format,
-    source_dir: shelfFilters.source_dir,
-    reading_status: shelfFilters.reading_status,
-    only_favorite: shelfFilters.only_favorite ? '1' : '0',
-    has_rating: shelfFilters.has_rating ? '1' : '0',
-    pub_period: shelfFilters.pub_period,
-    author: shelfFilters.author,
-    sort_by,
-    page: String(reqWindow.page),
-    page_size: String(reqWindow.size),
-  });
+  const params = shelfParams(sort_by, reqWindow.page, reqWindow.size);
   let d;
   try {
     const r = await fetch(`/api/books?${params.toString()}`, {
@@ -365,9 +386,9 @@ export async function loadShelfBooks(page = 1, opts = {}) {
 
   const totalPages = Math.max(1, Math.ceil(d.total / d.page_size));
   const topPagHtml = `
-    <button class="btn" ${page <= 1 ? 'disabled' : ''} onclick="loadShelfBooks(${page - 1})">上一页</button>
-    <span style="align-self:center;font-size:14px;color:var(--text-muted);">${page} / ${totalPages}</span>
-    <button class="btn" ${page >= totalPages ? 'disabled' : ''} onclick="loadShelfBooks(${page + 1})">下一页</button>
+    <button class="btn-icon" ${page <= 1 ? 'disabled' : ''} onclick="loadShelfBooks(${page - 1}, {scrollToTop:true})" aria-label="上一页">‹</button>
+    <span>${page} / ${totalPages}</span>
+    <button class="btn-icon" ${page >= totalPages ? 'disabled' : ''} onclick="loadShelfBooks(${page + 1}, {scrollToTop:true})" aria-label="下一页">›</button>
   `;
   document.getElementById('shelf-pagination-top').innerHTML = topPagHtml;
 
