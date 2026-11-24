@@ -9,3 +9,4 @@ captures/
 # The root .gitignore drops every local/ and Library/ folder; these are the app's package folders
 !local/
 !library/
+dist/
