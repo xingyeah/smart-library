@@ -204,6 +204,17 @@ class HttpTest(TempDbCase):
         r, _ = self.request("GET", "/api/books?page=abc")
         self.assertEqual(r.status, 400)
 
+    def test_unknown_api_get_returns_json_404(self):
+        # Regression: ISSUE-003 — unmatched /api/* GET routes must return JSON 404, not HTML
+        r, body = self.request("GET", "/api/books/abc")
+        self.assertEqual(r.status, 404)
+        self.assertIn("application/json", r.getheader("Content-Type", ""))
+        self.assertEqual(json.loads(body), {"error": "Unknown endpoint"})
+
+        r2, _ = self.request("GET", "/nonexistent-static-page")
+        self.assertEqual(r2.status, 404)
+        self.assertNotIn("application/json", r2.getheader("Content-Type", ""))
+
 
 class RollbackTest(TempDbCase):
     def test_keeps_link_when_source_was_deleted(self):

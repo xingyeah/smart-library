@@ -64,6 +64,9 @@ class LibraryRequestHandler(BaseHTTPRequestHandler):
         qs = urllib.parse.parse_qs(parsed_url.query)
         matched = self.router.dispatch(self, "GET", path, qs=qs, body={})
         if not matched:
+            if path == "/api" or path.startswith("/api/"):
+                self._send_json({"error": "Unknown endpoint"}, 404)
+                return
             self.send_error(404, "Not Found")
 
     def _handle_post(self) -> None:
