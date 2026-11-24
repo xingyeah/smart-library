@@ -29,6 +29,16 @@ class ServerConfigTest {
     }
 
     @Test
+    fun savedTokenFillsOnlyAnAddressWithoutOne() {
+        val bare = ServerConfig.parse("http://10.0.0.2:8765")
+        val own = ServerConfig.parse("http://10.0.0.2:8765/?token=abc")
+
+        assertEquals("saved", bare.withFallbackToken("saved").token)
+        assertEquals("abc", own.withFallbackToken("saved").token)
+        assertEquals("", bare.withFallbackToken("").token)
+    }
+
+    @Test
     fun addingKeepsKnownAddressesAndSkipsDuplicates() {
         val config = ServerConfig.of("http://a:1", "t").adding(listOf("http://b:2/", "http://a:1"))
 

@@ -27,6 +27,13 @@ data class ServerConfig(val baseUrl: String, val token: String, val addresses: L
         return copy(addresses = merged)
     }
 
+    /**
+     * This config with [savedToken] when the pasted address brought no token of its own (the saved token of the
+     * server being replaced); a token in the address always wins.
+     */
+    fun withFallbackToken(savedToken: String): ServerConfig =
+        if (token.isEmpty() && savedToken.isNotEmpty()) copy(token = savedToken) else this
+
     /** Keeps at least one address, so the app always has somewhere to connect. */
     fun removing(url: String): ServerConfig {
         val rest = addresses.filter { it != normalizeAddress(url) }

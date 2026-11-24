@@ -8,6 +8,8 @@
     <string name="connect_button">连接</string>
     <string name="connect_button_busy">正在连接…</string>
     <string name="connect_cancel">取消</string>
+    <string name="connect_saved_token_hint">地址不含 token 时，沿用已保存的 token。</string>
+    <string name="connect_error_saved_token">已保存的 token 对这个服务器无效：请粘贴含 token 的完整地址</string>
     <string name="connect_error_token">token 不对：请粘贴服务器终端打印的完整地址</string>
     <string name="connect_error_status">服务器返回 %1$d</string>
     <string name="connect_error_unreachable">连不上：%1$s</string>

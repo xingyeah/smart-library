@@ -72,11 +72,13 @@ class AppModel(application: Application) : AndroidViewModel(application) {
     /** Checks the pasted address against `/api/stats` and connects to it; returns why it failed, or null. */
     suspend fun connectTo(address: String): ConnectFailure? {
         val app = getApplication<Application>()
-        val config = try {
+        val parsed = try {
             ServerConfig.parse(address)
         } catch (error: InvalidServerAddressException) {
             return ConnectFailure(error.message.orEmpty())
         }
+        val config = parsed.withFallbackToken(replacedConfigState.value?.token.orEmpty())
+        val isUsingSavedToken = parsed.token.isEmpty() && config.token.isNotEmpty()
         val client = ServerClient(config)
         val response = try {
             withContext(Dispatchers.IO) { client.get("/api/stats") }
@@ -86,8 +88,9 @@ class AppModel(application: Application) : AndroidViewModel(application) {
         }
         if (response.status != 200) {
             return ConnectFailure(
-                if (response.status == STATUS_FORBIDDEN) app.getString(R.string.connect_error_token)
-                else app.getString(R.string.connect_error_status, response.status),
+                if (response.status == STATUS_FORBIDDEN) {
+                    app.getString(if (isUsingSavedToken) R.string.connect_error_saved_token else R.string.connect_error_token)
+                } else app.getString(R.string.connect_error_status, response.status),
             )
         }
         // The other address is fetched this once; after that the list changes only through the settings page

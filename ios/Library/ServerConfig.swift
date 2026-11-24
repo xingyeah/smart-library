@@ -23,6 +23,12 @@ struct ServerConfig: Equatable {
         return ServerConfig(baseURL: baseURL, token: token, addresses: merged)
     }
 
+    /// This config with `savedToken` when the pasted address brought no token of its own (the saved token of the
+    /// server being replaced); a token in the address always wins.
+    func withFallbackToken(_ savedToken: String) -> ServerConfig {
+        token.isEmpty && !savedToken.isEmpty ? ServerConfig(baseURL: baseURL, token: savedToken, addresses: addresses) : self
+    }
+
     /// Keeps at least one address, so the app always has somewhere to connect.
     func removing(_ url: URL) -> ServerConfig {
         let rest = addresses.filter { $0 != url }

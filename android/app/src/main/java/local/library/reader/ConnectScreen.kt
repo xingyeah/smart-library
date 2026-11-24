@@ -59,6 +59,13 @@ fun ConnectScreen(model: AppModel) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (replacedConfig?.token.orEmpty().isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.connect_saved_token_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         OutlinedTextField(
             value = address,
             onValueChange = { address = it },
