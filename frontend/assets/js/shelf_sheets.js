@@ -38,7 +38,7 @@ export function renderFilterSheet() {
       + `<div class="shelf-sheet-chips">${chips}</div></div>`;
   }).join('');
   document.getElementById('shelf-sheet-foot').innerHTML = `
-    <label><input type="checkbox" id="m-ai-toggle" ${aiRerankOn() ? 'checked' : ''} onchange="setAiRerank(this.checked)" /> AI 精排</label>
+    <label><input type="checkbox" id="m-ai-toggle" ${aiRerankOn() ? 'checked' : ''} onchange="setAiRerank(this.checked)" /> AI 精排（耗额度）</label>
     <button class="btn btn-primary" onclick="closeShelfSheet()">完成 · ${appState.shelfLastTotal.toLocaleString()} 本</button>`;
 }
 

@@ -403,7 +403,7 @@ export async function loadShelfBooks(page = 1, opts = {}) {
   renderMobileShelfUi();
   if (!opts.append) renderShelfLoadMore();
   document.getElementById('shelf-result-info').innerText =
-    `共检索到 ${d.total.toLocaleString()} 本藏书（耗时 ${d.elapsed_ms} ms，第 ${d.page} 页）`;
+    `共检索到 ${d.total.toLocaleString()} 本藏书（第 ${d.page} 页）`;
   renderShelfActiveFilters();
 
   const grid = document.getElementById('shelf-grid');

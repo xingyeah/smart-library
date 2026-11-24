@@ -89,6 +89,19 @@ export function syncBookCards(bookId, state) {
   });
 }
 
+const BILINGUAL_TITLE = /^(.*?)\s*[(（]([^()（）]+)[)）]\s*$/;
+const CJK_CHAR = /[\u4e00-\u9fff]/;
+const LATIN_LETTER = /[A-Za-z]/;
+
+/** '价值评估 (Valuation …)' → the Chinese name and the English original; any other title stays whole in `main`. */
+export function splitBilingualTitle(title) {
+  const match = BILINGUAL_TITLE.exec(title || '');
+  if (!match || !CJK_CHAR.test(match[1]) || CJK_CHAR.test(match[2]) || !LATIN_LETTER.test(match[2])) {
+    return { main: title || '', sub: '' };
+  }
+  return { main: match[1], sub: match[2] };
+}
+
 export function renderBookCard(b, opts = {}) {
   const coverHtml = bookCoverImgHtml(b);
   const rankHtml = opts.showRank && b.rank
@@ -100,6 +113,7 @@ export function renderBookCard(b, opts = {}) {
   const favClass = b.is_favorite ? 'fav-active' : '';
   const status = b.reading_status || 'unread';
   const langBadgeHtml = LANGUAGE_BADGES[b.language] || LANGUAGE_BADGES['zh-CN'];
+  const { main: titleMain, sub: titleSub } = splitBilingualTitle(b.clean_title || b.title);
 
   const ratingDetail = (b.rating_sources || [])
     .map(r => `${RATING_SOURCE_NAMES[r.source] || r.source} ${Number(r.rating).toFixed(1)}（${r.votes} 人）`).join(' · ');
@@ -125,8 +139,9 @@ export function renderBookCard(b, opts = {}) {
         <div class="book-info">
           ${rankHtml}
           <div class="book-title" title="${escapeHtml(b.title)}">
-            ${escapeHtml(b.clean_title || b.title)}${b.volume_part ? ` <span style="font-size:12px;color:var(--text-muted);">(${escapeHtml(b.volume_part)})</span>` : ''}
+            ${escapeHtml(titleMain)}${b.volume_part ? ` <span style="font-size:12px;color:var(--text-muted);">(${escapeHtml(b.volume_part)})</span>` : ''}
           </div>
+          ${titleSub ? `<div class="book-subtitle" title="${escapeHtml(titleSub)}">${escapeHtml(titleSub)}</div>` : ''}
           <div class="book-author">${escapeHtml(b.author)}${b.pub_year ? ` · ${escapeHtml(b.pub_year)}` : ''}</div>
           <div class="book-badges">
             ${langBadgeHtml}

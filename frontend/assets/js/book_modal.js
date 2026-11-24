@@ -14,6 +14,19 @@ function bookModalStatusHtml(message) {
   </div>`;
 }
 
+// The card the reader clicked already has the title and author; show them instead of a blank box
+function loadingModalHtml(bookId) {
+  const card = document.querySelector(`.book-card[data-book-id="${Number(bookId)}"]`);
+  const title = card ? card.querySelector('.book-title')?.getAttribute('title') : '';
+  if (!title) return bookModalStatusHtml('正在加载书籍详情...');
+  const author = card.querySelector('.book-author')?.textContent || '';
+  return `<div style="padding:28px 28px 8px;">
+      <div class="detail-title" style="cursor:default;">${escapeHtml(title)}</div>
+      <div style="margin-top:6px;color:var(--text-muted);">${escapeHtml(author)}</div>
+    </div>
+    ${bookModalStatusHtml('正在加载书籍详情...')}`;
+}
+
 async function fetchBookDetail(bookId) {
   try {
     const r = await fetch(`/api/books/${bookId}`);
@@ -29,7 +42,7 @@ export async function openBookModal(bookId) {
   const modal = document.getElementById('book-modal');
   const box = document.getElementById('book-modal-content');
   modal.classList.add('open');
-  box.innerHTML = bookModalStatusHtml('正在加载书籍详情...');
+  box.innerHTML = loadingModalHtml(bookId);
 
   const { book: b, error } = await fetchBookDetail(bookId);
   if (error) {

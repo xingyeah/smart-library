@@ -239,3 +239,9 @@ h1 { font-size: 20px; }
 .detail-title-proposal-current { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
 .detail-title-proposal-actions { display: flex; gap: 8px; margin-top: 10px; }
 .detail-edit-summary textarea { margin-top: 4px; font-size: 14px; }
+
+/* A phone screen fits two or three cards: the one-line summary leaves room for the next book */
+@media (max-width: 768px) { .book-card .book-summary { -webkit-line-clamp: 1; } }
+
+/* Shown until the interest view has directions to list (and while it loads) */
+#active-clusters-list:empty::before { content: "还没有兴趣方向：在上面写几个关注点，或把几本书标成在读 / 想读。"; font-size: 12px; color: var(--text-dim); }

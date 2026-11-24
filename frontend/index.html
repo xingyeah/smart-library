@@ -73,20 +73,20 @@
           <button class="m-only shelf-sort-btn" onclick="openShelfSheet('sort')" aria-label="排序">↕︎</button>
           <button class="m-only m-filter-btn" id="m-filter-btn" onclick="openShelfSheet('filter')">筛选</button>
           <select class="select-sm d-only" id="shelf-sort" onchange="appState.shelfSortTouched = true; loadShelfBooks(1)">
-            <option value="imported" selected>按导入时间 (最新在前)</option>
-            <option value="imported_asc">按导入时间 (最早在前)</option>
-            <option value="opened">按最近打开</option>
-            <option value="relevance">按综合相关度 / 权威经典度</option>
-            <option value="pub_desc">按出版时间 (最新到最旧)</option>
-            <option value="pub_asc">按出版时间 (最早到最新)</option>
-            <option value="classic">按权威经典度</option>
-            <option value="quality">按元数据完备度分</option>
-            <option value="rating">按我的星级评分</option>
-            <option value="title">按书名音序</option>
+            <option value="imported" selected>最近导入</option>
+            <option value="imported_asc">最早导入</option>
+            <option value="opened">最近打开</option>
+            <option value="relevance">综合相关度</option>
+            <option value="pub_desc">出版时间 新到旧</option>
+            <option value="pub_asc">出版时间 旧到新</option>
+            <option value="classic">经典度</option>
+            <option value="quality">资料完整度</option>
+            <option value="rating">我的评分</option>
+            <option value="title">书名音序</option>
           </select>
           <button class="btn d-only" onclick="resetShelfFilters()">重置筛选</button>
-          <label class="filter-label d-only" style="display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;" title="按回车后由 DeepSeek 重新排序前 20 本">
-            <input type="checkbox" id="shelf-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排
+          <label class="filter-label d-only" style="display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;" title="按回车后由 DeepSeek 重新排序前 20 本，会用掉 AI 额度">
+            <input type="checkbox" id="shelf-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排（耗额度）
           </label>
         </div>
 
@@ -201,7 +201,7 @@
           <div>
             <h1 style="font-size:20px; margin-bottom:6px;">兴趣罗盘</h1>
             <p style="font-size:14px; color:var(--text-muted); margin-bottom:12px;">
-              系统自动融合你的「阅读足迹（收藏 / 在读 / 高分评价）」与下方的「近期研究与阅读关注点」，拆解为多个独立兴趣簇，按 <b><span id="explore-core-pct">80%</span> 核心兴趣契合 + <span id="explore-pct">20%</span> 跨界高分破茧探索</b> 生成推荐。
+              根据你的阅读足迹（收藏 / 在读 / 高分）和下面写的关注点生成推荐：<b><span id="explore-core-pct">80%</span> 贴合兴趣 + <span id="explore-pct">20%</span> 跨界探索</b>。
             </p>
             <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">
               近期研究与阅读兴趣描述（用逗号或分号分隔多个方向）：
@@ -288,10 +288,10 @@
         </div>
 
         <div id="organize-progress-box" style="margin-top:16px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px;">
-          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;">
+          <div style="display:flex; flex-wrap:wrap; gap:4px 18px; font-size:14px; margin-bottom:6px;">
             <span id="org-status-text">空闲</span>
             <span id="org-Schedule-info" style="color:var(--text-muted);">定时自动整理：已开启（每 24 小时增量巡检）</span>
-            <span id="ai-usage-info" style="color:var(--text-muted);"></span>
+            <span id="ai-usage-info" style="color:var(--text-muted); flex-basis:100%;"></span>
           </div>
         </div>
       </div>
