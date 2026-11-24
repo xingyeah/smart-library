@@ -12,7 +12,9 @@ import { renderBookCard, splitBilingualTitle } from './shelf_render.js';
 // The shelf, detail, reader and status functions, reached through the globals main.js sets up
 const app = /** @type {any} */ (window);
 const HOME_VIEW_KEY = 'lib_home_view';
-const COVER_SIZE_KEY = 'lib_home_cover_size';
+// One button steps through these, in order; the label names the view showing now
+const HOME_VIEWS = ['small', 'big', 'grid'];
+const HOME_VIEW_LABELS = { small: '列表 · 小图', big: '列表 · 大图', grid: '封面' };
 const WIDE_HOME_QUERY = '(min-width: 1100px)';
 // Holding j shows each row's detail only once the cursor rests, not one fetch per row passed
 const DETAIL_FOLLOW_DELAY_MS = 150;
@@ -30,34 +32,24 @@ const homeState = {
 };
 
 function readHomeView() {
-  try { return localStorage.getItem(HOME_VIEW_KEY) === 'grid' ? 'grid' : 'list'; } catch (e) { return 'list'; }
+  let saved = '';
+  try { saved = localStorage.getItem(HOME_VIEW_KEY) || ''; } catch (e) { console.warn('home view not read', e); }
+  return HOME_VIEWS.includes(saved) ? saved : 'small';
 }
 
 export const isDesktopHome = () => !window.matchMedia(MOBILE_QUERY).matches;
 const isWideHome = () => window.matchMedia(WIDE_HOME_QUERY).matches;
-const isHomeListView = () => isDesktopHome() && homeState.view === 'list';
+const isHomeListView = () => isDesktopHome() && homeState.view !== 'grid';
 
 /** The books on the page now, in list order. */
 export function homeItems() {
   return homeState.items;
 }
 
-function applyCoverSize(isBig) {
-  document.body.classList.toggle('home-big-covers', isBig);
-  const btn = document.getElementById('home-cover-size-btn');
-  if (btn) btn.textContent = isBig ? '小图' : '大图';
-}
-
-/** Switches the list's covers between the small and the big size; the choice is remembered. */
-export function toggleHomeCoverSize() {
-  const isBig = !document.body.classList.contains('home-big-covers');
-  applyCoverSize(isBig);
-  try { localStorage.setItem(COVER_SIZE_KEY, isBig ? 'big' : 'small'); } catch (e) { console.warn('cover size not saved', e); }
-}
-
-/** Switches the desktop home between the compact list and the cover grid; the choice is remembered. */
-export function toggleHomeView() {
-  homeState.view = homeState.view === 'list' ? 'grid' : 'list';
+/** Steps the desktop home to its next view (list with small covers, list with big covers, cover grid); the choice
+ * is remembered. */
+export function cycleHomeView() {
+  homeState.view = HOME_VIEWS[(HOME_VIEWS.indexOf(homeState.view) + 1) % HOME_VIEWS.length];
   try { localStorage.setItem(HOME_VIEW_KEY, homeState.view); } catch (e) { console.warn('home view not saved', e); }
   app.loadShelfBooks(shelfFilters.page);
 }
@@ -72,9 +64,9 @@ export function fillShelfGrid(items, opts = {}) {
   homeState.items = items;
   homeState.activeIndex = items.findIndex(b => b.id === activeId);
   grid.className = isHomeListView() ? 'home-list' : 'book-grid';
-  document.body.classList.toggle('home-list-view', isHomeListView());
+  document.body.classList.toggle('home-big-covers', homeState.view === 'big');
   const viewBtn = document.getElementById('home-view-btn');
-  if (viewBtn) viewBtn.textContent = homeState.view === 'list' ? '封面' : '列表';
+  if (viewBtn) viewBtn.textContent = HOME_VIEW_LABELS[homeState.view];
   if (!items.length) {
     grid.innerHTML = (opts.prefixHtml || '') + (opts.emptyHtml || '');
   } else if (isHomeListView()) {
@@ -107,6 +99,7 @@ function rowProgressHtml(b) {
 }
 
 function homeRowHtml(b, index) {
+  const { main: titleMain, sub: titleSub } = splitBilingualTitle(b.clean_title || b.title);
   const status = b.reading_status || 'unread';
   const isChecked = homeState.checked.has(b.id);
   const rating = b.composite_rating ? Number(b.composite_rating).toFixed(1) : '—';
@@ -115,7 +108,8 @@ function homeRowHtml(b, index) {
       <span class="home-check-cell" onclick="event.stopPropagation()"><input type="checkbox" ${isChecked ? 'checked' : ''}
         aria-label="勾选" onchange="toggleHomeCheck(${b.id})" /></span>
       ${rowCoverHtml(b)}
-      <span class="home-row-title"><span class="book-title" title="${escapeHtml(b.title)}">${escapeHtml(splitBilingualTitle(b.clean_title || b.title).main)}${b.is_favorite ? `<span class="home-row-fav" title="已喜欢">${icon('heart')}</span>` : ''}</span>
+      <span class="home-row-title"><span class="book-title" title="${escapeHtml(b.title)}">${escapeHtml(titleMain)}${b.is_favorite ? `<span class="home-row-fav" title="已喜欢">${icon('heart')}</span>` : ''}</span>
+        ${titleSub ? `<span class="home-row-sub" title="${escapeHtml(titleSub)}">${escapeHtml(titleSub)}</span>` : ''}
         <span class="home-row-author book-author">${escapeHtml(b.author)}</span></span>
       ${rowProgressHtml(b)}
       <span onclick="event.stopPropagation()"><button class="home-pill card-status${status === 'unread' ? '' : ' has-status'}${status === 'reading' ? ' is-reading' : ''}"
@@ -411,7 +405,4 @@ export function initDesktopHome() {
   if (!isDesktopHome()) return;
   document.getElementById('top-cmd-slot').appendChild(document.querySelector('#view-shelf .search-input-wrap'));
   initPaneResizers();
-  let savedSize = '';
-  try { savedSize = localStorage.getItem(COVER_SIZE_KEY) || ''; } catch (e) { console.warn('cover size not read', e); }
-  applyCoverSize(savedSize === 'big');
 }

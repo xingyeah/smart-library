@@ -7,8 +7,8 @@ import {
   toggleLangFilter, toggleShelfFilter, updateShelfSearchClear,
 } from './shelf.js';
 import {
-  applyHomeBatch, clearHomeChecks, initDesktopHome, toggleHomeCoverSize, selectHomeRow, showRecentlyOpened, toggleHomeCheck, toggleHomeNav,
-  toggleHomePageChecks, toggleHomeView,
+  applyHomeBatch, clearHomeChecks, initDesktopHome, cycleHomeView, selectHomeRow, showRecentlyOpened, toggleHomeCheck, toggleHomeNav,
+  toggleHomePageChecks,
 } from './home.js';
 import { hideCommandSuggest, onCommandKey, renderCommandSuggest, runCommandSuggest } from './home_command.js';
 import { initBackStack } from './back_stack.js';
@@ -99,7 +99,7 @@ Object.assign(window, {
   resetShelfFilters, debounceShelfSearch, toggleFavorite, cycleReadingStatus,
   toggleShelfFilter, clearShelfFilters, clearShelfGroup, updateShelfSearchClear, clearShelfSearch,
   selectHomeRow, toggleHomeCheck, toggleHomePageChecks, clearHomeChecks, applyHomeBatch, toggleHomeNav,
-  toggleHomeView, toggleHomeCoverSize, onCommandKey, renderCommandSuggest, hideCommandSuggest, runCommandSuggest, showRecentlyOpened,
+  cycleHomeView, onCommandKey, renderCommandSuggest, hideCommandSuggest, runCommandSuggest, showRecentlyOpened,
   fetchShelfIds, openBookDialog,
   openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
   loadShelfBooks, showReadingShelf,
