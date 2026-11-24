@@ -71,6 +71,7 @@ class TestEnricherAdapters(unittest.TestCase):
         # Mock subject HTML with rating, votes and short reviews
         subject_html = """
         <html>
+            <span property="v:itemreviewed">重塑回路</span>
             <strong class="ll rating_num" property="v:average"> 8.6 </strong>
             <span property="v:votes">1200</span>
             <div id="link-report">
@@ -112,6 +113,29 @@ class TestEnricherAdapters(unittest.TestCase):
         self.assertEqual(len(res.reviews), 1)
         self.assertEqual(res.reviews[0]["author"], "认知派读者")
         self.assertEqual(res.reviews[0]["content"], "非常受用，练习很有针对性。")
+
+    @staticmethod
+    def _page(body: bytes) -> mock.MagicMock:
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = body
+        return response
+
+    @mock.patch("urllib.request.urlopen")
+    def test_douban_block_pages_are_errors_not_misses(self, mock_urlopen):
+        from enrichers.base import BookQuery
+        from enrichers.douban import DoubanBlockedError, DoubanEnricher
+
+        query = BookQuery(isbn="", title="重塑回路", author="", lang="zh-CN")
+        enricher = DoubanEnricher(timeout_sec=5.0)
+        mock_urlopen.side_effect = [self._page("<html>检测到有异常请求</html>".encode("utf-8"))]
+        with self.assertRaises(DoubanBlockedError):  # suggest answered with HTML
+            enricher.fetch(query)
+        mock_urlopen.side_effect = [
+            self._page(b'[{"id": "36890011", "title": "\xe9\x87\x8d\xe5\xa1\x91\xe5\x9b\x9e\xe8\xb7\xaf"}]'),
+            self._page("<html>验证码</html>".encode("utf-8")),
+        ]
+        with self.assertRaises(DoubanBlockedError):  # subject page without a title
+            enricher.fetch(query)
 
     @mock.patch("urllib.request.urlopen")
     def test_open_library_enricher_by_isbn(self, mock_urlopen):

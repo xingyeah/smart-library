@@ -12,6 +12,13 @@ logger = logging.getLogger("enrichers.douban")
 
 
 SUGGESTIONS_CHECKED = 5
+# Every real subject page carries its title under this property; a captcha or "unusual request" page, which Douban
+# serves with status 200, does not
+SUBJECT_PAGE_MARKER = 'property="v:itemreviewed"'
+
+
+class DoubanBlockedError(RuntimeError):
+    """Douban answered with a block page instead of data: the book is not known to be missing."""
 
 
 def pick_suggestion(items: List[Dict[str, Any]], query: BookQuery, by_isbn: bool) -> Tuple[Optional[str], Optional[str]]:
@@ -51,7 +58,11 @@ class DoubanEnricher(BaseBookEnricher):
 
         req = urllib.request.Request(url, headers=self._get_headers())
         with urllib.request.urlopen(req, timeout=self.timeout_sec, context=self._get_ssl_context()) as resp:
-            data = json.loads(resp.read().decode("utf-8", errors="ignore"))
+            body = resp.read().decode("utf-8", errors="ignore")
+        try:
+            data = json.loads(body)
+        except ValueError as error:
+            raise DoubanBlockedError(f"suggest answered with a non-JSON page: {body[:80]!r}") from error
         return pick_suggestion(data if isinstance(data, list) else [], query, by_isbn)
 
     def _parse_reviews(self, html: str) -> List[Dict[str, Any]]:
@@ -109,7 +120,9 @@ class DoubanEnricher(BaseBookEnricher):
             req = urllib.request.Request(subj_url, headers=self._get_headers())
             with urllib.request.urlopen(req, timeout=self.timeout_sec, context=self._get_ssl_context()) as resp:
                 html = resp.read().decode("utf-8", errors="ignore")
-                return self._parse_subject_html(subject_id, html, fallback_pic=pic_url or "")
+            if SUBJECT_PAGE_MARKER not in html:
+                raise DoubanBlockedError(f"subject {subject_id} answered with a block page")
+            return self._parse_subject_html(subject_id, html, fallback_pic=pic_url or "")
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return None
@@ -117,6 +130,9 @@ class DoubanEnricher(BaseBookEnricher):
             raise
         except (OSError, TimeoutError) as e:
             logger.warning("Douban network error for '%s': %s", query.title, e)
+            raise
+        except DoubanBlockedError as e:
+            logger.warning("Douban blocked the request for '%s': %s", query.title, e)
             raise
         except Exception:
             # Skip invalid HTML parse error silently
