@@ -39,7 +39,6 @@ html:has(#book-modal.open), html:has(#book-modal.open) body { overflow: hidden; 
                               border-radius: 0; border-width: 0 0 1px; background: rgba(247, 248, 250, 0.94);
                               backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
   #view-shelf .search-row { flex-wrap: nowrap; gap: 8px; margin-bottom: 0; }
-  #view-shelf .filter-group { display: none; }
   #view-shelf .search-Shortcut { display: none; }
   #view-shelf .search-input { padding: 10px 34px 10px 12px; font-size: 16px; }
   .m-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px;
@@ -158,16 +157,6 @@ h1 { font-size: 20px; }
   .book-card:hover .card-actions .btn-icon, .book-card:focus-within .card-actions .btn-icon { opacity: 1; }
 }
 .modal-box .detail-cover { box-shadow: 0 4px 12px rgba(16, 24, 40, 0.15); }
-
-.filter-group.more-filters:not(.open) { display: none; }
-
-/* The ⌄ at the end of the category row opens the other filter rows */
-.more-filters-toggle { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
-                       border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elev);
-                       color: var(--text-muted); cursor: pointer; font-size: 16px; }
-.more-filters-toggle:hover { color: var(--text); background: var(--bg-hover); }
-.more-filters-toggle .icon { transition: transform 0.15s ease-out; }
-.more-filters-toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }
 
 /* Filters in force, next to the result count */
 .active-filters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }

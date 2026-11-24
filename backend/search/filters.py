@@ -74,6 +74,11 @@ def build_pub_period_clause(period: str, table_alias: str = "b") -> str:
     return ""
 
 
+def split_facet_values(raw: str) -> List[str]:
+    """A facet value as sent by the shelf: one value or several joined by commas; '全部' and blanks mean no filter."""
+    return [v.strip() for v in (raw or "").split(",") if v.strip() and v.strip() != "全部"]
+
+
 def build_book_facet_where(
     filters: ShelfFilters,
     table_alias: str = "",
@@ -91,9 +96,10 @@ def build_book_facet_where(
         ("source_dir", filters.source_dir),
         ("reading_status", filters.reading_status),
     ):
-        if val and val != "全部":
-            clauses.append(f"{prefix}{col} = ?")
-            params.append(val)
+        picked = split_facet_values(val)
+        if picked:
+            clauses.append(f"{prefix}{col} IN ({','.join('?' for _ in picked)})")
+            params.extend(picked)
 
     resolved_langs = parse_language_filter(filters.language) if lang_list is None else lang_list
     lang_clause, lang_params = build_language_clause(resolved_langs, table_alias=table_alias)
@@ -109,9 +115,12 @@ def build_book_facet_where(
             f"WHERE em.book_id = {id_ref} AND (em.rating > 0 OR (em.reviews_json IS NOT NULL AND em.reviews_json != '[]'))"
             f"))"
         )
-    period_clause = build_pub_period_clause(filters.pub_period, table_alias=table_alias)
-    if period_clause:
-        clauses.append(period_clause)
+    period_clauses = [c for c in (build_pub_period_clause(p, table_alias=table_alias)
+                                  for p in split_facet_values(filters.pub_period)) if c]
+    if len(period_clauses) == 1:
+        clauses.append(period_clauses[0])
+    elif period_clauses:
+        clauses.append("(" + " OR ".join(period_clauses) + ")")
     if filters.author:
         # The connection must have search.authors.register_author_sql applied
         clauses.append(f"{AUTHOR_MATCH_SQL_FUNCTION}({prefix}author, ?)")

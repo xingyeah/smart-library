@@ -223,14 +223,6 @@ body {
   border: 1px solid var(--border);
 }
 
-.filter-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  margin-top: 8px;
-}
-
 .filter-label {
   font-size: 14px;
   color: var(--text-dim);

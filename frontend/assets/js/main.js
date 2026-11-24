@@ -2,17 +2,19 @@ import { MOBILE_QUERY, appState, pdfState, readerState, shelfFilters } from './s
 import { escapeHtml } from './utils.js';
 import { aiRerankOn, loadStats, setAiRerank } from './api.js';
 import {
-  bindShelfSearchIme, clearShelfFilters, clearShelfSearch, debounceShelfSearch, initCategoryChips,
-  initMobileShelf, loadMoreShelfBooks, loadShelfBooks, resetShelfFilters, setFilter, showReadingShelf, switchTab,
-  toggleLangFilter, toggleShelfFilter, toggleShelfMoreFilters, updateShelfSearchClear,
+  bindShelfSearchIme, clearShelfFilters, clearShelfGroup, clearShelfSearch, debounceShelfSearch,
+  initMobileShelf, loadMoreShelfBooks, loadShelfBooks, resetShelfFilters, showReadingShelf, switchTab,
+  toggleLangFilter, toggleShelfFilter, updateShelfSearchClear,
 } from './shelf.js';
+import {
+  applyHomeBatch, clearHomeChecks, hideCommandSuggest, initHomeKeys, onCommandKey, renderCommandSuggest,
+  runCommandSuggest, selectHomeRow, toggleHomeCheck, toggleHomeNav, toggleHomePageChecks, toggleHomeView,
+} from './home.js';
 import { initBackStack } from './back_stack.js';
 import {
   askTonight, loadTonightView, moreTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
 } from './tonight.js';
-import {
-  loadInterestView, runPresetDescribe, saveInterestConfig, showExploreRatio, triggerDescribeRecommend,
-} from './recommend.js';
+import { loadInterestView, saveInterestConfig, showExploreRatio } from './recommend.js';
 import {
   loadConflicts, loadMismergedBooks, resolveConflict, rollbackRun, startOrganize,
   triggerBatchSplitMismerged, triggerSplitSingleBook,
@@ -92,13 +94,15 @@ export function libraryAppSetOffline(isOffline) {
 // Expose inline HTML event handlers and shared state objects to global scope
 Object.assign(window, {
   appState, shelfFilters, readerState, pdfState,
-  escapeHtml, setAiRerank, toggleLangFilter, switchTab, setFilter,
-  resetShelfFilters, debounceShelfSearch, toggleFavorite, cycleReadingStatus, toggleShelfMoreFilters,
-  toggleShelfFilter, clearShelfFilters, updateShelfSearchClear, clearShelfSearch,
+  escapeHtml, setAiRerank, toggleLangFilter, switchTab, loadStats,
+  resetShelfFilters, debounceShelfSearch, toggleFavorite, cycleReadingStatus,
+  toggleShelfFilter, clearShelfFilters, clearShelfGroup, updateShelfSearchClear, clearShelfSearch,
+  selectHomeRow, toggleHomeCheck, toggleHomePageChecks, clearHomeChecks, applyHomeBatch, toggleHomeNav,
+  toggleHomeView, onCommandKey, renderCommandSuggest, hideCommandSuggest, runCommandSuggest,
   openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
   loadShelfBooks, showReadingShelf,
   loadTonightView, moreTonight, askTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
-  runPresetDescribe, triggerDescribeRecommend, loadInterestView, saveInterestConfig, showExploreRatio,
+  loadInterestView, saveInterestConfig, showExploreRatio,
   startOrganize, loadConflicts, resolveConflict, rollbackRun,
   loadMismergedBooks, triggerSplitSingleBook, triggerBatchSplitMismerged,
   openBookModal, closeBookModal, saveBookMeta, triggerAiRefresh, acceptProposedTitle,
@@ -135,8 +139,8 @@ window.addEventListener('resize', () => {
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushReaderProgress(); });
 migrateLocalReaderProgress();
-initCategoryChips();
 bindShelfSearchIme();
+initHomeKeys();
 initMobileShelf();
 loadStats();
 // The phone opens on tonight; the shelf is one tab away

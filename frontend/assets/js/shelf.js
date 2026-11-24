@@ -1,30 +1,18 @@
 import {
-  CATEGORIES, MOBILE_QUERY, QUICK_STATUS_KEYS, SHELF_FILTER_GROUPS, SHELF_MAX_PAGE_SIZE,
-  SHELF_STATUS_OPTIONS, appState, langSelections, shelfFilters,
+  MOBILE_QUERY, QUICK_STATUS_KEYS, SHELF_FILTER_GROUPS, SHELF_MAX_PAGE_SIZE,
+  SHELF_STATUS_OPTIONS, appState, langSelections, shelfFilters, shelfGroupValues, shelfPageSize,
 } from './state.js';
 import { escapeHtml } from './utils.js';
 import { icon } from './icons.js';
 import { authorFilterChipHtml, generatePaginationItems, renderBookCard } from './shelf_render.js';
 import { aiRerankOn, applyShelfAiRerank, loadAiUsage, loadStats } from './api.js';
-import { loadInterestView, runPresetDescribe, triggerDescribeRecommend } from './recommend.js';
+import { loadInterestView } from './recommend.js';
+import { fillShelfGrid, renderCommandSuggest, renderHomeNav } from './home.js';
 import { loadConflicts, loadMismergedBooks } from './organize.js';
 import { initShelfSheetDrag, renderShelfSheet } from './shelf_sheets.js';
 import { loadTonightView } from './tonight.js';
 
 const isMobileViewport = () => window.matchMedia(MOBILE_QUERY).matches;
-
-export function initCategoryChips() {
-  const row = document.getElementById('cat-filter-row');
-  let html = '<span class="filter-label">分类:</span>';
-  CATEGORIES.forEach((cat, idx) => {
-    const val = cat === '全部' ? '' : cat;
-    html += `<button class="chip ${idx === 0 ? 'active' : ''}" data-cat="${val}" onclick="setFilter('category', '${val}', this)">${cat}</button>`;
-  });
-  const isOpen = document.getElementById('shelf-more-filters').classList.contains('open');
-  html += `<button class="more-filters-toggle" id="shelf-more-filters-btn" aria-expanded="${isOpen}"
-    aria-controls="shelf-more-filters" onclick="toggleShelfMoreFilters()" title="更多筛选" aria-label="更多筛选">${icon('chevron')}</button>`;
-  row.innerHTML = html;
-}
 
 export function toggleLangFilter(scope, langCode, btn) {
   const sel = langSelections[scope];
@@ -50,28 +38,17 @@ export function toggleLangFilter(scope, langCode, btn) {
     }
   });
 
-  const joined = Array.from(sel).join(',');
-  if (scope === 'shelf') {
-    shelfFilters.language = joined;
-    loadShelfBooks(1);
-  } else if (scope === 'describe') {
-    triggerDescribeRecommend();
-  } else if (scope === 'interest') {
-    loadInterestView();
-  }
+  if (scope === 'interest') loadInterestView();
 }
 
 export function switchTab(tab) {
   appState.currentTab = tab;
-  ['tonight', 'shelf', 'describe', 'interest', 'organize'].forEach(t => {
+  ['tonight', 'shelf', 'interest', 'organize'].forEach(t => {
     document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
     document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
   });
   if (tab === 'tonight') loadTonightView();
   if (tab === 'shelf') loadShelfBooks(shelfFilters.page);
-  if (tab === 'describe' && !document.getElementById('describe-grid').innerHTML.trim()) {
-    runPresetDescribe('剖析人类非理性决策、认知偏差、思考快与慢或潜意识行为心理学的经典著作');
-  }
   if (tab === 'interest') loadInterestView();
   if (tab === 'organize') {
     loadStats();
@@ -88,44 +65,6 @@ export function showReadingShelf() {
   switchTab('shelf');
 }
 
-export function setFilter(key, val, btn) {
-  const parent = btn.parentElement;
-  if (key === 'category') {
-    parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    shelfFilters.category = val;
-  } else if (key === 'format') {
-    parent.querySelectorAll('[data-fmt]').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    shelfFilters.format = val;
-  } else if (key === 'source_dir') {
-    parent.querySelectorAll('[data-src]').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    shelfFilters.source_dir = val;
-  } else if (key === 'pub_period') {
-    parent.querySelectorAll('[data-period]').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    shelfFilters.pub_period = val;
-  } else if (key === 'reading_status') {
-    parent.querySelectorAll('[data-st]').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    if (val === 'fav') {
-      shelfFilters.only_favorite = true;
-      shelfFilters.reading_status = '';
-      shelfFilters.has_rating = false;
-    } else if (val === 'has_rating') {
-      shelfFilters.has_rating = true;
-      shelfFilters.only_favorite = false;
-      shelfFilters.reading_status = '';
-    } else {
-      shelfFilters.only_favorite = false;
-      shelfFilters.reading_status = val;
-      shelfFilters.has_rating = false;
-    }
-  }
-  loadShelfBooks(1);
-}
-
 // Until the user picks a sort: newest imports when browsing, relevance once there is a query
 
 export function resetShelfFilters() {
@@ -133,14 +72,10 @@ export function resetShelfFilters() {
   /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input')).value = '';
   Object.assign(shelfFilters, {
     q: '', category: '', language: '', format: '', source_dir: '',
-    reading_status: '', pub_period: '', only_favorite: false, has_rating: false, author: '', page: 1, page_size: 24
+    reading_status: '', pub_period: '', only_favorite: false, has_rating: false, author: '', page: 1,
+    page_size: shelfPageSize(),
   });
   langSelections.shelf.clear();
-  initCategoryChips();
-  document.querySelectorAll('[data-fmt],[data-src],[data-period],[data-st],[data-lang-scope="shelf"]').forEach(el => {
-    const isAll = !el.getAttribute('data-fmt') && !el.getAttribute('data-src') && !el.getAttribute('data-period') && !el.getAttribute('data-st') && !el.getAttribute('data-lang');
-    el.classList.toggle('active', isAll);
-  });
   loadShelfBooks(1);
 }
 
@@ -161,37 +96,41 @@ export function bindShelfSearchIme() {
   input.addEventListener('compositionend', () => { appState.isImeComposing = false; debounceShelfSearch(); });
 }
 
-export function shelfStatusKey() {
-  if (shelfFilters.only_favorite) return 'fav';
-  if (shelfFilters.has_rating) return 'has_rating';
-  return shelfFilters.reading_status;
+function setShelfStatuses(values) {
+  shelfFilters.only_favorite = values.includes('fav');
+  shelfFilters.has_rating = values.includes('has_rating');
+  shelfFilters.reading_status = values.filter(v => v !== 'fav' && v !== 'has_rating').join(',');
 }
 
-export function shelfGroupValues(key) {
-  if (key === 'status') return [shelfStatusKey()].filter(Boolean);
-  if (key === 'language') return Array.from(langSelections.shelf);
-  return [shelfFilters[key]].filter(Boolean);
-}
-
+/** Narrows the shelf to one status ('' for none), dropping any other status picked. */
 export function applyShelfStatus(val) {
-  shelfFilters.only_favorite = val === 'fav';
-  shelfFilters.has_rating = val === 'has_rating';
-  shelfFilters.reading_status = (val === 'fav' || val === 'has_rating') ? '' : val;
+  setShelfStatuses(val ? [val] : []);
 }
 
-/** Phone filter tap: picks the value, or clears it when already picked (languages toggle within a set). */
-export function toggleShelfFilter(key, val) {
-  const isPicked = shelfGroupValues(key).includes(val);
-  if (key === 'language') {
-    if (isPicked) langSelections.shelf.delete(val); else langSelections.shelf.add(val);
-    if (langSelections.shelf.size >= 3) langSelections.shelf.clear();
+function setShelfGroup(key, values) {
+  if (key === 'status') {
+    setShelfStatuses(values);
+  } else if (key === 'language') {
+    langSelections.shelf.clear();
+    // All three languages is the whole library, the same as none
+    if (values.length < 3) values.forEach(v => langSelections.shelf.add(v));
     shelfFilters.language = Array.from(langSelections.shelf).join(',');
-  } else if (key === 'status') {
-    applyShelfStatus(isPicked ? '' : val);
   } else {
-    shelfFilters[key] = isPicked ? '' : val;
+    shelfFilters[key] = values.join(',');
   }
-  syncDesktopShelfChips();
+}
+
+/** A filter tap: adds the value to its group, or takes it out when already picked. Values within a group widen
+ * the list (历史 or 数学), groups narrow it (历史 and EPUB). */
+export function toggleShelfFilter(key, val) {
+  const picked = shelfGroupValues(key);
+  setShelfGroup(key, picked.includes(val) ? picked.filter(v => v !== val) : [...picked, val]);
+  loadShelfBooks(1, { scrollToTop: true });
+}
+
+/** The 全部 entry of a filter group: drops everything picked in it. */
+export function clearShelfGroup(key) {
+  setShelfGroup(key, []);
   loadShelfBooks(1, { scrollToTop: true });
 }
 
@@ -200,25 +139,7 @@ export function clearShelfFilters() {
   applyShelfStatus('');
   ['category', 'format', 'source_dir', 'pub_period', 'language', 'author'].forEach(k => { shelfFilters[k] = ''; });
   langSelections.shelf.clear();
-  syncDesktopShelfChips();
   loadShelfBooks(1, { scrollToTop: true });
-}
-
-// The desktop chips stay in step so a phone rotated past 768px shows the same filters
-export function syncDesktopShelfChips() {
-  const picked = { cat: shelfFilters.category, fmt: shelfFilters.format, src: shelfFilters.source_dir,
-                   period: shelfFilters.pub_period, st: shelfStatusKey() };
-  Object.entries(picked).forEach(([attr, val]) => {
-    document.querySelectorAll(`#view-shelf [data-${attr}]`).forEach(el => {
-      const h = /** @type {HTMLElement} */ (el);
-      h.classList.toggle('active', h.dataset[attr] === (val || ''));
-    });
-  });
-  document.querySelectorAll('[data-lang-scope="shelf"]').forEach(el => {
-    const h = /** @type {HTMLElement} */ (el);
-    const code = h.dataset.lang || '';
-    h.classList.toggle('active', code ? langSelections.shelf.has(code) : langSelections.shelf.size === 0);
-  });
 }
 
 export function shelfOptionLabel(group, val) {
@@ -414,6 +335,7 @@ export async function loadShelfBooks(page = 1, opts = {}) {
   document.getElementById('shelf-result-info').innerText =
     `共检索到 ${d.total.toLocaleString()} 本藏书（第 ${d.page} 页）`;
   renderShelfActiveFilters();
+  renderHomeNav();
 
   const grid = document.getElementById('shelf-grid');
   if (opts.append) {
@@ -432,13 +354,13 @@ export async function loadShelfBooks(page = 1, opts = {}) {
     `;
   }
 
-  if (!d.items || d.items.length === 0) {
-    grid.innerHTML = bannerHtml + `<div class="section-card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:30px;">未找到匹配书目。可尝试点击上方「重置筛选」或更换关键词。</div>`;
-  } else {
-    grid.innerHTML = bannerHtml + d.items.map(b => renderBookCard(b, { showRank: Boolean(d.is_semantic_intent) })).join('');
-    if (opts.ai && aiRerankOn() && shelfFilters.q && page === 1 && sort_by === 'relevance' && d.items.length > 1) {
-      applyShelfAiRerank(d, bannerHtml, reqId);
-    }
+  fillShelfGrid(d.items || [], {
+    showRank: Boolean(d.is_semantic_intent), prefixHtml: bannerHtml,
+    emptyHtml: `<div class="section-card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:30px;">没有找到。换个说法，或去掉一些筛选。</div>`,
+  });
+  renderCommandSuggest();
+  if (opts.ai && aiRerankOn() && shelfFilters.q && page === 1 && sort_by === 'relevance' && (d.items || []).length > 1) {
+    applyShelfAiRerank(d, bannerHtml, reqId);
   }
 
   const totalPages = Math.max(1, Math.ceil(d.total / d.page_size));
@@ -472,10 +394,4 @@ export async function loadShelfBooks(page = 1, opts = {}) {
     `;
   }
   document.getElementById('shelf-pagination-bottom').innerHTML = bottomPagHtml;
-}
-
-// Language, format, source, period and status fold away; categories stay in view as the filter used most
-export function toggleShelfMoreFilters() {
-  const isOpen = document.getElementById('shelf-more-filters').classList.toggle('open');
-  document.getElementById('shelf-more-filters-btn').setAttribute('aria-expanded', String(isOpen));
 }

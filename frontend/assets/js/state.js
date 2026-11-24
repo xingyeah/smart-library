@@ -11,7 +11,6 @@ export const appState = {
   isImeComposing: false,
   shelfAbortController: null,
   shelfReqSeq: 0,
-  describeReqSeq: 0,
   orgPollTimer: null,
   shelfSortTouched: false,
   shelfLastQuery: '',
@@ -34,7 +33,16 @@ export const appState = {
   readerTransHistory: [],
   currentDrawerTrans: null,
   splitResizeTimer: null,
+  libraryCounts: /** @type {Object<string, Object<string, number>>} */ ({}),  // per filter value, from /api/stats
 };
+
+export const PHONE_PAGE_SIZE = 24;
+// The desktop list rows are short, so a page holds twice as many books as the phone's card batches
+export const HOME_PAGE_SIZE = 50;
+
+export function shelfPageSize() {
+  return window.matchMedia(MOBILE_QUERY).matches ? PHONE_PAGE_SIZE : HOME_PAGE_SIZE;
+}
 
 export const shelfFilters = {
   q: '',
@@ -45,14 +53,14 @@ export const shelfFilters = {
   reading_status: '',
   pub_period: '',
   only_favorite: false,
+  has_rating: false,
   author: '',  // one person from a book's author line: lists every book naming them
   page: 1,
-  page_size: 24,
+  page_size: shelfPageSize(),
 };
 
 export const langSelections = {
   shelf: new Set(),
-  describe: new Set(),
   interest: new Set(),
 };
 
@@ -143,7 +151,7 @@ export const QUICK_STATUS_KEYS = ['fav', 'reading', 'want', 'read'];
 export const SHELF_FILTER_GROUPS = [
   { key: 'status', title: '状态', options: SHELF_STATUS_OPTIONS },
   { key: 'category', title: '分类', options: CATEGORIES.slice(1).map(c => [c, c]) },
-  { key: 'language', title: '语言（可多选）', options: [['zh-CN', '简体中文'], ['zh-TW', '繁体中文'], ['en', '英文']] },
+  { key: 'language', title: '语言', options: [['zh-CN', '简体中文'], ['zh-TW', '繁体中文'], ['en', '英文']] },
   { key: 'format', title: '格式', options: [['epub', 'EPUB'], ['pdf', 'PDF'], ['azw3', 'AZW3'], ['mobi', 'MOBI']] },
   { key: 'pub_period', title: '年代', options: [['thisyear', '今年'], ['2020s', '2020年代'], ['2010s', '2010年代'], ['2000s', '2000年代'], ['1900s', '20世纪'], ['pre1900', '早期经典']] },
   { key: 'source_dir', title: '来源', options: /** @type {string[][]} */ ([]) }  // filled from /api/stats: the source folders are this machine's config,
@@ -173,3 +181,17 @@ export const MOBILE_SHEET_IDS = { progress: 'm-sheet-progress', theme: 'm-sheet-
 
 export const LATIN_TEXT_SAMPLE_CHARS = 1500;
 export const LATIN_TO_CJK_RATIO = 2;
+
+function splitPicked(raw) {
+  return String(raw || '').split(',').filter(Boolean);
+}
+
+/** The values picked in one shelf filter group; every group can hold several, sent to the server comma-joined. */
+export function shelfGroupValues(key) {
+  if (key === 'status') {
+    return [shelfFilters.only_favorite ? 'fav' : '', shelfFilters.has_rating ? 'has_rating' : '',
+      ...splitPicked(shelfFilters.reading_status)].filter(Boolean);
+  }
+  if (key === 'language') return Array.from(langSelections.shelf);
+  return splitPicked(shelfFilters[key]);
+}

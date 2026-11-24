@@ -3,54 +3,6 @@ import { escapeHtml } from './utils.js';
 import { renderBookCard } from './shelf_render.js';
 import { aiRerankOn, aiRerankItems, loadAiUsage } from './api.js';
 
-export function runPresetDescribe(text) {
-  /** @type {HTMLInputElement} */ (document.getElementById('describe-input')).value = text;
-  triggerDescribeRecommend();
-}
-
-export async function triggerDescribeRecommend() {
-  const desc = /** @type {HTMLInputElement} */ (document.getElementById('describe-input')).value.trim();
-  if (!desc) return;
-  const langParam = Array.from(langSelections.describe).join(',');
-  const aiOn = aiRerankOn();
-  const reqId = ++appState.describeReqSeq;
-  const telemetry = document.getElementById('describe-telemetry');
-  telemetry.innerText = '正在检索…';
-  const r = await fetch('/api/recommend/describe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // AI on: fetch 20 for DeepSeek to rerank, and skip the local cross-encoder
-    body: JSON.stringify({ description: desc, top_k: aiOn ? 20 : 10, language: langParam, ai: aiOn }),
-  });
-  const d = await r.json();
-  if (reqId !== appState.describeReqSeq) return;
-  const shown = (d.items || []).slice(0, 10);
-  telemetry.innerText = `已找到 ${shown.length} 本 · 用时 ${(d.elapsed_ms / 1000).toFixed(1)} 秒`;
-
-  const expBar = document.getElementById('describe-expansion-bar');
-  const tokens = (d.expanded_tokens || []).map(t => `<span class="tag-xs cat">${escapeHtml(t)}</span>`).join(' ');
-  const cats = (d.inferred_categories || []).map(c => `<span class="tag-xs fmt">${escapeHtml(c)}</span>`).join(' ');
-
-  expBar.classList.remove('hidden');
-  expBar.innerHTML = `
-    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-      <b>关键词：</b> ${tokens || '无'}
-      <span style="margin-left:10px;"><b>预测学科：</b> ${cats || '综合'}</span>
-    </div>
-  `;
-
-  const grid = document.getElementById('describe-grid');
-  grid.innerHTML = shown.map(b => renderBookCard(b, { showRank: true })).join('');
-  if (aiOn && (d.items || []).length > 1) {
-    const base = telemetry.innerText;
-    telemetry.innerText = `${base} · AI 精排中…`;
-    const res = await aiRerankItems(desc, d.items);
-    if (reqId !== appState.describeReqSeq) return;
-    telemetry.innerText = `${base} · ${res.status}`;
-    if (res.ok) grid.innerHTML = res.items.slice(0, 10).map(b => renderBookCard(b, { showRank: true, isAiOrder: true })).join('');
-  }
-}
-
 // ==================== TAB 3: INTEREST PROFILE ====================
 
 export async function applyInterestAi(langParam, reqId) {

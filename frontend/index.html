@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/assets/css/main_grid.css" />
   <link rel="stylesheet" href="/assets/css/main_refinements.css" />
   <link rel="stylesheet" href="/assets/css/tonight.css" />
+  <link rel="stylesheet" href="/assets/css/home.css" />
   <link rel="stylesheet" href="/assets/css/reader.css" />
   <link rel="stylesheet" href="/assets/css/reader_bilingual.css" />
   <link rel="stylesheet" href="/assets/css/reader_mobile.css" />
@@ -36,17 +37,12 @@
     <nav class="nav-tabs">
       <button class="nav-tab m-only" onclick="switchTab('tonight')" id="tab-btn-tonight">今晚</button>
       <button class="nav-tab active" onclick="switchTab('shelf')" id="tab-btn-shelf">
-        书架
+        <span class="d-only">首页</span><span class="m-only">书架</span>
         <span class="badge-pill" id="nav-book-count">0</span>
       </button>
-      <button class="nav-tab d-only" onclick="switchTab('describe')" id="tab-btn-describe">
-        <span class="d-only">按描述找书</span><span class="m-only">找书</span>
-      </button>
-      <button class="nav-tab d-only" onclick="switchTab('interest')" id="tab-btn-interest">
-        <span class="d-only">兴趣推荐</span><span class="m-only">推荐</span>
-      </button>
-      <button class="nav-tab" onclick="switchTab('organize')" id="tab-btn-organize">
-        <span class="d-only">整理与收件箱</span><span class="m-only">整理</span>
+      <button class="nav-tab d-only" onclick="switchTab('interest')" id="tab-btn-interest">推荐</button>
+      <button class="nav-tab d-only" onclick="switchTab('organize')" id="tab-btn-organize">
+        整理
         <span class="badge-pill hidden" id="nav-conflict-count">0</span>
       </button>
     </nav>
@@ -83,23 +79,31 @@
       </form>
     </section>
 
-    <!-- ==================== TAB 1: SHELF & INSTANT SEARCH ==================== -->
+    <!-- ==================== SHELF: DESKTOP HOME (filters | list | detail), PHONE SHELF ==================== -->
     <section id="view-shelf">
       <h1 class="sr-only">书架</h1>
+      <div class="home-layout">
+      <aside class="home-nav d-only" id="home-nav" aria-label="筛选"></aside>
+      <div class="home-main">
       <div class="search-panel">
         <div class="search-row">
+          <button class="btn d-only home-nav-toggle" onclick="toggleHomeNav()">筛选</button>
           <div class="search-input-wrap">
             <input
               type="text"
               id="shelf-search-input"
               class="search-input"
-              placeholder="输入书名、作者、拼音 (如 santi / sikao)、自然语言意图 (如 营销经典书籍)、ISBN 即时检索..."
+              placeholder="书名、作者、拼音，或说想读什么"
               oninput="debounceShelfSearch(); updateShelfSearchClear()"
+              onfocus="renderCommandSuggest()"
+              onblur="hideCommandSuggest()"
               enterkeyhint="search"
-              onkeydown="if(event.key==='Enter' && !event.isComposing && !appState.isImeComposing){ clearTimeout(appState.searchTimer); shelfFilters.q = this.value.trim(); loadShelfBooks(1, { ai: true }); }"
+              autocomplete="off"
+              onkeydown="if (onCommandKey(event)) return; if(event.key==='Enter' && !event.isComposing && !appState.isImeComposing){ clearTimeout(appState.searchTimer); shelfFilters.q = this.value.trim(); loadShelfBooks(1, { ai: true }); }"
             />
             <span class="search-Shortcut" id="search-latency-badge">⌘K</span>
             <button class="m-only m-search-clear hidden" id="m-search-clear" onclick="clearShelfSearch()" aria-label="清空搜索"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <div class="cmd-suggest hidden" id="cmd-suggest" role="listbox"></div>
           </div>
           <button class="m-only shelf-sort-btn" onclick="openShelfSheet('sort')" aria-label="排序">↕︎</button>
           <button class="m-only m-filter-btn" id="m-filter-btn" onclick="openShelfSheet('filter')">筛选</button>
@@ -115,114 +119,34 @@
             <option value="rating">我的评分</option>
             <option value="title">书名音序</option>
           </select>
-          <button class="btn d-only" onclick="resetShelfFilters()">重置筛选</button>
           <label class="filter-label d-only" style="display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;" title="按回车后由 DeepSeek 重新排序前 20 本，会用掉 AI 额度">
             <input type="checkbox" id="shelf-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排（耗额度）
           </label>
-        </div>
-
-        <div class="filter-group" id="cat-filter-row">
-          <span class="filter-label">分类:</span>
-        </div>
-
-        <div class="filter-group more-filters" id="shelf-more-filters">
-          <span class="filter-label">语言:</span>
-          <button class="chip active" data-lang-scope="shelf" data-lang="" onclick="toggleLangFilter('shelf', '', this)">全部</button>
-          <button class="chip" data-lang-scope="shelf" data-lang="zh-CN" onclick="toggleLangFilter('shelf', 'zh-CN', this)" id="lang-btn-shelf-cn">简体中文</button>
-          <button class="chip" data-lang-scope="shelf" data-lang="zh-TW" onclick="toggleLangFilter('shelf', 'zh-TW', this)" id="lang-btn-shelf-tw">繁体中文</button>
-          <button class="chip" data-lang-scope="shelf" data-lang="en" onclick="toggleLangFilter('shelf', 'en', this)" id="lang-btn-shelf-en">英文</button>
-          <span style="font-size:12px; color:var(--text-dim); margin-left:2px;">(可多选组合)</span>
-
-          <span class="filter-label" style="margin-left:14px;">格式:</span>
-          <button class="chip active" data-fmt="" onclick="setFilter('format', '', this)">全部</button>
-          <button class="chip" data-fmt="epub" onclick="setFilter('format', 'epub', this)">EPUB</button>
-          <button class="chip" data-fmt="pdf" onclick="setFilter('format', 'pdf', this)">PDF</button>
-          <button class="chip" data-fmt="azw3" onclick="setFilter('format', 'azw3', this)">AZW3</button>
-          <button class="chip" data-fmt="mobi" onclick="setFilter('format', 'mobi', this)">MOBI</button>
-
-          <span class="filter-label" style="margin-left:14px;">来源:</span>
-          <button class="chip active" data-src="" onclick="setFilter('source_dir', '', this)">全部目录</button>
-          <span id="shelf-source-chips" style="display:contents"></span>
-
-          <span class="filter-label" style="margin-left:14px;">年代:</span>
-          <button class="chip active" data-period="" onclick="setFilter('pub_period', '', this)">全部年代</button>
-          <button class="chip" data-period="thisyear" onclick="setFilter('pub_period', 'thisyear', this)">今年</button>
-          <button class="chip" data-period="2020s" onclick="setFilter('pub_period', '2020s', this)">2020年代</button>
-          <button class="chip" data-period="2010s" onclick="setFilter('pub_period', '2010s', this)">2010年代</button>
-          <button class="chip" data-period="2000s" onclick="setFilter('pub_period', '2000s', this)">2000年代</button>
-          <button class="chip" data-period="1900s" onclick="setFilter('pub_period', '1900s', this)">20世纪</button>
-          <button class="chip" data-period="pre1900" onclick="setFilter('pub_period', 'pre1900', this)">早期经典</button>
-
-          <span class="filter-label" style="margin-left:14px;">状态:</span>
-          <button class="chip active" data-st="" onclick="setFilter('reading_status', '', this)">全部</button>
-          <button class="chip" data-st="fav" onclick="setFilter('reading_status', 'fav', this)">我的收藏</button>
-          <button class="chip" data-st="reading" onclick="setFilter('reading_status', 'reading', this)">在读</button>
-          <button class="chip" data-st="want" onclick="setFilter('reading_status', 'want', this)">想读</button>
-          <button class="chip" data-st="read" onclick="setFilter('reading_status', 'read', this)">已读</button>
-          <button class="chip" data-st="has_rating" onclick="setFilter('reading_status', 'has_rating', this)">有外部评分/书评</button>
         </div>
       </div>
 
       <div class="m-only m-chip-row" id="m-chip-row"></div>
 
-      <div class="d-only" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div class="d-only home-result-row">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <div style="font-size:14px; color:var(--text-muted);" id="shelf-result-info">共找到 0 本藏书</div>
           <div class="active-filters" id="shelf-active-filters"></div>
         </div>
-        <div style="display:flex; gap:8px;" id="shelf-pagination-top"></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="home-key-hint" title="j / k 上下移动 · 回车 打开阅读 · s 切换状态 · f 喜欢 · x 勾选 · / 搜索">j k ↵ s f x</span>
+          <button class="btn" id="home-view-btn" onclick="toggleHomeView()" title="列表 / 封面">封面</button>
+          <span style="display:flex; gap:8px;" id="shelf-pagination-top"></span>
+        </div>
       </div>
 
+      <div class="home-batch-bar hidden" id="home-batch-bar"></div>
       <div class="book-grid" id="shelf-grid"></div>
 
       <div class="d-only" style="display:flex; justify-content:center; gap:10px; margin-top:26px;" id="shelf-pagination-bottom"></div>
       <div class="m-only m-load-more" id="m-load-more"></div>
-    </section>
-
-    <!-- ==================== TAB 2: DESCRIBE TO RECOMMEND TOP 10 ==================== -->
-    <section id="view-describe" class="hidden">
-      <div class="section-card">
-        <h1 style="font-size:20px; margin-bottom:6px;">按自然语言描述 · 精准推荐最相关的 10 本书</h1>
-        <p style="font-size:14px; color:var(--text-muted); margin-bottom:14px;">
-          用一句话描述你想读什么，系统按语义理解，从藏书里挑出最相关、最经典的 10 本。
-        </p>
-
-        <textarea
-          id="describe-input"
-          class="textarea-lg"
-          rows="3"
-          placeholder="描述你想找的书，例如：我想看讲认知心理学、大脑决策偏差、行为经济学相关的经典书，最好有实验案例..."
-        ></textarea>
-
-        <div class="preset-pills">
-          <span style="font-size:12px; color:var(--text-dim); align-self:center;">试试点击示例：</span>
-          <button class="chip" onclick="runPresetDescribe('讲解计算机操作系统底层原理、分布式系统架构或算法设计的硬核技术书')">计算机底层与分布式架构</button>
-          <button class="chip" onclick="runPresetDescribe('剖析人类非理性决策、认知偏差、思考快与慢或潜意识行为心理学的经典著作')">认知偏差与行为决策心理学</button>
-          <button class="chip" onclick="runPresetDescribe('关于中国历代王朝兴衰、明清政治制度博弈、资治通鉴或人物传记的深度历史书')">王朝政治博弈与历史兴衰</button>
-          <button class="chip" onclick="runPresetDescribe('讲解价值投资、金融周期、资本市场规律、巴菲特芒格智慧或宏观经济的书')">价值投资与经济金融周期</button>
-          <button class="chip" onclick="runPresetDescribe('格局宏大的硬科幻小说，涉及星际文明、宇宙社会学、时间或人工智能哲学思考')">宏大硬科幻与星际文明</button>
-        </div>
-
-        <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="triggerDescribeRecommend()">
-              立即检索最准 Top 10 推荐
-            </button>
-            <label class="filter-label" style="display:flex; align-items:center; gap:5px; cursor:pointer; min-width:auto;" title="由 DeepSeek 重新排序前 20 本">
-              <input type="checkbox" id="describe-ai-toggle" onchange="setAiRerank(this.checked)" /> AI 精排
-            </label>
-            <span class="filter-label" style="margin-left:10px; min-width:auto;">语言:</span>
-            <button class="chip active" data-lang-scope="describe" data-lang="" onclick="toggleLangFilter('describe', '', this)">全部</button>
-            <button class="chip" data-lang-scope="describe" data-lang="zh-CN" onclick="toggleLangFilter('describe', 'zh-CN', this)">简体中文</button>
-            <button class="chip" data-lang-scope="describe" data-lang="zh-TW" onclick="toggleLangFilter('describe', 'zh-TW', this)">繁体中文</button>
-            <button class="chip" data-lang-scope="describe" data-lang="en" onclick="toggleLangFilter('describe', 'en', this)">英文</button>
-          </div>
-          <div id="describe-telemetry" style="font-size:12px; color:var(--text-muted);"></div>
-        </div>
       </div>
-
-      <div id="describe-expansion-bar" class="section-card hidden" style="padding:12px 16px; font-size:12px;"></div>
-      <div class="book-grid" id="describe-grid"></div>
+      <aside class="home-detail d-only" id="home-detail" aria-label="书籍详情"><div id="home-detail-body"></div></aside>
+      </div>
     </section>
 
     <!-- ==================== TAB 3: INTEREST COMPASS & RECOMMENDATIONS ==================== -->

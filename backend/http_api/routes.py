@@ -1,4 +1,4 @@
-from http_api.handlers import books, connection, organize, pdf_pages, reading, recommend, tonight, translate
+from http_api.handlers import books, connection, marks, organize, pdf_pages, reading, recommend, tonight, translate
 from http_api.router import Router
 
 
@@ -40,6 +40,7 @@ def build_default_router() -> Router:
     router.add("POST", r"/api/recommend/interests/ai", recommend.handle_post_interests_ai)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/progress", books.handle_post_book_progress)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/meta", books.handle_post_book_meta)
+    router.add("POST", r"/api/books/batch_meta", marks.handle_post_batch_meta)
     router.add("POST", r"/api/skips", tonight.handle_post_skip)
     router.add("POST", r"/api/skips/undo", tonight.handle_post_skip_undo)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/enrich_refresh", books.handle_post_book_enrich_refresh)

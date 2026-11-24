@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import deepseek_client
 from auto_summary_refresher import enqueue_book_summary_refresh
+from book_marks import RATING_MIN, is_new_mark
 from database import get_conn
 from ebook_parser import build_cjk_search_tokens, normalize_for_dedup
 from http_api import state
@@ -286,8 +287,7 @@ def handle_post_book_progress(
     send_json(handler, {"ok": True, "updated": cur.rowcount})
 
 
-UNREAD = "unread"
-RATING_MIN, RATING_MAX = 0, 5
+RATING_MAX = 5
 
 
 def _posted_marks(body: Dict[str, Any]) -> Dict[str, Any]:
@@ -301,14 +301,6 @@ def _posted_marks(body: Dict[str, Any]) -> Dict[str, Any]:
     if "user_rating" in body:
         marks["user_rating"] = max(RATING_MIN, min(RATING_MAX, int(body["user_rating"])))
     return marks
-
-
-def _is_new_mark(row: Any, marks: Dict[str, Any]) -> bool:
-    """Whether `marks` gives the book a mark it does not have now. The same value sent again is none, and neither
-    is taking a mark away: marked_at is when the reader last marked the book, not when they last touched it."""
-    unmarked = {"reading_status": UNREAD, "is_favorite": 0, "user_rating": RATING_MIN}
-    return any(value != unmarked[column] and value != (row[column] or unmarked[column])
-               for column, value in marks.items())
 
 
 def handle_post_book_meta(
@@ -359,7 +351,7 @@ def handle_post_book_meta(
         for column, value in marks.items():
             updates.append(f"{column} = ?")
             params.append(value)
-        if _is_new_mark(row, marks):
+        if is_new_mark(row, marks):
             updates.append("marked_at = CURRENT_TIMESTAMP")
         if "tags" in body and isinstance(body["tags"], list):
             updates.append("tags = ?")

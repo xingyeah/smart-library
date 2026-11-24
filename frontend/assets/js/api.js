@@ -1,6 +1,6 @@
 import { appState, shelfFilters, AI_FALLBACK_TEXT, SHELF_FILTER_GROUPS } from './state.js';
-import { escapeHtml } from './utils.js';
-import { renderBookCard, generatePaginationItems } from './shelf_render.js';
+import { generatePaginationItems } from './shelf_render.js';
+import { fillShelfGrid, renderHomeNav } from './home.js';
 import { updateOrganizeBanner, renderRunsTable } from './organize.js';
 
 export function aiRerankOn() {
@@ -9,7 +9,7 @@ export function aiRerankOn() {
 
 export function setAiRerank(on) {
   try { localStorage.setItem('aiRerank', on ? '1' : '0'); } catch (e) {}
-  ['shelf-ai-toggle', 'describe-ai-toggle', 'interest-ai-toggle', 'm-ai-toggle'].forEach(id => {
+  ['shelf-ai-toggle', 'interest-ai-toggle', 'm-ai-toggle'].forEach(id => {
     const el = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
     if (el) el.checked = on;
   });
@@ -46,10 +46,7 @@ export async function applyShelfAiRerank(d, bannerHtml, reqId) {
   const res = await aiRerankItems(shelfFilters.q, d.items);
   if (reqId !== appState.shelfReqSeq) return;  // a newer search replaced this one
   info.innerText = `${base} · ${res.status}`;
-  if (res.ok) {
-    document.getElementById('shelf-grid').innerHTML =
-      bannerHtml + res.items.map(b => renderBookCard(b, { showRank: true, isAiOrder: true })).join('');
-  }
+  if (res.ok) fillShelfGrid(res.items, { showRank: true, isAiOrder: true, prefixHtml: bannerHtml });
 }
 
 export async function loadAiUsage() {
@@ -65,18 +62,29 @@ export async function loadAiUsage() {
   } catch (e) {}
 }
 
-/** One filter option per configured source folder, on the desktop chip row and in the phone's filter sheet. */
+/** One filter option per configured source folder, in the desktop home's left column and the phone's filter sheet. */
 function renderSourceFilters(names) {
   const group = SHELF_FILTER_GROUPS.find(g => g.key === 'source_dir');
   if (group) group.options = names.map(name => [name, name]);
-  const chips = document.getElementById('shelf-source-chips');
-  if (chips) {
-    chips.innerHTML = names.map(name =>
-      `<button class="chip${shelfFilters.source_dir === name ? ' active' : ''}" data-src="${escapeHtml(name)}" `
-      + `onclick="setFilter('source_dir', this.dataset.src, this)">${escapeHtml(name)}</button>`).join('');
-  }
   const sub = document.getElementById('st-source-names');
   if (sub) sub.innerText = names.join(' / ');
+}
+
+function countsByValue(rows, valueKey) {
+  return Object.fromEntries((rows || []).map(row => [row[valueKey], row.count]));
+}
+
+/** How many books each filter value holds across the whole library, for the desktop home's left column. */
+function storeLibraryCounts(d) {
+  const statuses = d.reading_statuses || {};
+  appState.libraryCounts = {
+    status: { fav: d.favorite_count, reading: statuses.reading || 0, want: statuses.want || 0, read: statuses.read || 0 },
+    category: countsByValue(d.categories, 'category'),
+    format: Object.fromEntries((d.formats || []).map(row => [String(row.format || '').toLowerCase(), row.count])),
+    source_dir: countsByValue(d.sources, 'source'),
+    language: d.languages || {},
+  };
+  renderHomeNav();
 }
 
 export async function loadStats() {
@@ -95,14 +103,7 @@ export async function loadStats() {
     document.getElementById('nav-book-count').innerText = d.total_books.toLocaleString();
 
     renderSourceFilters((d.sources || []).map(s => s.source));
-
-    const langs = d.languages || {};
-    const btnCn = document.getElementById('lang-btn-shelf-cn');
-    const btnTw = document.getElementById('lang-btn-shelf-tw');
-    const btnEn = document.getElementById('lang-btn-shelf-en');
-    if (btnCn && langs['zh-CN']) btnCn.innerText = `简体中文 (${langs['zh-CN']})`;
-    if (btnTw && langs['zh-TW']) btnTw.innerText = `繁体中文 (${langs['zh-TW']})`;
-    if (btnEn && langs['en']) btnEn.innerText = `英文 (${langs['en']})`;
+    storeLibraryCounts(d);
 
     const confBadge = document.getElementById('nav-conflict-count');
     if (d.pending_conflicts > 0) {

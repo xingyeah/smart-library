@@ -1,4 +1,4 @@
-import { appState, shelfFilters, COVER_DETAIL_WIDTH, RATING_SOURCE_NAMES } from './state.js';
+import { appState, shelfFilters, COVER_DETAIL_WIDTH, MOBILE_QUERY, RATING_SOURCE_NAMES } from './state.js';
 import { escapeHtml, bookCoverImgHtml } from './utils.js';
 import { icon, favoriteLabelHtml, wantLabelHtml } from './icons.js';
 import { authorLinksHtml, getReaderButtonHtml, sourceQualityText, syncBookCards } from './shelf_render.js';
@@ -16,7 +16,7 @@ function bookModalStatusHtml(message) {
 
 // The card the reader clicked already has the title and author; show them instead of a blank box
 function loadingModalHtml(bookId) {
-  const card = document.querySelector(`.book-card[data-book-id="${Number(bookId)}"]`);
+  const card = document.querySelector(`.book-card[data-book-id="${Number(bookId)}"], .home-row[data-book-id="${Number(bookId)}"]`);
   const title = card ? card.querySelector('.book-title')?.getAttribute('title') : '';
   if (!title) return bookModalStatusHtml('正在加载书籍详情...');
   const author = card.querySelector('.book-author')?.textContent || '';
@@ -38,13 +38,27 @@ async function fetchBookDetail(bookId) {
   }
 }
 
+// The desktop home shows the detail in its right column instead of a dialog over the list
+const isHomeDetail = () => appState.currentTab === 'shelf' && !window.matchMedia(MOBILE_QUERY).matches;
+
+let detailRequestSeq = 0;
+
+function detailBox() {
+  return document.getElementById(isHomeDetail() ? 'home-detail-body' : 'book-modal-content');
+}
+
 export async function openBookModal(bookId) {
-  const modal = document.getElementById('book-modal');
-  const box = document.getElementById('book-modal-content');
-  modal.classList.add('open');
+  const box = detailBox();
+  // One detail on the page at a time: both places use the same element ids
+  const otherBox = document.getElementById(isHomeDetail() ? 'book-modal-content' : 'home-detail-body');
+  otherBox.innerHTML = '';
+  document.getElementById(isHomeDetail() ? 'home-detail' : 'book-modal').classList.add('open');
   box.innerHTML = loadingModalHtml(bookId);
 
+  // Walking the home list with j/k opens one detail after another; only the last one asked for may land
+  const seq = ++detailRequestSeq;
   const { book: b, error } = await fetchBookDetail(bookId);
+  if (seq !== detailRequestSeq) return;
   if (error) {
     box.innerHTML = bookModalStatusHtml(`详情加载失败：${error}`);
     return;
@@ -232,6 +246,7 @@ function detailEditFormHtml(b) {
 
 export function closeBookModal() {
   document.getElementById('book-modal').classList.remove('open');
+  document.getElementById('home-detail').classList.remove('open');
 }
 
 function _syncModalStatusButtons(book) {
@@ -310,7 +325,7 @@ export async function saveBookMeta(bookId) {
 
 // AI never renames a book on its own: the user edits or rejects its suggestion here
 function showTitleProposal(bookId, currentTitle, proposedTitle) {
-  const head = document.querySelector('#book-modal-content .detail-head');
+  const head = detailBox().querySelector('.detail-head');
   if (!head) return;
   head.insertAdjacentHTML('afterend', `
     <div class="detail-title-proposal" id="detail-title-proposal">

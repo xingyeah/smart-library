@@ -1,6 +1,6 @@
 import { aiRerankOn } from './api.js';
-import { loadShelfBooks, shelfChipHtml, shelfGroupValues } from './shelf.js';
-import { SHEET_CLOSE_DRAG_PX, SHELF_FILTER_GROUPS, SORT_SHORT_LABELS, appState } from './state.js';
+import { loadShelfBooks, shelfChipHtml } from './shelf.js';
+import { SHEET_CLOSE_DRAG_PX, SHELF_FILTER_GROUPS, SORT_SHORT_LABELS, appState, shelfGroupValues } from './state.js';
 
 // ---------- bottom sheets ----------
 export function openShelfSheet(kind, section) {

@@ -72,7 +72,7 @@ export function sourceQualityText(b) {
 /** Brings every card of one book on the page in line with a change made anywhere (card, detail view): the same
  * book can sit in several lists at once. state: { isFavorite?, readingStatus? }; a field left out is not touched. */
 export function syncBookCards(bookId, state) {
-  document.querySelectorAll(`.book-card[data-book-id="${Number(bookId)}"]`).forEach(card => {
+  document.querySelectorAll(`.book-card[data-book-id="${Number(bookId)}"], .home-row[data-book-id="${Number(bookId)}"]`).forEach(card => {
     const fav = /** @type {HTMLElement | null} */ (card.querySelector('.card-fav'));
     if (fav && state.isFavorite !== undefined) {
       fav.classList.toggle('fav-active', state.isFavorite);

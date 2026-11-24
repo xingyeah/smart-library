@@ -1,7 +1,7 @@
 // "All books by this author": a shelf filter entered from the book detail's author line.
 // The back gesture leaves it like a layer and puts the shelf back the way it was before the click.
 import { appState, langSelections, shelfFilters } from './state.js';
-import { loadShelfBooks, switchTab, syncDesktopShelfChips } from './shelf.js';
+import { loadShelfBooks, switchTab } from './shelf.js';
 
 /** @type {{ filters: object, languages: string[], query: string, sort: string, sortTouched: boolean } | null} */
 let shelfBeforeAuthor = null;
@@ -10,7 +10,6 @@ const searchInput = () => /** @type {HTMLInputElement} */ (document.getElementBy
 const sortSelect = () => /** @type {HTMLSelectElement} */ (document.getElementById('shelf-sort'));
 
 function showShelf() {
-  syncDesktopShelfChips();
   if (appState.currentTab === 'shelf') loadShelfBooks(1, { scrollToTop: true });
   else switchTab('shelf');
 }

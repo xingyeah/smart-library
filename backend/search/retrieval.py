@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from database import get_conn
 from search.authors import register_author_sql
-from search.filters import build_book_facet_where
+from search.filters import build_book_facet_where, split_facet_values
 from search.finalize import finalize_ranked_pool, _finalize_ranked_pool, rerank_and_fuse_candidates
 from search.intent import analyze_query_intent, _translate_english_query
 from search.recall import build_allowed_ids, execute_dual_path_recall
@@ -65,10 +65,10 @@ def _retrieve_one_language(
     # Smart Category Conflict Relaxation
     category_relaxed = False
     effective_category = category
-    if category and category != "全部" and inferred_cats:
-        if category not in inferred_cats:
-            category_relaxed = True
-            effective_category = ""
+    picked_cats = split_facet_values(category)
+    if picked_cats and inferred_cats and not set(picked_cats) & set(inferred_cats):
+        category_relaxed = True
+        effective_category = ""
 
     conn = get_conn()
     register_author_sql(conn)
