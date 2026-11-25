@@ -9,9 +9,12 @@ since the last reset). Books wanted elsewhere may show again. Without DeepSeek t
 """
 
 import logging
-from typing import Any, Dict, List, Set, Tuple
+import re
+from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from database import get_conn, write_tx
+from repair_titles import english_part_of, work_key
+from same_work import canonical_title
 from search.recommend import _apply_author_diversity
 from search.retrieval import _execute_unified_hybrid_retrieval
 from search.shelf import attach_ai_meta, format_book_row
@@ -103,6 +106,33 @@ def _book_rows(conn: Any, book_ids: List[int]) -> Dict[int, Dict[str, Any]]:
     return {int(book["id"]): book for book in attach_ai_meta([format_book_row(r) for r in rows], conn)}
 
 
+def edition_keys(book: Dict[str, Any]) -> Set[str]:
+    """Keys two editions of one work share: the English title, or the Chinese title with the same author."""
+    keys = set()
+    for title in {book.get("title") or "", book.get("clean_title") or ""} - {""}:
+        english = english_part_of(title) or ("" if re.search(r"[一-鿿]", title) else title)
+        english = re.sub(r"[\[(（【][^\])）】]*[\])）】]", " ", english)  # '[with eText Access Code]' is an edition note
+        if work_key(english):
+            keys.add(f"en:{work_key(english)}")
+        chinese = canonical_title(title.split(" (", 1)[0])
+        if re.search(r"[一-鿿]", chinese):
+            keys.add(f"zh:{chinese}|{book.get('norm_author') or ''}")
+    return keys
+
+
+def drop_other_editions(books: List[Dict[str, Any]], answered: Iterable[Dict[str, Any]] = ()) -> List[Dict[str, Any]]:
+    """`books` in order without a second edition of a work already listed or already answered."""
+    seen = set().union(*(edition_keys(book) for book in answered))
+    kept = []
+    for book in books:
+        keys = edition_keys(book)
+        if keys & seen:
+            continue
+        seen |= keys
+        kept.append(book)
+    return kept
+
+
 def _ai_recall(understanding: Dict[str, Any], excluded: Set[int]) -> List[Dict[str, Any]]:
     """The JUDGE_BATCH best unjudged candidates over all search lines, merged by reciprocal rank."""
     lines = understanding["search_lines"]
@@ -165,6 +195,7 @@ def _ai_state(query: str) -> Dict[str, Any]:
 
     kept = [dict(rows[b], ai_score=judged[b]["score"], ai_reason=judged[b]["reason"]) for b in sorted(
         (b for b in kept_ids if b in rows), key=order)]
+    kept = drop_other_editions(kept, [rows[b] for b in skipped | wanted if b in rows])
     feedback = {"wanted": [b.get("clean_title") or b["title"] for b in liked],
                 "skipped": [rows[b].get("clean_title") or rows[b]["title"] for b in skipped if b in rows]}
     return {"skipped": skipped, "wanted": wanted, "judged": judged, "kept": kept, "feedback": feedback}
@@ -232,7 +263,7 @@ def plain_batch(query: str) -> Dict[str, Any]:
     pool, raw_count = _plain_pool(query, FIRST_POOL)
     if len(pool) < BATCH_SIZE and raw_count >= FIRST_POOL:
         pool, raw_count = _plain_pool(query, WIDE_POOL)
-    batch = _apply_author_diversity(pool, query, BATCH_SIZE)
+    batch = _apply_author_diversity(drop_other_editions(pool), query, BATCH_SIZE)
     return {"query": query, "items": batch, "exhausted": raw_count > 0 and not batch}
 
 

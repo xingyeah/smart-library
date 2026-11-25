@@ -202,6 +202,23 @@ class AiSearchTests(TonightSearchTestCase):
         self.assertEqual(result["ai_status"], "cap")
         self.assertEqual(len(result["items"]), tonight_search.BATCH_SIZE)
 
+    def test_one_edition_per_work_and_none_of_an_answered_work(self):
+        conn = database.get_conn(self.db_path)
+        conn.execute("UPDATE books SET title = '思考，快与慢 (Thinking, Fast and Slow)' WHERE id = 3")
+        conn.execute("UPDATE books SET title = 'Thinking, Fast and Slow' WHERE id = 7")
+        conn.execute("UPDATE books SET title = '操作系统概念 (Operating System Concepts)' WHERE id = 12")
+        conn.execute("UPDATE books SET title = '操作系统概念（第十版） (Operating System Concepts [with eText Access Code])' WHERE id = 13")
+        conn.commit()
+        conn.close()
+        self.use_deepseek(good={3, 7, 12, 13, 20})
+        self.assertEqual(sorted(self.batch_ids()), [3, 12, 20])
+        skips.record_skip(3, skips.SKIP_CONTEXT_SEARCH, QUERY)
+        self.assertEqual(sorted(self.batch_ids()), [12, 20])
+
+    def test_same_chinese_title_by_different_authors_is_not_one_work(self):
+        books = [{"title": "中国史", "norm_author": "吕思勉"}, {"title": "中国史", "norm_author": "宫崎市定"}]
+        self.assertEqual(len(tonight_search.drop_other_editions(books)), 2)
+
     def test_clean_verdicts_rejects_unknown_ids_and_bad_scores(self):
         reply = {"books": {"1": {"score": 8, "reason": "好"}, "99": {"score": 9}, "2": {"score": 11}, "3": "x"}}
         self.assertEqual(tonight_ai._clean_verdicts(reply, [1, 2, 3]), {1: {"score": 8, "reason": "好"}})
