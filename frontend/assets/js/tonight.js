@@ -69,7 +69,8 @@ function continueHtml(book, others) {
 function cardHtml(book, isTop) {
   const { main, sub } = splitBilingualTitle(book.clean_title || book.title);
   const reason = tonight.mode === CONTEXT_TONIGHT
-    ? friendlyReason(book.tonight_reason) : (book.summary || '').slice(0, SEARCH_SUMMARY_CHARS);
+    ? friendlyReason(book.tonight_reason) : (book.ai_reason || (book.summary || '').slice(0, SEARCH_SUMMARY_CHARS));
+  const wantTag = book.reading_status === 'want' ? '<span class="tonight-want-tag">已在想读</span>' : '';
   const stamps = isTop ? '<span class="tonight-stamp want">想读</span><span class="tonight-stamp skip">跳过</span>' : '';
   return `<div class="tonight-card${isTop ? '' : ' behind'}" data-book-id="${book.id}">
       ${stamps}
@@ -78,6 +79,7 @@ function cardHtml(book, isTop) {
         <div class="tonight-card-title">${escapeHtml(main)}</div>
         ${sub ? `<div class="tonight-card-sub">${escapeHtml(sub)}</div>` : ''}
         <div class="tonight-card-author">${escapeHtml(book.author || '')}</div>
+        ${wantTag}
         <div class="tonight-card-reason">${escapeHtml(reason)}</div>
       </div>
     </div>`;
@@ -120,6 +122,13 @@ function showMessage(text, retryCall) {
 function setHeader(title, isSearch) {
   byId('tonight-stack-title').textContent = title;
   byId('tonight-back').classList.toggle('hidden', !isSearch);
+  if (!isSearch) setAiNote('');
+}
+
+function setAiNote(text) {
+  const note = byId('tonight-ai-note');
+  note.textContent = text;
+  note.classList.toggle('hidden', !text);
 }
 
 function historyChipHtml(query, index) {
@@ -207,7 +216,8 @@ async function searchTonight(text) {
 async function loadSearchBatch() {
   const requestSeq = ++tonight.requestSeq;
   Object.assign(tonight, { index: 0, cards: [], isExhausted: false });
-  showMessage('正在找…', '');
+  setAiNote('');
+  showMessage('AI 正在挑书…', '');
   try {
     const response = await fetch('/api/tonight/search', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: tonight.query }),
@@ -216,6 +226,7 @@ async function loadSearchBatch() {
     const data = await response.json();
     if (requestSeq !== tonight.requestSeq) return;
     Object.assign(tonight, { cards: data.items || [], isExhausted: Boolean(data.exhausted) });
+    setAiNote(data.ai_status ? 'AI 暂时不可用，结果比较粗略' : '');
     renderStack();
   } catch (error) {
     console.error('tonight search failed', tonight.query, error);

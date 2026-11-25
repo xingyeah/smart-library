@@ -59,7 +59,7 @@ class ConfigAndMigrationsTest(unittest.TestCase):
                     apply_migrations(conn)
                     conn.commit()
                     self.assertEqual(dict(conn.execute("SELECT id, marked_at FROM books").fetchall()), expected)
-                self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 12)
+                self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 13)
             finally:
                 conn.close()
 
@@ -70,7 +70,7 @@ class ConfigAndMigrationsTest(unittest.TestCase):
             conn = get_conn(db_file)
             try:
                 version = conn.execute("PRAGMA user_version").fetchone()[0]
-                self.assertEqual(version, 12)
+                self.assertEqual(version, 13)
                 indexes = {r["name"] for r in conn.execute("PRAGMA index_list(books)").fetchall()}
                 self.assertIn("idx_books_category_classic", indexes)
                 bf_cols = {r["name"] for r in conn.execute("PRAGMA table_info(book_files)").fetchall()}

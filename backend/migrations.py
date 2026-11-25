@@ -211,6 +211,31 @@ def _migrate_v12(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_v13(conn: sqlite3.Connection) -> None:
+    """DeepSeek's reading of each tonight search sentence, and its 0-10 verdict on each book it judged for it."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ai_query_understanding (
+            query TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ai_query_judgments (
+            query TEXT NOT NULL,
+            book_id INTEGER NOT NULL,
+            score INTEGER NOT NULL,
+            reason TEXT NOT NULL DEFAULT '',
+            round INTEGER NOT NULL,
+            PRIMARY KEY (query, book_id)
+        )
+        """
+    )
+
+
 _MIGRATIONS = [
     (1, _migrate_v1),
     (2, _migrate_v2),
@@ -224,6 +249,7 @@ _MIGRATIONS = [
     (10, _migrate_v10),
     (11, _migrate_v11),
     (12, _migrate_v12),
+    (13, _migrate_v13),
 ]
 
 
