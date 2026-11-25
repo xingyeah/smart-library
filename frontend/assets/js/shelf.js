@@ -281,6 +281,18 @@ function applyCommandText(raw) {
   return command.query;
 }
 
+/** A thin moving line under the search box while a search (and its AI rerank) is on the way. */
+function startSearching() {
+  document.querySelector('.search-input-wrap')?.classList.add('is-searching');
+  renderCommandSuggest();
+}
+
+function stopSearching(reqId) {
+  if (reqId !== appState.shelfReqSeq) return;
+  document.querySelector('.search-input-wrap')?.classList.remove('is-searching');
+  renderCommandSuggest();
+}
+
 function shelfParams(sortBy, page, size) {
   return new URLSearchParams({
     q: shelfFilters.q, category: shelfFilters.category, language: shelfFilters.language, format: shelfFilters.format,
@@ -331,6 +343,7 @@ export async function loadShelfBooks(page = 1, opts = {}) {
   }
   appState.shelfAbortController = new AbortController();
   const reqId = ++appState.shelfReqSeq;
+  startSearching();
 
   const params = shelfParams(sort_by, reqWindow.page, reqWindow.size);
   let d;
@@ -343,6 +356,7 @@ export async function loadShelfBooks(page = 1, opts = {}) {
     if (reqId !== appState.shelfReqSeq) return;
   } catch (err) {
     if (err && err.name === 'AbortError') return;
+    stopSearching(reqId);
     console.error('loadShelfBooks error:', err);
     if (opts.append) {
       shelfFilters.page = page - 1;
@@ -361,6 +375,7 @@ export async function loadShelfBooks(page = 1, opts = {}) {
   const grid = document.getElementById('shelf-grid');
   if (opts.append) {
     grid.insertAdjacentHTML('beforeend', (d.items || []).map(b => renderBookCard(b, { showRank: Boolean(d.is_semantic_intent) })).join(''));
+    stopSearching(reqId);
     return;
   }
   let bannerHtml = '';
@@ -381,7 +396,9 @@ export async function loadShelfBooks(page = 1, opts = {}) {
   });
   renderCommandSuggest();
   if (opts.ai && aiRerankOn() && shelfFilters.q && page === 1 && sort_by === 'relevance' && (d.items || []).length > 1) {
-    applyShelfAiRerank(d, bannerHtml, reqId);
+    applyShelfAiRerank(d, bannerHtml, reqId).finally(() => stopSearching(reqId));
+  } else {
+    stopSearching(reqId);
   }
 
   const totalPages = Math.max(1, Math.ceil(d.total / d.page_size));

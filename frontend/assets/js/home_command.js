@@ -74,7 +74,9 @@ function historySuggestions() {
 function searchSuggestion(command) {
   const statusNames = STATUS_WORDS.filter(([, val]) => shelfGroupValues('status').includes(val)).map(([word]) => word);
   const scope = [...new Set(statusNames), command.query].filter(Boolean).join(' · ');
-  return { kind: '搜索', label: `${scope || '全部'} · 找到 ${appState.shelfLastTotal.toLocaleString()} 本`, hint: '回车',
+  const isSearching = Boolean(document.querySelector('.search-input-wrap.is-searching'));
+  const found = isSearching ? '搜索中…' : `找到 ${appState.shelfLastTotal.toLocaleString()} 本`;
+  return { kind: '搜索', label: `${scope || '全部'} · ${found}`, hint: '回车',
     run: () => { rememberCommandText(); /** @type {HTMLElement} */ (document.activeElement).blur(); focusFirstHomeRow(); } };
 }
 
