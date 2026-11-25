@@ -257,6 +257,7 @@ function renderHomeBatchBar() {
   const isTooMany = count > MAX_BATCH_BOOKS;
   bar.innerHTML = `<span class="home-batch-count">已选 ${count} 本${isTooMany ? `（一次最多 ${MAX_BATCH_BOOKS} 本）` : ''}</span>`
     + BATCH_ACTIONS.map(([label], i) => `<button class="btn" ${isTooMany ? 'disabled' : ''} onclick="applyHomeBatch(${i})">${label}</button>`).join('')
+    + `<button class="btn home-batch-delete" ${isTooMany ? 'disabled' : ''} onclick="deleteHomeChecked()">删除</button>`
     + '<button class="btn home-batch-clear" onclick="clearHomeChecks()">取消选择</button>';
 }
 
@@ -290,6 +291,15 @@ export async function applyMarksToBooks(ids, marks, label) {
     if (await postBatchMarks(previous)) refreshAfterMarks();
   });
   return true;
+}
+
+/** The batch bar's 删除: the ticked books go after one confirmation (multi-file ones are asked one by one). */
+export async function deleteHomeChecked() {
+  const byId = new Map(homeItems().map(b => [Number(b.id), b]));
+  const books = Array.from(homeState.checked).map(id => ({ id, title: (byId.get(Number(id)) || {}).title || '' }));
+  const deletedIds = await app.deleteBooks(books);
+  deletedIds.forEach(id => homeState.checked.delete(id));
+  renderHomeBatchBar();
 }
 
 /** One batch bar button: its mark on every ticked book. */

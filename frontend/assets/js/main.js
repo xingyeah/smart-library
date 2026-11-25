@@ -7,12 +7,13 @@ import {
   toggleLangFilter, toggleShelfFilter, updateShelfSearchClear,
 } from './shelf.js';
 import {
-  applyHomeBatch, clearHomeChecks, initDesktopHome, cycleHomeView, selectHomeRow, showRecentlyOpened, toggleHomeCheck, toggleHomeNav,
+  applyHomeBatch, clearHomeChecks, deleteHomeChecked, initDesktopHome, cycleHomeView, selectHomeRow, showRecentlyOpened, toggleHomeCheck, toggleHomeNav,
   toggleHomePageChecks,
 } from './home.js';
 import { hideCommandSuggest, loadCommandHistory, onCommandKey, renderCommandSuggest, runCommandSuggest } from './home_command.js';
 import { initBackStack } from './back_stack.js';
 import { initTabSwipe } from './tab_swipe.js';
+import { deleteBooks } from './book_batch_delete.js';
 import {
   askTonight, loadTonightView, moreTonight, runTonightPreset, runTonightHistory, deleteTonightHistory,
   nextTonightSearch, restartTonightSearch,
@@ -100,7 +101,7 @@ Object.assign(window, {
   escapeHtml, setAiRerank, toggleLangFilter, switchTab, loadStats,
   resetShelfFilters, debounceShelfSearch, toggleFavorite, cycleReadingStatus,
   toggleShelfFilter, clearShelfFilters, clearShelfGroup, updateShelfSearchClear, clearShelfSearch,
-  selectHomeRow, toggleHomeCheck, toggleHomePageChecks, clearHomeChecks, applyHomeBatch, toggleHomeNav,
+  selectHomeRow, toggleHomeCheck, toggleHomePageChecks, clearHomeChecks, applyHomeBatch, deleteHomeChecked, deleteBooks, toggleHomeNav,
   cycleHomeView, onCommandKey, renderCommandSuggest, hideCommandSuggest, loadCommandHistory, runCommandSuggest, showRecentlyOpened,
   fetchShelfIds, openBookDialog,
   openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
