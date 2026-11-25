@@ -1,6 +1,7 @@
 import math
 import re
 import threading
+from collections import Counter
 from typing import Dict, List, Optional, Set
 
 from database import get_conn
@@ -50,6 +51,16 @@ def reset_corpus_caches() -> None:
         _TERM_IDF_CACHE.clear()
 
 
+def _drop_common_short_names(names: Set[str], docs: List[str]) -> Set[str]:
+    """Two-character names found in more than 30 books are ordinary words, not authors. One pass over the books'
+    character pairs instead of a scan per name (7k names x 21k books took 11 s after every reindex)."""
+    short = {n for n in names if len(n) <= 2}
+    book_counts: Counter = Counter()
+    for doc in docs:
+        book_counts.update({doc[i:i + 2] for i in range(len(doc) - 1)} & short)
+    return {n for n in names if len(n) > 2 or book_counts[n] <= 30}
+
+
 def ensure_author_lexicon() -> List[str]:
     """Load distinct CJK author names (longest first) so queries like '刘慈欣科幻' keep the author as an anchor."""
     global _AUTHOR_LEXICON_CACHE
@@ -71,8 +82,7 @@ def ensure_author_lexicon() -> List[str]:
                         if re.fullmatch(r"[一-鿿]{2,5}", surname) and surname not in DOMAIN_SYNONYM_MAP:
                             names.add(surname)
             names.discard("未知作者")
-            docs = ensure_corpus_idf_cache()
-            names = {n for n in names if len(n) > 2 or sum(1 for d in docs if n in d) <= 30}
+            names = _drop_common_short_names(names, ensure_corpus_idf_cache())
             _AUTHOR_LEXICON_CACHE = sorted(names, key=len, reverse=True)
         except Exception:
             _AUTHOR_LEXICON_CACHE = []

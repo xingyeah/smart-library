@@ -84,6 +84,7 @@ def rebuild_vector_cache(reencode_ids=()) -> Dict[str, Any]:
     classic_res = backfill_languages_and_classic_scores(only_ids=only_ids)
     bge_res = sync_bge_m3_index(force_full=False, reencode_ids=set(reencode_ids))
     search_engine.reset_corpus_caches()  # new authors / IDF counts without a restart
+    search_engine._ensure_author_lexicon()  # rebuilt here, in the reindex thread, not by the next search
 
     conn = get_conn()
     try:
