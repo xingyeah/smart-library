@@ -56,7 +56,7 @@
   body.home-resizing { cursor: col-resize; user-select: none; -webkit-user-select: none; }
   .home-nav, .home-main, .home-detail { overflow-y: auto; min-height: 0; }
   .home-nav { padding: 12px 10px; border-right: 1px solid var(--border); }
-  .home-main { padding: 10px 14px 24px; }
+  .home-main { padding: 10px 14px 24px; container-type: inline-size; }
   .home-detail { padding: 24px; border-left: 1px solid var(--border); overflow-x: hidden; overflow-wrap: anywhere; }
   .home-nav-toggle { display: none; }
   .home-status { position: fixed; left: 0; right: 0; bottom: 0; height: 28px; display: flex; align-items: center;
@@ -77,7 +77,8 @@
 .home-list { display: flex; flex-direction: column; gap: 2px; }
 .home-list > .section-card { margin: 12px 0; }
 .home-list-head, .home-row { display: grid; align-items: center; gap: 12px; padding: 7px 8px;
-                             grid-template-columns: 16px 30px minmax(0, 1fr) 150px 72px 44px; border-radius: 8px; }
+                             grid-template-columns: 16px 30px minmax(0, 1fr) var(--home-progress-w) 72px 44px; border-radius: 8px;
+                             --home-progress-w: 96px; }
 .home-list-head { color: var(--text-dim); font-size: 11px; padding-bottom: 4px; }
 .home-check-cell { display: flex; align-items: center; }
 .home-check-cell input { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--accent); }
@@ -91,7 +92,7 @@ body.home-has-checks .home-row .home-check-cell input, .home-row .home-check-cel
 .home-row.active { background: #24262b; outline: 1px solid rgba(230, 242, 58, 0.33); }
 .home-row-cover { width: 30px; height: 42px; border-radius: 3px; object-fit: cover; background: var(--bg-card); display: block; }
 /* 大图: covers half as large again in width and height */
-body.home-big-covers .home-list-head, body.home-big-covers .home-row { grid-template-columns: 16px 45px minmax(0, 1fr) 150px 72px 44px; }
+body.home-big-covers .home-list-head, body.home-big-covers .home-row { grid-template-columns: 16px 45px minmax(0, 1fr) var(--home-progress-w) 72px 44px; }
 body.home-big-covers .home-row-cover { width: 45px; height: 63px; }
 .home-row-title { min-width: 0; display: flex; flex-direction: column; }
 .home-row-title .book-title { font-weight: 700; font-size: 13px; line-height: 1.4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -102,6 +103,11 @@ body.home-big-covers .home-row-cover { width: 45px; height: 63px; }
 .home-row-progress.is-empty { color: #4a4d55; }
 .home-bar { flex: 1; height: 4px; border-radius: 4px; background: #2b2e34; overflow: hidden; }
 .home-bar i { display: block; height: 100%; background: var(--accent); }
+/* A narrow list keeps the title room: the percentage alone, without the bar */
+@container (max-width: 620px) {
+  .home-list-head, .home-row { --home-progress-w: 44px; }
+  .home-bar { display: none; }
+}
 .home-pill { font-size: 11px; padding: 3px 8px; border-radius: 10px; border: 0; background: var(--selected-bg);
              color: #c9cbd2; cursor: pointer; white-space: nowrap; }
 .home-pill:not(.has-status) { color: var(--text-dim); }
