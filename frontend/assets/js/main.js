@@ -12,6 +12,7 @@ import {
 } from './home.js';
 import { hideCommandSuggest, loadCommandHistory, onCommandKey, renderCommandSuggest, runCommandSuggest } from './home_command.js';
 import { initBackStack } from './back_stack.js';
+import { initTabSwipe } from './tab_swipe.js';
 import {
   askTonight, loadTonightView, moreTonight, runTonightPreset, runTonightHistory, deleteTonightHistory,
   nextTonightSearch, restartTonightSearch,
@@ -150,3 +151,4 @@ loadStats();
 switchTab(window.matchMedia(MOBILE_QUERY).matches ? 'tonight' : 'shelf');
 initReaderSelectionHandler();
 initBackStack();
+initTabSwipe();
