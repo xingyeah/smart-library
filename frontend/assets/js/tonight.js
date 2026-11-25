@@ -3,6 +3,8 @@
 import { READING_STATUS_LABEL } from './state.js';
 import { bookCoverImgHtml, escapeHtml, showMobileNotice, showUndoToast } from './utils.js';
 import { splitBilingualTitle } from './shelf_render.js';
+import { icon } from './icons.js';
+import { deleteSearch, fetchSearchHistory, recordSearch } from './search_history.js';
 
 const SWIPE_COMMIT_PX = 90;
 const TAP_SLOP_PX = 8;
@@ -21,8 +23,8 @@ const TONIGHT_PRESETS = [
   ['宏大硬科幻与星际文明', '格局宏大的硬科幻小说，涉及星际文明、宇宙社会学、时间或人工智能哲学思考'],
 ];
 
-/** @type {{ cards: any[], index: number, seen: number[], mode: string, query: string, requestSeq: number }} */
-const tonight = { cards: [], index: 0, seen: [], mode: CONTEXT_TONIGHT, query: '', requestSeq: 0 };
+/** @type {{ cards: any[], index: number, seen: number[], mode: string, query: string, requestSeq: number, history: string[] }} */
+const tonight = { cards: [], index: 0, seen: [], mode: CONTEXT_TONIGHT, query: '', requestSeq: 0, history: [] };
 
 const byId = id => document.getElementById(id);
 
@@ -51,10 +53,10 @@ function continueHtml(book, others) {
   const othersHtml = others > 0
     ? `<div class="tonight-others"><button class="tonight-link" onclick="showReadingShelf()">其他在读 ${others} 本 ›</button></div>` : '';
   return `<div class="tonight-now">
-      <div class="tonight-cover tonight-cover-now">${bookCoverImgHtml(book)}</div>
+      <div class="tonight-cover tonight-cover-now" onclick="openBookModal(${book.id})">${bookCoverImgHtml(book)}</div>
       <div class="tonight-now-info">
         <span class="tonight-now-label">接着读</span>
-        <div class="tonight-now-title">${escapeHtml(splitBilingualTitle(book.clean_title || book.title).main)}</div>
+        <div class="tonight-now-title" onclick="openBookModal(${book.id})">${escapeHtml(splitBilingualTitle(book.clean_title || book.title).main)}</div>
         <div class="tonight-now-pos">${where}</div>
         <div class="tonight-bar"><i style="width:${percent}%"></i></div>
         <button class="btn btn-primary tonight-now-go" onclick="openOnlineReader(${book.id})">继续阅读</button>
@@ -87,14 +89,9 @@ function endHtml() {
   return `<div class="tonight-end"><div>${text}</div>${next}</div>`;
 }
 
-function setActionsEnabled(isEnabled) {
-  byId('tonight-actions').querySelectorAll('button').forEach(button => { button.disabled = !isEnabled; });
-}
-
 function renderStack() {
   const stack = byId('tonight-stack');
   const current = tonight.cards[tonight.index];
-  setActionsEnabled(Boolean(current));
   if (!current) {
     stack.innerHTML = endHtml();
     return;
@@ -107,7 +104,6 @@ function renderStack() {
 function showMessage(text, retryCall) {
   byId('tonight-stack').innerHTML = `<div class="tonight-end"><div>${escapeHtml(text)}</div>${
     retryCall ? `<button class="btn" onclick="${retryCall}">重试</button>` : ''}</div>`;
-  setActionsEnabled(false);
 }
 
 function setHeader(title, isSearch) {
@@ -115,9 +111,27 @@ function setHeader(title, isSearch) {
   byId('tonight-back').classList.toggle('hidden', !isSearch);
 }
 
+function historyChipHtml(query, index) {
+  return `<span class="chip tonight-history-chip">
+      <button class="tonight-history-run" onclick="runTonightHistory(${index})">${icon('history')}<span>${escapeHtml(query)}</span></button>
+      <button class="tonight-history-del" onclick="deleteTonightHistory(${index})" aria-label="删除这条搜索记录">×</button>
+    </span>`;
+}
+
 function renderPresets() {
-  byId('tonight-presets').innerHTML = TONIGHT_PRESETS.map(([label], index) =>
+  const history = tonight.history.map(historyChipHtml).join('');
+  byId('tonight-presets').innerHTML = history + TONIGHT_PRESETS.map(([label], index) =>
     `<button class="chip" onclick="runTonightPreset(${index})">${escapeHtml(label)}</button>`).join('');
+}
+
+async function refreshHistory() {
+  tonight.history = await fetchSearchHistory();
+  renderPresets();
+}
+
+async function rememberSearch(text) {
+  await recordSearch(text);
+  await refreshHistory();
 }
 
 /** Opens the page: the book to carry on with and a first batch of picks. */
@@ -127,6 +141,7 @@ export async function loadTonightView() {
   byId('tonight-date').textContent = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
   setHeader('今晚推荐', false);
   renderPresets();
+  refreshHistory();
   showMessage('正在挑书…', '');
   try {
     const data = await (await fetch('/api/tonight')).json();
@@ -159,11 +174,17 @@ export async function moreTonight() {
 }
 
 /** The line at the bottom: the same swipeable cards, now the best matches for what was said. */
-export async function askTonight(event) {
+export function askTonight(event) {
   event.preventDefault();
-  const input = /** @type {HTMLInputElement} */ (byId('tonight-ask-input'));
-  const text = input.value.trim();
+  const text = /** @type {HTMLInputElement} */ (byId('tonight-ask-input')).value.trim();
   if (!text) return;
+  rememberSearch(text);
+  searchTonight(text);
+}
+
+async function searchTonight(text) {
+  const input = /** @type {HTMLInputElement} */ (byId('tonight-ask-input'));
+  input.value = text;
   input.blur();
   const requestSeq = ++tonight.requestSeq;
   Object.assign(tonight, { mode: CONTEXT_SEARCH, query: text, index: 0, cards: [] });
@@ -184,9 +205,26 @@ export async function askTonight(event) {
   }
 }
 
+/** A preset is always on show, so searching it leaves the history alone. */
 export function runTonightPreset(index) {
-  /** @type {HTMLInputElement} */ (byId('tonight-ask-input')).value = TONIGHT_PRESETS[index][1];
-  askTonight(new Event('submit'));
+  searchTonight(TONIGHT_PRESETS[index][1]);
+}
+
+export function runTonightHistory(index) {
+  const query = tonight.history[index];
+  if (!query) return;
+  rememberSearch(query);
+  searchTonight(query);
+}
+
+export async function deleteTonightHistory(index) {
+  const query = tonight.history[index];
+  if (!query) return;
+  if (!(await deleteSearch(query))) {
+    showMobileNotice('没删掉，请再试一次');
+    return;
+  }
+  await refreshHistory();
 }
 
 function advanceFrom(cardIndex) {
@@ -257,20 +295,6 @@ async function decide(card, action) {
 async function throwCard(card, action) {
   await flyOut(card, action === 'want' ? 1 : -1);
   await decide(card, action);
-}
-
-export function tonightWant() {
-  const card = document.querySelector('.tonight-card:not(.behind)');
-  if (card) throwCard(card, 'want');
-}
-
-export function tonightSkip() {
-  const card = document.querySelector('.tonight-card:not(.behind)');
-  if (card) throwCard(card, 'skip');
-}
-
-export function tonightOpen() {
-  openCurrent();
 }
 
 function actionFor(dx, dy) {

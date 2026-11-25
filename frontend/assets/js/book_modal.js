@@ -348,7 +348,8 @@ export async function saveBookMeta(bookId) {
 
 // AI never renames a book on its own: the user edits or rejects its suggestion here
 function showTitleProposal(bookId, currentTitle, proposedTitle) {
-  const head = detailBox().querySelector('.detail-head');
+  // The dialog and the home's short detail each have a head block; the proposal goes under it
+  const head = detailBox().querySelector('.detail-head, .home-detail-head');
   if (!head) return;
   head.insertAdjacentHTML('afterend', `
     <div class="detail-title-proposal" id="detail-title-proposal">

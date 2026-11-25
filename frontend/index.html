@@ -67,12 +67,7 @@
         <button class="tonight-link hidden" id="tonight-back" onclick="loadTonightView()">‹ 返回今晚</button>
       </div>
       <div class="tonight-stack" id="tonight-stack"></div>
-      <div class="tonight-actions" id="tonight-actions">
-        <button class="btn tonight-act" onclick="tonightSkip()">跳过</button>
-        <button class="btn tonight-act" onclick="tonightOpen()">详情</button>
-        <button class="btn btn-primary tonight-act" onclick="tonightWant()">想读</button>
-      </div>
-      <div class="tonight-hint">右滑想读 · 左滑跳过 · 上滑看详情</div>
+      <div class="tonight-hint">右滑想读 · 左滑跳过 · 点卡片看详情</div>
       <div class="tonight-presets" id="tonight-presets"></div>
       <form class="tonight-ask" onsubmit="askTonight(event)">
         <input id="tonight-ask-input" type="text" enterkeyhint="search" autocomplete="off"
@@ -96,7 +91,7 @@
               class="search-input"
               placeholder="搜书，或说一句：把想读里讲决策的书设为在读"
               oninput="debounceShelfSearch(); updateShelfSearchClear()"
-              onfocus="if (appState.currentTab !== 'shelf') switchTab('shelf'); renderCommandSuggest()"
+              onfocus="if (appState.currentTab !== 'shelf') switchTab('shelf'); renderCommandSuggest(); loadCommandHistory()"
               onblur="hideCommandSuggest()"
               enterkeyhint="search"
               autocomplete="off"

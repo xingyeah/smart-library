@@ -10,10 +10,10 @@ import {
   applyHomeBatch, clearHomeChecks, initDesktopHome, cycleHomeView, selectHomeRow, showRecentlyOpened, toggleHomeCheck, toggleHomeNav,
   toggleHomePageChecks,
 } from './home.js';
-import { hideCommandSuggest, onCommandKey, renderCommandSuggest, runCommandSuggest } from './home_command.js';
+import { hideCommandSuggest, loadCommandHistory, onCommandKey, renderCommandSuggest, runCommandSuggest } from './home_command.js';
 import { initBackStack } from './back_stack.js';
 import {
-  askTonight, loadTonightView, moreTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
+  askTonight, loadTonightView, moreTonight, runTonightPreset, runTonightHistory, deleteTonightHistory,
 } from './tonight.js';
 import { loadInterestView, saveInterestConfig, showExploreRatio } from './recommend.js';
 import {
@@ -99,11 +99,11 @@ Object.assign(window, {
   resetShelfFilters, debounceShelfSearch, toggleFavorite, cycleReadingStatus,
   toggleShelfFilter, clearShelfFilters, clearShelfGroup, updateShelfSearchClear, clearShelfSearch,
   selectHomeRow, toggleHomeCheck, toggleHomePageChecks, clearHomeChecks, applyHomeBatch, toggleHomeNav,
-  cycleHomeView, onCommandKey, renderCommandSuggest, hideCommandSuggest, runCommandSuggest, showRecentlyOpened,
+  cycleHomeView, onCommandKey, renderCommandSuggest, hideCommandSuggest, loadCommandHistory, runCommandSuggest, showRecentlyOpened,
   fetchShelfIds, openBookDialog,
   openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
   loadShelfBooks, showReadingShelf,
-  loadTonightView, moreTonight, askTonight, runTonightPreset, tonightOpen, tonightSkip, tonightWant,
+  loadTonightView, moreTonight, askTonight, runTonightPreset, runTonightHistory, deleteTonightHistory,
   loadInterestView, saveInterestConfig, showExploreRatio,
   startOrganize, loadConflicts, resolveConflict, rollbackRun,
   loadMismergedBooks, triggerSplitSingleBook, triggerBatchSplitMismerged,

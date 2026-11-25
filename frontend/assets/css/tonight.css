@@ -10,7 +10,8 @@
 .tonight-now .tonight-cover { width: 84px; height: 122px; flex: none; }
 .tonight-now-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .tonight-now-label { font-size: 12px; color: var(--accent-text); letter-spacing: 2px; }
-.tonight-now-title { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.tonight-now-title { font-size: 18px; font-weight: 700; line-height: 1.3; cursor: pointer; }
+.tonight-cover-now { cursor: pointer; }
 .tonight-now-pos { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tonight-bar { height: 4px; border-radius: 4px; background: var(--border); overflow: hidden; margin: 6px 0; }
 .tonight-bar i { display: block; height: 100%; background: var(--accent); }
@@ -43,10 +44,14 @@
 .tonight-end { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
   height: 100%; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 16px; font-size: 14px; }
 
-.tonight-actions { display: flex; gap: 10px; }
-.tonight-act { flex: 1; min-height: 44px; }
 .tonight-hint { text-align: center; font-size: 11px; color: var(--text-dim); margin: 8px 0 14px; }
 .tonight-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tonight-history-chip { display: flex; align-items: center; max-width: 100%; padding: 0; overflow: hidden; }
+.tonight-history-run { display: flex; align-items: center; min-width: 0; padding: 4px 4px 4px 11px; border: 0; background: none;
+                       color: inherit; font: inherit; cursor: pointer; }
+.tonight-history-run .icon { margin-right: 5px; color: var(--text-dim); }
+.tonight-history-run span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tonight-history-del { flex: none; padding: 4px 11px 4px 6px; border: 0; background: none; color: var(--text-dim); font: inherit; cursor: pointer; }
 
 .tonight-ask { position: fixed; left: 12px; right: 12px; bottom: 14px; z-index: 50; display: flex; align-items: center; gap: 8px;
   height: 52px; padding: 0 8px 0 18px; border-radius: 26px; background: var(--text); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25); }

@@ -5,6 +5,7 @@ import { SHELF_FILTER_GROUPS, appState, shelfFilters, shelfGroupValues } from '.
 import { escapeHtml, showMobileNotice } from './utils.js';
 import { splitBilingualTitle } from './shelf_render.js';
 import { MAX_BATCH_BOOKS, applyMarksToBooks, focusFirstHomeRow, homeItems, isDesktopHome } from './home.js';
+import { fetchSearchHistory, recordSearch } from './search_history.js';
 
 const app = /** @type {any} */ (window);
 const COMMAND_BOOK_MATCHES = 3;
@@ -37,13 +38,44 @@ export function parseCommand(raw) {
 const commandState = {
   suggestions: /** @type {{kind: string, label: string, hint: string, isDisabled?: boolean, run: () => void}[]} */ ([]),
   index: -1,
+  history: /** @type {string[]} */ ([]),
 };
+
+function commandInput() {
+  return /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input'));
+}
+
+/** Only a line the reader settles on (Enter, or picking 搜索) goes into the history, not every keystroke. */
+function rememberCommandText() {
+  const text = commandInput().value.trim();
+  if (text) recordSearch(text);
+}
+
+/** Loads the recent searches the empty command bar offers, then shows them if the bar is still empty and focused. */
+export async function loadCommandHistory() {
+  commandState.history = await fetchSearchHistory();
+  renderCommandSuggest();
+}
+
+/** Puts a past line back in the bar and lists what it finds; a 设为 in it is only offered, never run. */
+function runHistoryLine(text) {
+  commandInput().value = text;
+  app.updateShelfSearchClear();
+  recordSearch(text);
+  clearTimeout(appState.searchTimer);
+  shelfFilters.q = text;
+  app.loadShelfBooks(1, { ai: true });
+}
+
+function historySuggestions() {
+  return commandState.history.map(text => ({ kind: '最近', label: text, hint: '', run: () => runHistoryLine(text) }));
+}
 
 function searchSuggestion(command) {
   const statusNames = STATUS_WORDS.filter(([, val]) => shelfGroupValues('status').includes(val)).map(([word]) => word);
   const scope = [...new Set(statusNames), command.query].filter(Boolean).join(' · ');
   return { kind: '搜索', label: `${scope || '全部'} · 找到 ${appState.shelfLastTotal.toLocaleString()} 本`, hint: '回车',
-    run: () => { /** @type {HTMLElement} */ (document.activeElement).blur(); focusFirstHomeRow(); } };
+    run: () => { rememberCommandText(); /** @type {HTMLElement} */ (document.activeElement).blur(); focusFirstHomeRow(); } };
 }
 
 function actionSuggestion(command) {
@@ -101,15 +133,18 @@ export function hideCommandSuggest() {
   document.getElementById('cmd-suggest')?.classList.add('hidden');
 }
 
-/** Under the command bar while it has focus and holds text: search, action, organize, matching books, jumps. */
+/** Under the command bar while it has focus: the recent searches when it is empty; with text, search, action,
+ * organize, matching books and jumps. */
 export function renderCommandSuggest() {
   const box = document.getElementById('cmd-suggest');
-  const input = /** @type {HTMLInputElement} */ (document.getElementById('shelf-search-input'));
-  if (!box || !isDesktopHome() || !input.value.trim() || document.activeElement !== input) {
+  const input = commandInput();
+  const text = input.value.trim();
+  const suggestions = text ? buildSuggestions(text) : historySuggestions();
+  if (!box || !isDesktopHome() || !suggestions.length || document.activeElement !== input) {
     hideCommandSuggest();
     return;
   }
-  commandState.suggestions = buildSuggestions(input.value.trim());
+  commandState.suggestions = suggestions;
   commandState.index = -1;
   box.innerHTML = commandState.suggestions.map((item, i) => `<button class="cmd-item" data-index="${i}" ${item.isDisabled ? 'disabled' : ''}
       onmousedown="event.preventDefault(); runCommandSuggest(${i})"><b class="cmd-kind">${escapeHtml(item.kind)}</b>
@@ -153,6 +188,9 @@ export function onCommandKey(event) {
     return true;
   }
   // The search runs and the box lets go of the keys, so j/k walk the results at once
-  if (event.key === 'Enter') /** @type {HTMLElement} */ (event.target).blur();
+  if (event.key === 'Enter') {
+    rememberCommandText();
+    /** @type {HTMLElement} */ (event.target).blur();
+  }
   return false;
 }

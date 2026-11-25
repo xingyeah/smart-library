@@ -1,12 +1,16 @@
-from http_api.handlers import books, connection, marks, organize, pdf_pages, reading, recommend, tonight, translate
+from http_api.handlers import books, connection, marks, organize, pdf_pages, reading, recommend, search_history, tonight, translate
 from http_api.router import Router
 
 
 def build_default_router() -> Router:
     """Instantiate and populate the standard declarative HTTP router."""
     router = Router()
+    _add_get_routes(router)
+    _add_post_routes(router)
+    return router
 
-    # GET routes
+
+def _add_get_routes(router: Router) -> None:
     router.add("GET", r"/api/stats", books.handle_get_stats)
     router.add("GET", r"/api/ping", connection.handle_get_ping)
     router.add("GET", r"/api/connection", connection.handle_get_connection)
@@ -23,6 +27,7 @@ def build_default_router() -> Router:
     router.add("GET", r"/api/books/(?P<book_id>\d+)/pdf_text/(?P<page_no>\d+)", pdf_pages.handle_get_pdf_text)
     router.add("GET", r"/api/recommend/interests", recommend.handle_get_recommend_interests)
     router.add("GET", r"/api/tonight", tonight.handle_get_tonight)
+    router.add("GET", r"/api/search_history", search_history.handle_get_search_history)
     router.add("GET", r"/api/conflicts", organize.handle_get_conflicts)
     router.add("GET", r"/api/organize/mismerged", organize.handle_get_mismerged_books)
     router.add("GET", r"/api/organize/status", organize.handle_get_organize_status)
@@ -31,7 +36,8 @@ def build_default_router() -> Router:
     router.add("GET", r"/assets/.+", reading.handle_get_asset)
     router.add("GET", r"(/|/index\.html)", reading.handle_get_frontend_spa)
 
-    # POST routes
+
+def _add_post_routes(router: Router) -> None:
     router.add("POST", r"/api/translate", translate.handle_post_translate)
     router.add("POST", r"/api/translate/batch", translate.handle_post_translate_batch)
     router.add("POST", r"/api/recommend/describe", recommend.handle_post_recommend_describe)
@@ -43,11 +49,11 @@ def build_default_router() -> Router:
     router.add("POST", r"/api/books/batch_meta", marks.handle_post_batch_meta)
     router.add("POST", r"/api/skips", tonight.handle_post_skip)
     router.add("POST", r"/api/skips/undo", tonight.handle_post_skip_undo)
+    router.add("POST", r"/api/search_history", search_history.handle_post_search_history)
+    router.add("POST", r"/api/search_history/delete", search_history.handle_post_search_history_delete)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/enrich_refresh", books.handle_post_book_enrich_refresh)
     router.add("POST", r"/api/books/(?P<book_id>\d+)/delete", books.handle_post_book_delete)
     router.add("POST", r"/api/conflicts/(?P<conflict_id>\d+)/resolve", organize.handle_post_conflict_resolve)
     router.add("POST", r"/api/organize/start", organize.handle_post_organize_start)
     router.add("POST", r"/api/organize/split_mismerged", organize.handle_post_split_mismerged)
     router.add("POST", r"/api/organize/rollback", organize.handle_post_organize_rollback)
-
-    return router
