@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.graphics.Color
+import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -65,7 +66,10 @@ private class PageEvents(
 
 @SuppressLint("SetJavaScriptEnabled")
 private fun createWebView(context: Context, connection: Connection, events: PageEvents): WebView {
-    val webView = WebView(context)
+    // Without explicit params the web view runs in wrap-content mode, where Chromium resolves every vh unit to 0
+    val webView = WebView(context).apply {
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+    }
     val bridge = PageBridge(
         proxy = connection.proxy,
         listener = events.actionListener,
