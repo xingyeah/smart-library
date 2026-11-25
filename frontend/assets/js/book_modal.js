@@ -6,6 +6,7 @@ import { loadStats } from './api.js';
 import { loadShelfBooks } from './shelf.js';
 import { loadMismergedBooks } from './organize.js';
 import { homeDetailHtml, homeSimilarHtml } from './home_detail.js';
+import { dropTonightBook } from './tonight.js';
 
 // The phone shows the modal full screen, so the loading and error states need their own way back
 function bookModalStatusHtml(message) {
@@ -442,6 +443,7 @@ export async function triggerDeleteBook(bookId) {
     if (typeof appState.currentTab !== 'undefined' && appState.currentTab === 'shelf' && typeof loadShelfBooks === 'function') {
       loadShelfBooks(shelfFilters.page);
     }
+    if (appState.currentTab === 'tonight') dropTonightBook(bookId);
     if (typeof loadStats === 'function') loadStats();
   } catch (err) {
     alert('删除图书失败：' + (err.message || '请检查系统状态'));

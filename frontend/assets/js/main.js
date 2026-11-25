@@ -14,6 +14,7 @@ import { hideCommandSuggest, loadCommandHistory, onCommandKey, renderCommandSugg
 import { initBackStack } from './back_stack.js';
 import {
   askTonight, loadTonightView, moreTonight, runTonightPreset, runTonightHistory, deleteTonightHistory,
+  nextTonightSearch, restartTonightSearch,
 } from './tonight.js';
 import { loadInterestView, saveInterestConfig, showExploreRatio } from './recommend.js';
 import {
@@ -104,7 +105,7 @@ Object.assign(window, {
   openShelfSheet, closeShelfSheet, pickShelfSort, loadMoreShelfBooks,
   loadShelfBooks, showReadingShelf,
   loadTonightView, moreTonight, askTonight, runTonightPreset, runTonightHistory, deleteTonightHistory,
-  loadInterestView, saveInterestConfig, showExploreRatio,
+  nextTonightSearch, restartTonightSearch, loadInterestView, saveInterestConfig, showExploreRatio,
   startOrganize, loadConflicts, resolveConflict, rollbackRun,
   loadMismergedBooks, triggerSplitSingleBook, triggerBatchSplitMismerged,
   openBookModal, closeBookModal, saveBookMeta, triggerAiRefresh, acceptProposedTitle,

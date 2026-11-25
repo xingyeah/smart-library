@@ -4,7 +4,9 @@ from typing import Any, Dict, List
 from database import get_conn
 from http_api.responses import send_json
 from search.shelf import attach_ai_meta, format_book_row
+from search_history import SearchHistoryError
 from skips import SkipError, record_skip, undo_skip
+from tonight_search import TonightSearchError, record_search_want, reset_search, tonight_search, undo_search_want
 from tonight import continue_reading_row, other_reading_count, tonight_picks
 
 logger = logging.getLogger("http_api.tonight")
@@ -55,4 +57,43 @@ def handle_post_skip_undo(handler: Any, qs: Dict[str, List[str]], body: Dict[str
     try:
         send_json(handler, {"ok": undo_skip(_body_book_id(body))})
     except SkipError as error:
+        send_json(handler, {"error": str(error)}, 400)
+
+
+BAD_REQUEST_ERRORS = (SearchHistoryError, TonightSearchError, SkipError)
+
+
+def handle_post_tonight_search(handler: Any, qs: Dict[str, List[str]], body: Dict[str, Any]) -> None:
+    """POST /api/tonight/search: {query}. The next batch for the sentence: {query, items, exhausted}."""
+    try:
+        send_json(handler, tonight_search(body.get("query")))
+    except BAD_REQUEST_ERRORS as error:
+        send_json(handler, {"error": str(error)}, 400)
+
+
+def handle_post_tonight_search_reset(handler: Any, qs: Dict[str, List[str]], body: Dict[str, Any]) -> None:
+    """POST /api/tonight/search/reset: {query}. Brings the sentence's skipped books back."""
+    try:
+        reset_search(body.get("query"))
+    except BAD_REQUEST_ERRORS as error:
+        send_json(handler, {"error": str(error)}, 400)
+        return
+    send_json(handler, {"ok": True})
+
+
+def handle_post_search_want(handler: Any, qs: Dict[str, List[str]], body: Dict[str, Any]) -> None:
+    """POST /api/tonight/search/want: {book_id, query}. Keeps that the book was wanted from that sentence."""
+    try:
+        record_search_want(_body_book_id(body), body.get("query"))
+    except BAD_REQUEST_ERRORS as error:
+        send_json(handler, {"error": str(error)}, 400)
+        return
+    send_json(handler, {"ok": True})
+
+
+def handle_post_search_want_undo(handler: Any, qs: Dict[str, List[str]], body: Dict[str, Any]) -> None:
+    """POST /api/tonight/search/want/undo: {book_id}. Takes back the latest want record of the book."""
+    try:
+        send_json(handler, {"ok": undo_search_want(_body_book_id(body))})
+    except BAD_REQUEST_ERRORS as error:
         send_json(handler, {"error": str(error)}, 400)

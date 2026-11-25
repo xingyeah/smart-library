@@ -4,6 +4,7 @@ Every skip is kept: what a reader turns down says as much about their taste as w
 the tonight page (not from search results, where it only means "not this query") hides the book for a while.
 """
 
+import re
 from typing import Any, Set
 
 from database import get_conn, write_tx
@@ -13,6 +14,11 @@ SKIP_CONTEXT_SEARCH = "search"
 SKIP_CONTEXTS = (SKIP_CONTEXT_TONIGHT, SKIP_CONTEXT_SEARCH)
 TONIGHT_HIDE_DAYS = 30
 MAX_QUERY_CHARS = 200
+
+
+def _same_query_form(query: str) -> str:
+    """Folds whitespace the way search history does, so a skip matches the query it was made under."""
+    return re.sub(r"\s+", " ", query).strip()[:MAX_QUERY_CHARS]
 
 
 class SkipError(ValueError):
@@ -28,7 +34,7 @@ def record_skip(book_id: int, context: str, query: str = "") -> None:
             raise SkipError(f"book {book_id} does not exist")
         conn.execute(
             "INSERT INTO book_skips (book_id, context, query) VALUES (?, ?, ?)",
-            (book_id, context, query.strip()[:MAX_QUERY_CHARS] if context == SKIP_CONTEXT_SEARCH else ""),
+            (book_id, context, _same_query_form(query) if context == SKIP_CONTEXT_SEARCH else ""),
         )
 
 

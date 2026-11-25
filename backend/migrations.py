@@ -188,6 +188,29 @@ def _migrate_v11(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_v12(conn: sqlite3.Connection) -> None:
+    """What the reader wanted from each tonight search, and where they asked to see a search afresh."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS search_wants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            book_id INTEGER NOT NULL,
+            query TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_search_wants_query ON search_wants(query)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS search_resets (
+            query TEXT PRIMARY KEY,
+            after_skip_id INTEGER NOT NULL
+        )
+        """
+    )
+
+
 _MIGRATIONS = [
     (1, _migrate_v1),
     (2, _migrate_v2),
@@ -200,6 +223,7 @@ _MIGRATIONS = [
     (9, _migrate_v9),
     (10, _migrate_v10),
     (11, _migrate_v11),
+    (12, _migrate_v12),
 ]
 
 

@@ -43,6 +43,7 @@
 .tonight-stamp.skip { left: 12px; color: var(--text-muted); border-color: var(--text-muted); }
 .tonight-end { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
   height: 100%; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 16px; font-size: 14px; }
+.tonight-end-actions { display: flex; gap: 10px; }
 
 .tonight-hint { text-align: center; font-size: 11px; color: var(--text-dim); margin: 8px 0 14px; }
 .tonight-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }

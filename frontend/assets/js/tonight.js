@@ -23,8 +23,10 @@ const TONIGHT_PRESETS = [
   ['宏大硬科幻与星际文明', '格局宏大的硬科幻小说，涉及星际文明、宇宙社会学、时间或人工智能哲学思考'],
 ];
 
-/** @type {{ cards: any[], index: number, seen: number[], mode: string, query: string, requestSeq: number, history: string[] }} */
-const tonight = { cards: [], index: 0, seen: [], mode: CONTEXT_TONIGHT, query: '', requestSeq: 0, history: [] };
+/** @type {{ cards: any[], index: number, seen: number[], mode: string, query: string, requestSeq: number, history: string[], isExhausted: boolean, continueId: number }} */
+const tonight = {
+  cards: [], index: 0, seen: [], mode: CONTEXT_TONIGHT, query: '', requestSeq: 0, history: [], isExhausted: false, continueId: 0,
+};
 
 const byId = id => document.getElementById(id);
 
@@ -81,12 +83,21 @@ function cardHtml(book, isTop) {
     </div>`;
 }
 
+function searchEndHtml() {
+  const back = '<button class="btn" onclick="loadTonightView()">返回今晚</button>';
+  if (tonight.isExhausted) {
+    return `<div class="tonight-end"><div>这句搜的书都看过了</div><div class="tonight-end-actions">
+      <button class="btn btn-primary" onclick="restartTonightSearch()">从头再看</button>${back}</div></div>`;
+  }
+  if (!tonight.cards.length) return `<div class="tonight-end"><div>暂时没有合适的书</div>${back}</div>`;
+  return `<div class="tonight-end"><div>这一批看完了</div><div class="tonight-end-actions">
+      <button class="btn btn-primary" onclick="nextTonightSearch()">换一批</button>${back}</div></div>`;
+}
+
 function endHtml() {
-  const next = tonight.mode === CONTEXT_TONIGHT
-    ? '<button class="btn btn-primary" onclick="moreTonight()">换一批</button>'
-    : '<button class="btn btn-primary" onclick="loadTonightView()">返回今晚</button>';
+  if (tonight.mode === CONTEXT_SEARCH) return searchEndHtml();
   const text = tonight.cards.length ? '这一批看完了' : '暂时没有合适的书';
-  return `<div class="tonight-end"><div>${text}</div>${next}</div>`;
+  return `<div class="tonight-end"><div>${text}</div><button class="btn btn-primary" onclick="moreTonight()">换一批</button></div>`;
 }
 
 function renderStack() {
@@ -147,6 +158,7 @@ export async function loadTonightView() {
     const data = await (await fetch('/api/tonight')).json();
     if (requestSeq !== tonight.requestSeq) return;
     byId('tonight-continue').innerHTML = continueHtml(data.continue, data.other_reading);
+    tonight.continueId = data.continue ? Number(data.continue.id) : 0;
     tonight.cards = data.picks || [];
     tonight.seen = tonight.cards.map(book => Number(book.id));
     renderStack();
@@ -186,23 +198,54 @@ async function searchTonight(text) {
   const input = /** @type {HTMLInputElement} */ (byId('tonight-ask-input'));
   input.value = text;
   input.blur();
-  const requestSeq = ++tonight.requestSeq;
-  Object.assign(tonight, { mode: CONTEXT_SEARCH, query: text, index: 0, cards: [] });
+  Object.assign(tonight, { mode: CONTEXT_SEARCH, query: text });
   setHeader(`「${text}」的结果`, true);
+  await loadSearchBatch();
+}
+
+/** The next batch for the current sentence; the server leaves out what was already answered under it. */
+async function loadSearchBatch() {
+  const requestSeq = ++tonight.requestSeq;
+  Object.assign(tonight, { index: 0, cards: [], isExhausted: false });
   showMessage('正在找…', '');
   try {
-    const response = await fetch('/api/recommend/describe', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: text, top_k: 10, language: '', ai: false }),
+    const response = await fetch('/api/tonight/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: tonight.query }),
     });
+    if (!response.ok) throw new Error(`tonight search: server answered ${response.status}`);
     const data = await response.json();
     if (requestSeq !== tonight.requestSeq) return;
-    tonight.cards = (data.items || []).slice(0, 10);
+    Object.assign(tonight, { cards: data.items || [], isExhausted: Boolean(data.exhausted) });
     renderStack();
   } catch (error) {
-    console.error('tonight search failed', error);
-    if (requestSeq === tonight.requestSeq) showMessage('没能连上书库', '');
+    console.error('tonight search failed', tonight.query, error);
+    if (requestSeq === tonight.requestSeq) showMessage('没能连上书库', 'nextTonightSearch()');
   }
+}
+
+export function nextTonightSearch() {
+  loadSearchBatch();
+}
+
+/** Skipped books of this sentence come back; wanted, reading and read ones stay out. */
+export async function restartTonightSearch() {
+  if (!(await postJson('/api/tonight/search/reset', { query: tonight.query }))) {
+    showMobileNotice('没成功，请再试一次');
+    return;
+  }
+  await loadSearchBatch();
+}
+
+/** A book deleted from its detail leaves the page: its card goes, and a deleted carry-on book brings the next one. */
+export function dropTonightBook(bookId) {
+  if (Number(bookId) === tonight.continueId) {
+    loadTonightView();
+    return;
+  }
+  const position = tonight.cards.findIndex((book, index) => index >= tonight.index && Number(book.id) === Number(bookId));
+  if (position < 0) return;
+  tonight.cards.splice(position, 1);
+  renderStack();
 }
 
 /** A preset is always on show, so searching it leaves the history alone. */
@@ -242,9 +285,14 @@ async function wantCurrent() {
   const book = tonight.cards[cardIndex];
   const previous = book.reading_status || 'unread';
   if (!(await postJson(`/api/books/${book.id}/meta`, { reading_status: 'want' }))) return false;
+  // Under a search the want also steers that sentence's next batch toward look-alikes
+  const isFromSearch = tonight.mode === CONTEXT_SEARCH;
+  if (isFromSearch) postJson('/api/tonight/search/want', { book_id: Number(book.id), query: tonight.query });
   advanceFrom(cardIndex);
   showUndoToast(`已设为「${READING_STATUS_LABEL.want}」`, async () => {
-    if (await postJson(`/api/books/${book.id}/meta`, { reading_status: previous })) returnTo(cardIndex);
+    if (!(await postJson(`/api/books/${book.id}/meta`, { reading_status: previous }))) return;
+    if (isFromSearch) await postJson('/api/tonight/search/want/undo', { book_id: Number(book.id) });
+    returnTo(cardIndex);
   });
   return true;
 }

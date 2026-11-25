@@ -82,7 +82,7 @@ class MigrationsV9Test(unittest.TestCase):
                 conn.commit()
 
                 version = conn.execute("PRAGMA user_version").fetchone()[0]
-                self.assertEqual(version, 11)
+                self.assertEqual(version, 12)
                 tables = {
                     r["name"]
                     for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
