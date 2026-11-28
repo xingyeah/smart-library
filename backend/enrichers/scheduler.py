@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 import database
 from config import COVERS_DIR, DB_PATH, MIN_EXTERNAL_VOTES
 from enrichers.base import BaseBookEnricher, BookQuery, EnrichedBookMeta, search_title
-from enrichers.douban import DoubanEnricher
+from enrichers.douban import DoubanBlockedError, DoubanEnricher
 from enrichers.google_books import GoogleBooksEnricher
 from enrichers.open_library import OpenLibraryEnricher
 
@@ -120,7 +120,8 @@ class MultiSourceSlowEnricher:
             return enricher.fetch(query)
         except Exception as e:
             logger.warning("Channel '%s' failed for book #%s: %s", ch, row["id"], e)
-            self.cb.trigger_cooldown(ch, duration_sec=300.0)
+            cooldown = 600.0 if isinstance(e, DoubanBlockedError) else 300.0
+            self.cb.trigger_cooldown(ch, duration_sec=cooldown)
             return CHANNEL_UNANSWERED
 
     def _update_book_records(self, bid: int, res: EnrichedBookMeta, current_score: float) -> None:
@@ -240,7 +241,7 @@ def _enricher_daemon_loop(enricher: MultiSourceSlowEnricher, db_path: Path, inte
         _slow_enricher_stop.wait(wait_sec)
 
 
-def start_background_slow_enricher(interval_sec: float = 12.0, db_path: Path = DB_PATH) -> None:
+def start_background_slow_enricher(interval_sec: float = 4.0, db_path: Path = DB_PATH) -> None:
     """Start low-priority background daemon thread for multi-source slow enrichment."""
     global _slow_enricher_thread
     if _slow_enricher_thread and _slow_enricher_thread.is_alive():

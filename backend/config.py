@@ -87,7 +87,6 @@ SUPPORTED_EXTENSIONS = {
     ".pdf": 75,
     ".mobi": 65,
     ".azw": 60,
-    ".djvu": 45,
     ".txt": 30,
 }
 

@@ -404,6 +404,17 @@ class TestServerRoutesCharacterization(unittest.TestCase):
         after = c.execute("SELECT cover_path, summary, classic_score FROM books WHERE id = ?", (bid,)).fetchone()
         self.assertEqual(tuple(after), ("/covers/ext_douban_1.jpg", "短简介", 50.0))
 
+    def test_refresh_cover_fetch_skips_unanswered_channel(self):
+        from enrichers.scheduler import CHANNEL_UNANSWERED
+        c, bid = self._insert_book(summary="短简介")
+        row = c.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone()
+        found = mock.MagicMock(status="success", cover_url="http://x/c.jpg", source="google_books", external_id="g1")
+        with mock.patch("enrichers.scheduler.MultiSourceSlowEnricher._attempt_channel_fetch", side_effect=[CHANNEL_UNANSWERED, found]), \
+                mock.patch("enrichers.scheduler._download_channel_cover", return_value="/covers/ext_gb_g1.jpg"):
+            book_enrichment_service._fetch_missing_cover(bid, row)
+        cover = c.execute("SELECT cover_path FROM books WHERE id = ?", (bid,)).fetchone()[0]
+        self.assertEqual(cover, "/covers/ext_gb_g1.jpg")
+
     def test_excluded_categories_are_saved_trimmed_and_a_non_list_is_refused(self):
         def post(value):
             payload = json.dumps({"excluded_categories": value}, ensure_ascii=False).encode("utf-8")

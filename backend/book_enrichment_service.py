@@ -274,10 +274,10 @@ def _upsert_ai_metadata(conn, book_id: int, enriched: Dict[str, Any]) -> None:
 
 
 def _channel_cover_or_none(enricher: Any, channel: Any, row: Any) -> Optional[str]:
-    from enrichers.scheduler import _download_channel_cover
+    from enrichers.scheduler import CHANNEL_UNANSWERED, _download_channel_cover
     lang = (row["language"] or "zh-CN").lower()
     res = enricher._attempt_channel_fetch(channel, row, lang)
-    if not (res and res.status == "success" and res.cover_url):
+    if res is CHANNEL_UNANSWERED or not (res and res.status == "success" and res.cover_url):
         return None
     return _download_channel_cover(res.source, res.external_id, res.cover_url)
 

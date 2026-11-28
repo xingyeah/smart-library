@@ -339,7 +339,7 @@ def _enrich_one_douban_book(row: Any) -> bool:
     return True
 
 
-def start_background_douban_enricher(interval_sec: float = 12.0) -> None:
+def start_background_douban_enricher(interval_sec: float = 4.0) -> None:
     """Start multi-source background slow enricher daemon (backward compatibility bridge)."""
     from enrichers import start_background_slow_enricher
 
