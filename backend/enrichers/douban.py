@@ -50,12 +50,12 @@ class DoubanEnricher(BaseBookEnricher):
             "Referer": "https://book.douban.com/",
         }
 
-    def _query_subject_id(self, query: BookQuery) -> Tuple[Optional[str], Optional[str]]:
-        clean_isbn = "".join(ch for ch in query.isbn if ch.isdigit() or ch.upper() == "X")
-        by_isbn = len(clean_isbn) in (10, 13)
-        short_title = re.split(r"[\(（:：—\-]", query.title)[0].strip() or query.title.strip()
-        url = f"https://book.douban.com/j/subject_suggest?q={urllib.parse.quote(clean_isbn if by_isbn else short_title)}"
-
+    def _suggest_match(
+        self, term: str, query: BookQuery, by_isbn: bool
+    ) -> Tuple[Optional[str], Optional[str]]:
+        if not term:
+            return None, None
+        url = f"https://book.douban.com/j/subject_suggest?q={urllib.parse.quote(term)}"
         req = urllib.request.Request(url, headers=self._get_headers())
         with urllib.request.urlopen(req, timeout=self.timeout_sec, context=self._get_ssl_context()) as resp:
             body = resp.read().decode("utf-8", errors="ignore")
@@ -64,6 +64,15 @@ class DoubanEnricher(BaseBookEnricher):
         except ValueError as error:
             raise DoubanBlockedError(f"suggest answered with a non-JSON page: {body[:80]!r}") from error
         return pick_suggestion(data if isinstance(data, list) else [], query, by_isbn)
+
+    def _query_subject_id(self, query: BookQuery) -> Tuple[Optional[str], Optional[str]]:
+        clean_isbn = "".join(ch for ch in query.isbn if ch.isdigit() or ch.upper() == "X")
+        if len(clean_isbn) in (10, 13):
+            sid, pic = self._suggest_match(clean_isbn, query, by_isbn=True)
+            if sid:
+                return sid, pic
+        short_title = re.split(r"[\(（:：—\-]", query.title)[0].strip() or query.title.strip()
+        return self._suggest_match(short_title, query, by_isbn=False)
 
     def _parse_reviews(self, html: str) -> List[Dict[str, Any]]:
         reviews = []

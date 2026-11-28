@@ -138,6 +138,28 @@ class TestEnricherAdapters(unittest.TestCase):
             enricher.fetch(query)
 
     @mock.patch("urllib.request.urlopen")
+    def test_douban_isbn_miss_falls_back_to_title_search(self, mock_urlopen):
+        from enrichers.base import BookQuery
+        from enrichers.douban import DoubanEnricher
+        import json
+
+        title_suggest = json.dumps(
+            [{"id": "35506252", "title": "岩田先生", "author_name": "[日] HOBO日刊ITOI新闻(编)"}]
+        ).encode("utf-8")
+        subject_html = (
+            '<html><span property="v:itemreviewed">岩田先生</span>'
+            '<strong property="v:average">8.8</strong><span property="v:votes">9000</span></html>'
+        ).encode("utf-8")
+        mock_urlopen.side_effect = [self._page(b"[]"), self._page(title_suggest), self._page(subject_html)]
+
+        res = DoubanEnricher(timeout_sec=5.0).fetch(
+            BookQuery(isbn="9787544787581", title="岩田先生", author="HOBO日刊ITOI新闻", lang="zh-CN")
+        )
+        self.assertIsNotNone(res)
+        self.assertEqual((res.external_id, res.rating), ("35506252", 8.8))
+        self.assertEqual(mock_urlopen.call_count, 3)
+
+    @mock.patch("urllib.request.urlopen")
     def test_open_library_enricher_by_isbn(self, mock_urlopen):
         from enrichers.open_library import OpenLibraryEnricher
         import json
