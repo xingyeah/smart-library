@@ -32,6 +32,7 @@ export async function renderPdfPage(pageNo) {
     canvas.style.height = `${cssH}px`;
     slot.style.width = `${cssW}px`;
     slot.style.minHeight = `${cssH}px`;
+    slot.style.height = 'auto';
 
     const ctx = canvas.getContext('2d');
     await page.render({

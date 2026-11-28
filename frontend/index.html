@@ -340,19 +340,26 @@
   <!-- ==================== IMMERSIVE FULL-SCREEN E-BOOK READER ==================== -->
   <div class="reader-overlay" id="immersive-reader-overlay" data-theme="dark">
     <header class="reader-topbar">
-      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-        <button class="reader-ctrl-btn" onclick="toggleReaderSidebar()" title="展开/收起目录栏">📑 目录</button>
-        <div style="min-width:0;">
-          <div id="reader-top-title" style="font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:340px;"></div>
-          <div id="reader-top-sub" style="font-size:11.5px; color:var(--r-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:340px;"></div>
+      <div class="reader-topbar-row1">
+        <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
+          <button class="reader-ctrl-btn" onclick="toggleReaderSidebar()" title="展开/收起目录栏">📑 目录</button>
+          <div style="min-width:0; flex:1;">
+            <div id="reader-top-title" style="font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+            <div id="reader-top-sub" style="font-size:11.5px; color:var(--r-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+          </div>
+        </div>
+
+        <div id="reader-top-chapter-info" style="font-size:12.5px; color:var(--r-muted); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px;"></div>
+
+        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+          <a class="reader-ctrl-btn" id="reader-download-link" href="#" style="text-decoration:none;" title="下载原电子书文件">⬇️ 原书</a>
+          <button class="reader-ctrl-btn" style="border-color:var(--rose); color:var(--rose); font-weight:700;" onclick="closeOnlineReader()">✕ 退出阅读</button>
         </div>
       </div>
 
-      <div id="reader-top-chapter-info" style="font-size:13px; color:var(--r-muted); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:380px;"></div>
-
-      <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; min-width:0;">
+      <div class="reader-topbar-row2">
         <!-- Theme Switcher -->
-        <div style="display:flex; align-items:center; gap:5px; padding:0 6px;" title="切换阅读主题配色">
+        <div style="display:flex; align-items:center; gap:5px; padding:0 4px;" title="切换阅读主题配色">
           <button class="reader-theme-dot active" data-rtheme="dark" style="background:#141822;" onclick="setReaderTheme('dark')" title="暗夜深邃"></button>
           <button class="reader-theme-dot" data-rtheme="sepia" style="background:#f8f1e4;" onclick="setReaderTheme('sepia')" title="羊皮纸护眼"></button>
           <button class="reader-theme-dot" data-rtheme="light" style="background:#ffffff;" onclick="setReaderTheme('light')" title="纯白日间"></button>
@@ -406,9 +413,6 @@
         <button class="reader-ctrl-btn" id="reader-trans-toggle-btn" onclick="toggleReaderTransDrawer()" title="打开/收起英文翻译助手与查词历史">🌐 翻译助手</button>
         <button class="reader-ctrl-btn" id="reader-bilingual-btn" onclick="toggleBilingualMode()" title="中英双语段落/整页对照">📖 双语对照</button>
         <button class="reader-ctrl-btn" id="reader-transonly-btn" onclick="toggleTransOnly()" style="display:none;" title="隐藏 PDF 原页面，只看译文对照">📃 仅译文</button>
-
-        <a class="reader-ctrl-btn" id="reader-download-link" href="#" style="text-decoration:none;" title="下载原电子书文件">⬇️ 原书</a>
-        <button class="reader-ctrl-btn" style="border-color:var(--rose); color:var(--rose); font-weight:700;" onclick="closeOnlineReader()">✕ 退出阅读</button>
       </div>
     </header>
 
